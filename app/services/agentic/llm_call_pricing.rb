@@ -26,6 +26,16 @@ module Agentic
         input_per_million: BigDecimal("0.20"),
         cached_input_per_million: BigDecimal("0.02"),
         output_per_million: BigDecimal("1.25")
+      },
+      "openai:text-embedding-3-small" => {
+        input_per_million: BigDecimal("0.02"),
+        cached_input_per_million: BigDecimal("0"),
+        output_per_million: BigDecimal("0")
+      },
+      "openai:text-embedding-3-large" => {
+        input_per_million: BigDecimal("0.13"),
+        cached_input_per_million: BigDecimal("0"),
+        output_per_million: BigDecimal("0")
       }
     }.freeze
 

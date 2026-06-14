@@ -51,7 +51,7 @@ class Documents::PreparePdfTest < ActiveSupport::TestCase
     assert_equal "prepared", document.preparation_status
     assert_equal "pdf-v1", document.prepared_payload.fetch("preparation_version")
     assert_equal 2, document.prepared_payload.fetch("page_count")
-    assert_equal 225, document.prepared_payload.fetch("dpi")
+    assert_equal 300, document.prepared_payload.fetch("dpi")
     assert_equal 2, pages.count
     assert pages.all? { |page| page.status == "processed" }
     assert pages.all? { |page| page.image.attached? }
@@ -59,8 +59,8 @@ class Documents::PreparePdfTest < ActiveSupport::TestCase
     assert_equal "OCR text for page 1", pages.first.ocr_text
     assert_includes payload.fetch(:full_text), "Embedded text for page 2"
     assert_includes payload.fetch(:full_text), "OCR text for page 2"
-    assert_includes command_runner.calls, [ :render_page, 1, 225 ]
-    assert_includes command_runner.calls, [ :render_page, 2, 225 ]
+    assert_includes command_runner.calls, [ :render_page, 1, 300 ]
+    assert_includes command_runner.calls, [ :render_page, 2, 300 ]
   end
 
   test "preparation is idempotent for existing page records" do

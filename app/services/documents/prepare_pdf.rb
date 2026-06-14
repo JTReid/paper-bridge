@@ -4,7 +4,7 @@ require "tmpdir"
 
 module Documents
   class PreparePdf
-    DEFAULT_DPI = 225
+    DEFAULT_DPI = 300
 
     def self.call(document, command_runner: PdfCommandRunner.new, dpi: DEFAULT_DPI)
       new(document, command_runner: command_runner, dpi: dpi).call

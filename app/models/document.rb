@@ -10,6 +10,8 @@ class Document < ApplicationRecord
   belongs_to :account
   belongs_to :user
   has_many :document_pages, -> { order(:page_number) }, dependent: :destroy
+  has_many :document_chunks, -> { order(:chunk_index) }, dependent: :destroy
+  has_many :document_embeddings, through: :document_chunks
   has_many :pipeline_runs, as: :subject, dependent: :destroy
 
   has_one_attached :file

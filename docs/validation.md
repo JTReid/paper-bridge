@@ -28,17 +28,16 @@ ruby scripts/agentic_pipeline_harness.rb review
 This is a framework harness for agentic pipeline execution, provider wiring,
 logging, telemetry, database-backed model/prompt/schema configuration, and
 deterministic Minitest coverage. The `documents` command covers the current
-document upload-to-summary lifecycle, including callback enqueueing, job
-execution, PDF preparation, page OCR/image artifacts, pipeline records,
-telemetry, and JSONB persistence with fake PDF tooling and a fake LLM
-connection. The `pdf-tools` command checks local Poppler/Tesseract availability
-for live PDF preparation; it is optional and not part of default CI. The
-`queue` command checks the development Solid Queue adapter, queue tables, and a
-throwaway enqueue path.
+document upload-to-ingestion lifecycle, including callback enqueueing, job
+execution, PDF preparation, page OCR/image artifacts, page-aware chunk creation,
+pgvector embedding persistence, pipeline records, and telemetry with fake PDF
+tooling and fake LLM/embedding calls. The `pdf-tools` command checks local
+Poppler/Tesseract availability for live PDF preparation; it is optional and not
+part of default CI. The `queue` command checks the development Solid Queue
+adapter, queue tables, and a throwaway enqueue path.
 
-PDF summary coverage asserts the existing document summarizer sends extracted
-page text and rendered page screenshots together in one multimodal OpenAI
-payload.
+PDF ingestion coverage asserts the chunker sends extracted page text and
+rendered page screenshots together in one multimodal OpenAI payload per page.
 
 Live LLM checks are explicit opt-in checks:
 

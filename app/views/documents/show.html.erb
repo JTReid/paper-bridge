@@ -25,10 +25,25 @@
     <p><%= link_to "Download file", rails_blob_path(@document.file, disposition: "attachment") %></p>
   <% end %>
 
-  <% if @document.summary.present? %>
+  <% if @document.document_chunks.any? %>
     <section>
-      <h2>Summary</h2>
-      <pre><%= JSON.pretty_generate(@document.summary) %></pre>
+      <h2>Ingestion</h2>
+      <dl>
+        <dt>Chunks</dt>
+        <dd><%= @document.document_chunks.count %></dd>
+
+        <dt>Embeddings</dt>
+        <dd><%= @document.document_embeddings.count %></dd>
+      </dl>
+
+      <h3>Chunks</h3>
+      <% @document.document_chunks.includes(:document_page).each do |chunk| %>
+        <article>
+          <h4><%= chunk.label.humanize %> chunk <%= chunk.chunk_index %></h4>
+          <p>Starts on page <%= chunk.document_page.page_number %></p>
+          <pre><%= chunk.content %></pre>
+        </article>
+      <% end %>
     </section>
   <% end %>
 

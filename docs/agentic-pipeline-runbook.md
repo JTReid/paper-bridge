@@ -1,11 +1,11 @@
 # Agentic Pipeline Runbook
 
 This runbook protects the shared agentic pipeline machinery and the current
-document-summary pipeline lifecycle.
+document-ingestion pipeline lifecycle.
 
 Implementation-specific behavior belongs in targeted harness commands and
 tests. The generic checks prove that the pipeline framework is healthy. The
-document checks prove the upload-to-summary lifecycle that PaperBridge depends
+document checks prove the upload-to-ingestion lifecycle that PaperBridge depends
 on now.
 
 ## Critical Path Contract
@@ -36,7 +36,7 @@ The generic harness does not protect:
 - Every provider/model combination in production data.
 - Cost ceilings beyond making provider/model drift visible.
 
-## Document Summary Pipeline Contract
+## Document Ingestion Pipeline Contract
 
 The document pipeline harness protects these product-level guarantees:
 
@@ -47,24 +47,30 @@ The document pipeline harness protects these product-level guarantees:
 - The callback marks the document `queued` and enqueues `ProcessDocumentJob`.
 - Development and production use Solid Queue for Active Job-backed document
   processing. Development stores queue records in `paper_bridge_development_queue`.
-- `ProcessDocumentJob` prepares the document before running the summary
+- `ProcessDocumentJob` prepares the document before running the ingestion
   pipeline.
 - Text uploads are normalized into `documents.prepared_payload`.
 - PDF uploads are prepared through `Documents::PreparePdf`.
-- PDF preparation renders every page at 225 DPI, OCRs every page, extracts
+- PDF preparation renders every page at 300 DPI, OCRs every page, extracts
   embedded text for every page, and stores page-level artifacts in
   `DocumentPage` records.
 - `DocumentPage` stores page number, embedded text, OCR text, metadata, status,
   and a page image attachment.
 - `ProcessDocumentJob` creates a `PipelineRun` for the document subject.
-- `Agentic::DocumentSummaryPipeline` executes `Agents::DocumentSummarizer`.
-- The summarizer consumes the prepared payload and, for PDFs, sends extracted
-  page text plus rendered page screenshots to the configured LLM through the
-  provider abstraction. It returns schema-enforced structured JSON.
+- `Agentic::DocumentIngestionPipeline` executes `Agents::DocumentChunker` and
+  `Agents::DocumentEmbedder`.
+- The chunker processes prepared pages with previous/current/next page context,
+  sends page text and screenshots through the provider abstraction, and creates
+  labeled `DocumentChunk` records.
+- Each chunk belongs to the document page where the chunk starts. Chunks may
+  include continuation text from the next page when needed for coherence.
+- `DocumentEmbedding` stores generated pgvector embeddings for chunks using
+  provider/model strings, dimensions, distance metric, and the vector value.
 - Pipeline logs, activity entries, and LLM telemetry are recorded on the
   `PipelineRun`.
 - Deterministic preparation output is persisted to `documents.prepared_payload`.
-- The structured model output is persisted to `documents.summary`.
+- The structured chunk output is persisted to `document_chunks`.
+- The embedding output is persisted to `document_embeddings`.
 - Successful processing marks the document `processed`; failures mark it
   `failed`.
 

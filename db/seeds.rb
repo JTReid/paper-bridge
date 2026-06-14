@@ -12,24 +12,37 @@ openai = Llm.find_or_create_by!(name: "gpt-5.4-nano") do |llm|
 end
 openai.update!(provider_class: "Agentic::Providers::Openai")
 
+openai_embeddings = Llm.find_or_create_by!(name: "text-embedding-3-large") do |llm|
+  llm.provider_class = "Agentic::Providers::Openai"
+end
+openai_embeddings.update!(provider_class: "Agentic::Providers::Openai")
+
 [
   [
     "structured_text_summarizer",
+    openai,
     "Summarize the user's text as structured JSON. Return only fields allowed by the configured schema."
   ],
   [
     "structured_text_validator",
+    openai,
     "Validate the structured JSON. Approve only if it is parseable, source-grounded, and contains no unsupported fields."
   ],
   [
-    "document_summarizer",
-    "Summarize uploaded PaperBridge documents as grounded structured JSON. Use extracted text and provided page screenshots when available. Return only fields allowed by the configured schema."
+    "document_chunker",
+    openai,
+    "Create coherent, page-aware search chunks from prepared PaperBridge document pages. Use adjacent-page context for continuity, keep headings with their bodies, label each chunk with the configured taxonomy, and return only fields allowed by the configured schema."
+  ],
+  [
+    "document_embedder",
+    openai_embeddings,
+    "Embed PaperBridge document chunks for vector search indexing."
   ]
-].each do |name, directive|
+].each do |name, llm, directive|
   agent_type = AgentType.find_or_create_by!(name: name) do |record|
-    record.llm = openai
+    record.llm = llm
   end
-  agent_type.update!(llm: openai)
+  agent_type.update!(llm: llm)
 
   prompt = agent_type.prompts.active.first_or_initialize
   prompt.system_directive = directive
@@ -64,29 +77,41 @@ validation_schema = {
   required: %w[status reasons]
 }
 
-document_summary_schema = {
+document_chunks_schema = {
   type: "object",
   additionalProperties: false,
   properties: {
-    title: { type: "string" },
-    summary: { type: "string" },
-    key_points: {
+    chunks: {
       type: "array",
-      items: { type: "string" }
-    },
-    document_type: { type: "string" },
-    notable_dates: {
-      type: "array",
-      items: { type: "string" }
+      items: {
+        type: "object",
+        additionalProperties: false,
+        properties: {
+          content: { type: "string" },
+          label: {
+            type: "string",
+            enum: %w[
+              medical
+              education
+              therapy
+              behavior
+              legal
+              financial
+              general
+            ]
+          }
+        },
+        required: %w[content label]
+      }
     }
   },
-  required: %w[title summary key_points document_type notable_dates]
+  required: %w[chunks]
 }
 
 {
   "structured_summary" => summary_schema,
   "structured_validation" => validation_schema,
-  "document_summary" => document_summary_schema
+  "document_chunks" => document_chunks_schema
 }.each do |name, schema|
   openai_schema = JsonSchema.find_or_initialize_by(name: "openai_#{name}")
   openai_schema.schema = {

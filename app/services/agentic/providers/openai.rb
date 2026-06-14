@@ -54,6 +54,8 @@ module Agentic
       end
 
       def parse_response(raw_response)
+        return raw_response["data"] if operation_type == :embeddings
+
         raw_response["choices"][0]["message"]["content"]
       end
 
@@ -70,6 +72,8 @@ module Agentic
       end
 
       def attributes
+        return embedding_attributes if operation_type == :embeddings
+
         {
           model: requirements[:model],
           messages: [
@@ -85,6 +89,16 @@ module Agentic
         }
       end
 
+      def embedding_attributes
+        {
+          model: requirements[:model],
+          input: requirements[:input],
+          encoding_format: requirements[:encoding_format] || "float"
+        }.tap do |attributes|
+          attributes[:dimensions] = requirements[:dimensions] if requirements[:dimensions]
+        end
+      end
+
       def headers
         {
           "Content-Type": "application/json",
@@ -94,6 +108,8 @@ module Agentic
 
       def payload
         attributes = base_attributes.deep_dup
+        return attributes if operation_type == :embeddings
+
         attributes.merge!(policy_schema) if requirements[:response_format] == "structured_json"
         attributes.merge!(max_tokens) if requirements[:max_tokens]
 

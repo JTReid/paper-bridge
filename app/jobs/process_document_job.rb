@@ -12,7 +12,7 @@ class ProcessDocumentJob < ApplicationJob
     prepared_payload = Documents::Prepare.call(document, pdf_command_runner: pdf_command_runner)
 
     pipeline_run = create_pipeline_run(document, prepared_payload)
-    pipeline = Agentic::DocumentSummaryPipeline.new(
+    pipeline = Agentic::DocumentIngestionPipeline.new(
       connection: llm_connection,
       context: pipeline_context(document, pipeline_run)
     )
@@ -21,8 +21,8 @@ class ProcessDocumentJob < ApplicationJob
 
     document.update!(
       status: :processed,
-      summary: pipeline.to_response,
-      summarized_at: Time.current
+      summary: {},
+      summarized_at: nil
     )
   rescue Agentic::Errors::ConfigurationError => e
     mark_document_failed(document, e)

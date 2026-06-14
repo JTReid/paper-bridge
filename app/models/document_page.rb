@@ -9,6 +9,8 @@ class DocumentPage < ApplicationRecord
   belongs_to :account
   belongs_to :document
 
+  has_many :document_chunks, -> { order(:chunk_index) }, dependent: :destroy
+
   has_one_attached :image
 
   enum :status, STATUSES

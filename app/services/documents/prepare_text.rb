@@ -17,7 +17,9 @@ module Documents
       document.preparing!
 
       text = normalize_content(document.file.download)
+      page = prepare_document_page(text)
       payload = build_payload(text)
+      payload[:pages] = [ page_payload(page) ]
 
       document.update!(
         preparation_status: :prepared,
@@ -42,6 +44,34 @@ module Documents
                    .byteslice(0, MAX_INPUT_BYTES)
                    .encode("UTF-8", invalid: :replace, undef: :replace, replace: "")
                    .strip
+      end
+
+      def prepare_document_page(text)
+        page = document.document_pages.find_or_initialize_by(page_number: 1)
+        page.update!(
+          account: document.account,
+          embedded_text: text,
+          ocr_text: "",
+          metadata: {
+            source: "text_upload"
+          },
+          status: :processed
+        )
+
+        document.document_pages.where.not(page_number: 1).destroy_all
+        page
+      end
+
+      def page_payload(page)
+        {
+          id: page.id,
+          number: page.page_number,
+          embedded_text: page.embedded_text.to_s,
+          ocr_text: page.ocr_text.to_s,
+          image_attached: false,
+          image_blob_id: nil,
+          metadata: page.metadata
+        }
       end
 
       def build_payload(text)

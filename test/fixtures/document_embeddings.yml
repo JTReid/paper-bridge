@@ -1,0 +1,2 @@
+# Empty by default. Tests create embeddings explicitly because the embedding
+# column is a non-null 3072-dimensional vector.

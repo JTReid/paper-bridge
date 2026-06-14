@@ -1,0 +1,11 @@
+# Read about fixtures at https://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
+
+one:
+  account: greenfield
+  document: advance_directive
+  document_page: advance_directive_first
+  content: Embedded page text
+  content_hash: 28006190cf5eaaae893d3c6fd30dc97a4ec85f46bf2f18f1b5dd6ea0c53f6216
+  label: legal
+  chunk_index: 1
+  metadata: {}

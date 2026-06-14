@@ -46,11 +46,14 @@ AGENTIC_CORE_FILES = %w[
 DOCUMENT_PIPELINE_FILES = %w[
   app/jobs/process_document_job.rb
   app/models/document.rb
+  app/models/document_chunk.rb
+  app/models/document_embedding.rb
   app/models/document_page.rb
   config/database.yml
   config/environments/development.rb
-  app/services/agentic/document_summary_pipeline.rb
-  app/services/agents/document_summarizer.rb
+  app/services/agentic/document_ingestion_pipeline.rb
+  app/services/agents/document_chunker.rb
+  app/services/agents/document_embedder.rb
   app/services/documents/pdf_command_runner.rb
   app/services/documents/prepare.rb
   app/services/documents/prepare_pdf.rb
@@ -58,8 +61,13 @@ DOCUMENT_PIPELINE_FILES = %w[
   db/migrate/20260614033907_add_summary_to_documents.rb
   db/migrate/20260614040236_create_document_pages.rb
   db/migrate/20260614040243_add_preparation_to_documents.rb
+  db/migrate/20260614230725_enable_pgvector.rb
+  db/migrate/20260614230726_create_document_chunks.rb
+  db/migrate/20260614230727_create_document_embeddings.rb
   test/controllers/documents_controller_test.rb
   test/jobs/process_document_job_test.rb
+  test/models/document_chunk_test.rb
+  test/models/document_embedding_test.rb
   test/models/document_page_test.rb
   test/models/document_test.rb
   test/services/documents/prepare_pdf_test.rb
@@ -88,10 +96,10 @@ DOCTOR_RUNNER = <<~"RUBY"
     errors << "AgentType \#{agent_type.name} has no llm" if agent_type.llm.blank?
     errors << "AgentType \#{agent_type.name} has no active prompt" if agent_type.prompts.active.empty?
   end
-  required_agent_types = %w[structured_text_summarizer structured_text_validator document_summarizer]
+  required_agent_types = %w[structured_text_summarizer structured_text_validator document_chunker document_embedder]
   missing_agent_types = required_agent_types - AgentType.pluck(:name)
   errors.concat(missing_agent_types.map { |name| "Required AgentType \#{name} is missing" })
-  errors << "openai_document_summary JsonSchema is missing" unless JsonSchema.exists?(name: "openai_document_summary")
+  errors << "openai_document_chunks JsonSchema is missing" unless JsonSchema.exists?(name: "openai_document_chunks")
   puts "Agentic provider classes in test DB: \#{provider_classes.any? ? provider_classes.join(", ") : "none"}"
   puts "OpenAI credential present: \#{Agentic::Providers::Openai.api_key_present?}"
   puts "Anthropic credential present: \#{Agentic::Providers::Anthropic.api_key_present?}"
@@ -224,6 +232,8 @@ COMMANDS = {
       "bin/rails", "test",
       "test/models/document_test.rb",
       "test/models/document_page_test.rb",
+      "test/models/document_chunk_test.rb",
+      "test/models/document_embedding_test.rb",
       "test/controllers/documents_controller_test.rb",
       "test/jobs/process_document_job_test.rb",
       "test/services/documents/prepare_text_test.rb",
@@ -244,6 +254,8 @@ COMMANDS = {
       "app/jobs",
       "app/models/agent_type.rb",
       "app/models/document.rb",
+      "app/models/document_chunk.rb",
+      "app/models/document_embedding.rb",
       "app/models/json_schema.rb",
       "app/models/llm.rb",
       "app/models/pipeline_activity.rb",
@@ -261,6 +273,8 @@ COMMANDS = {
       "test/services/documents",
       "test/models/document_test.rb",
       "test/models/document_page_test.rb",
+      "test/models/document_chunk_test.rb",
+      "test/models/document_embedding_test.rb",
       "test/models/user_test.rb",
       "scripts/check_docs_index.rb",
       "scripts/agentic_pipeline_harness.rb"
@@ -280,7 +294,7 @@ def usage
       static    Check generic agentic pipeline file shape and provider interface
       doctor    Seed/check local test DB provider records and API key visibility
       tests     Run deterministic generic pipeline Minitest coverage
-      documents Run deterministic document upload-to-summary lifecycle coverage
+      documents Run deterministic document upload-to-ingestion lifecycle coverage
       pdf-tools Check local Poppler/Tesseract binaries for live PDF preparation
       queue     Check development Solid Queue adapter/tables/enqueue path
       rubocop   Run RuboCop on generic pipeline files and this harness

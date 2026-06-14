@@ -42,16 +42,16 @@ class DocumentsControllerTest < ActionDispatch::IntegrationTest
     assert_equal "queued", document.status
   end
 
-  test "shows a persisted document summary" do
+  test "shows persisted document chunks" do
     document = documents(:advance_directive)
-    document.summary = { title: "Advance Directive", summary: "Care planning instructions" }
-    document.save!(validate: false)
     sign_in users(:family_admin)
 
     get document_path(document)
 
     assert_response :success
-    assert_includes response.body, "Care planning instructions"
+    assert_includes response.body, "Legal chunk 1"
+    assert_includes response.body, "Embedded page text"
+    assert_includes response.body, "Starts on page 1"
   end
 
   test "does not show documents from another account" do

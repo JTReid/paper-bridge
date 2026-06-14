@@ -10,9 +10,10 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_06_14_040243) do
+ActiveRecord::Schema[8.1].define(version: 2026_06_14_230727) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
+  enable_extension "vector"
 
   create_table "accounts", force: :cascade do |t|
     t.datetime "created_at", null: false
@@ -55,6 +56,41 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_14_040243) do
     t.datetime "updated_at", null: false
     t.index ["llm_id"], name: "index_agent_types_on_llm_id"
     t.index ["name"], name: "index_agent_types_on_name", unique: true
+  end
+
+  create_table "document_chunks", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.integer "chunk_index", null: false
+    t.text "content", null: false
+    t.string "content_hash", null: false
+    t.datetime "created_at", null: false
+    t.bigint "document_id", null: false
+    t.bigint "document_page_id", null: false
+    t.string "label", null: false
+    t.jsonb "metadata", default: {}, null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id", "label"], name: "index_document_chunks_on_account_id_and_label"
+    t.index ["account_id"], name: "index_document_chunks_on_account_id"
+    t.index ["document_id", "chunk_index"], name: "index_document_chunks_on_document_id_and_chunk_index", unique: true
+    t.index ["document_id", "content_hash"], name: "index_document_chunks_on_document_id_and_content_hash", unique: true
+    t.index ["document_id"], name: "index_document_chunks_on_document_id"
+    t.index ["document_page_id", "chunk_index"], name: "index_document_chunks_on_document_page_id_and_chunk_index"
+    t.index ["document_page_id"], name: "index_document_chunks_on_document_page_id"
+  end
+
+  create_table "document_embeddings", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.integer "dimensions", null: false
+    t.string "distance_metric", null: false
+    t.bigint "document_chunk_id", null: false
+    t.halfvec "embedding", limit: 3072, null: false
+    t.jsonb "metadata", default: {}, null: false
+    t.string "model", null: false
+    t.string "provider", null: false
+    t.datetime "updated_at", null: false
+    t.index ["document_chunk_id", "provider", "model"], name: "idx_on_document_chunk_id_provider_model_d597da71f5", unique: true
+    t.index ["document_chunk_id"], name: "index_document_embeddings_on_document_chunk_id"
+    t.index ["provider", "model", "dimensions"], name: "index_document_embeddings_on_provider_and_model_and_dimensions"
   end
 
   create_table "document_pages", force: :cascade do |t|
@@ -175,6 +211,10 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_14_040243) do
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
   add_foreign_key "agent_types", "llms"
+  add_foreign_key "document_chunks", "accounts"
+  add_foreign_key "document_chunks", "document_pages"
+  add_foreign_key "document_chunks", "documents"
+  add_foreign_key "document_embeddings", "document_chunks"
   add_foreign_key "document_pages", "accounts"
   add_foreign_key "document_pages", "documents"
   add_foreign_key "documents", "accounts"
