@@ -1,0 +1,29 @@
+<%= form_with model: document do |form| %>
+  <% if document.errors.any? %>
+    <div role="alert">
+      <h2><%= pluralize(document.errors.count, "error") %> prevented this document from uploading</h2>
+      <ul>
+        <% document.errors.full_messages.each do |message| %>
+          <li><%= message %></li>
+        <% end %>
+      </ul>
+    </div>
+  <% end %>
+
+  <div>
+    <%= form.label :title %>
+    <%= form.text_field :title %>
+  </div>
+
+  <div>
+    <%= form.label :description %>
+    <%= form.text_area :description, rows: 4 %>
+  </div>
+
+  <div>
+    <%= form.label :file %>
+    <%= form.file_field :file, required: true %>
+  </div>
+
+  <%= form.submit "Upload" %>
+<% end %>

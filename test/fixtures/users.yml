@@ -1,0 +1,20 @@
+family_admin:
+  account: greenfield
+  name: Family Admin
+  role: family_admin
+  email: admin@example.test
+  encrypted_password: <%= Devise::Encryptor.digest(User, "password") %>
+
+profile_user:
+  account: greenfield
+  name: Profile User
+  role: profile_user
+  email: profile@example.test
+  encrypted_password: <%= Devise::Encryptor.digest(User, "password") %>
+
+other_user:
+  account: other
+  name: Other User
+  role: family_admin
+  email: other@example.test
+  encrypted_password: <%= Devise::Encryptor.digest(User, "password") %>

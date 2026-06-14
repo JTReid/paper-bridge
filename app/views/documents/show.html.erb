@@ -1,0 +1,36 @@
+<main>
+  <p><%= link_to "Back to documents", documents_path %></p>
+
+  <h1><%= @document.title %></h1>
+
+  <% if @document.description.present? %>
+    <p><%= @document.description %></p>
+  <% end %>
+
+  <dl>
+    <dt>Status</dt>
+    <dd><%= @document.status.humanize %></dd>
+
+    <dt>Original filename</dt>
+    <dd><%= @document.original_filename %></dd>
+
+    <dt>Content type</dt>
+    <dd><%= @document.content_type %></dd>
+
+    <dt>Size</dt>
+    <dd><%= number_to_human_size(@document.byte_size) if @document.byte_size %></dd>
+  </dl>
+
+  <% if @document.file.attached? %>
+    <p><%= link_to "Download file", rails_blob_path(@document.file, disposition: "attachment") %></p>
+  <% end %>
+
+  <% if @document.summary.present? %>
+    <section>
+      <h2>Summary</h2>
+      <pre><%= JSON.pretty_generate(@document.summary) %></pre>
+    </section>
+  <% end %>
+
+  <%= button_to "Delete document", @document, method: :delete, form: { data: { turbo_confirm: "Delete this document?" } } %>
+</main>

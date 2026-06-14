@@ -1,0 +1,19 @@
+advance_directive:
+  account: greenfield
+  user: family_admin
+  title: Advance Directive
+  description: Planning document
+  status: uploaded
+  original_filename: advance-directive.txt
+  content_type: text/plain
+  byte_size: 28
+
+outside_account:
+  account: other
+  user: other_user
+  title: Outside Account Document
+  description: Should not be visible to the greenfield account
+  status: uploaded
+  original_filename: outside.txt
+  content_type: text/plain
+  byte_size: 16

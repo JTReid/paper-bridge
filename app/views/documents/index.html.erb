@@ -1,0 +1,30 @@
+<main>
+  <h1>Documents</h1>
+
+  <p><%= link_to "Upload document", new_document_path %></p>
+
+  <% if @documents.any? %>
+    <table>
+      <thead>
+        <tr>
+          <th>Title</th>
+          <th>Status</th>
+          <th>File</th>
+          <th>Uploaded</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% @documents.each do |document| %>
+          <tr>
+            <td><%= link_to document.title, document %></td>
+            <td><%= document.status.humanize %></td>
+            <td><%= document.original_filename.presence || "Attached file" %></td>
+            <td><%= l document.created_at, format: :short %></td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  <% else %>
+    <p>No documents uploaded yet.</p>
+  <% end %>
+</main>

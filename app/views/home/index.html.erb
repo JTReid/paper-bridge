@@ -1,0 +1,12 @@
+<main>
+  <h1>PaperBridge</h1>
+
+  <% if user_signed_in? %>
+    <p>Signed in as <%= current_user.email %>.</p>
+    <p><%= link_to "Documents", documents_path %></p>
+    <%= button_to "Sign out", destroy_user_session_path, method: :delete %>
+  <% else %>
+    <%= link_to "Sign in", new_user_session_path %>
+    <%= link_to "Create account", new_user_registration_path %>
+  <% end %>
+</main>
