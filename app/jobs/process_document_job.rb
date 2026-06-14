@@ -2,14 +2,16 @@ class ProcessDocumentJob < ApplicationJob
   queue_as :default
 
   class_attribute :llm_connection, default: RestClient
+  class_attribute :pdf_command_runner, default: Documents::PdfCommandRunner.new
 
   retry_on Agentic::Errors::ExecutionError, wait: :polynomially_longer, attempts: 3
   discard_on ActiveJob::DeserializationError
 
   def perform(document)
     document.processing!
+    prepared_payload = Documents::Prepare.call(document, pdf_command_runner: pdf_command_runner)
 
-    pipeline_run = create_pipeline_run(document)
+    pipeline_run = create_pipeline_run(document, prepared_payload)
     pipeline = Agentic::DocumentSummaryPipeline.new(
       connection: llm_connection,
       context: pipeline_context(document, pipeline_run)
@@ -31,7 +33,7 @@ class ProcessDocumentJob < ApplicationJob
 
   private
 
-    def create_pipeline_run(document)
+    def create_pipeline_run(document, prepared_payload)
       PipelineRun.create!(
         subject: document,
         user: document.user,
@@ -40,7 +42,10 @@ class ProcessDocumentJob < ApplicationJob
           account_id: document.account_id,
           filename: document.original_filename,
           content_type: document.content_type,
-          byte_size: document.byte_size
+          byte_size: document.byte_size,
+          preparation_status: document.preparation_status,
+          preparation_version: prepared_payload["preparation_version"] || prepared_payload[:preparation_version],
+          page_count: prepared_payload["page_count"] || prepared_payload[:page_count]
         }
       )
     end
@@ -55,6 +60,8 @@ class ProcessDocumentJob < ApplicationJob
     def mark_document_failed(document, error)
       document.update!(
         status: :failed,
+        preparation_status: document.preparation_status == "prepared" ? document.preparation_status : :preparation_failed,
+        preparation_error: error.message,
         summary: {
           error: {
             class: error.class.name,

@@ -1,0 +1,8 @@
+advance_directive_first:
+  account: greenfield
+  document: advance_directive
+  page_number: 1
+  embedded_text: Embedded page text
+  ocr_text: OCR page text
+  metadata: {}
+  status: processed

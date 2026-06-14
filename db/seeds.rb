@@ -23,7 +23,7 @@ openai.update!(provider_class: "Agentic::Providers::Openai")
   ],
   [
     "document_summarizer",
-    "Summarize uploaded PaperBridge documents as grounded structured JSON. Return only fields allowed by the configured schema."
+    "Summarize uploaded PaperBridge documents as grounded structured JSON. Use extracted text and provided page screenshots when available. Return only fields allowed by the configured schema."
   ]
 ].each do |name, directive|
   agent_type = AgentType.find_or_create_by!(name: name) do |record|

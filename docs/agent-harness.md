@@ -39,6 +39,17 @@ For each new feature:
    persistence, migrations, background jobs, or asset compilation.
 6. Update docs when durable behavior, commands, or architecture changed.
 
+The document summary pipeline is now encoded in the agentic harness as a
+feature-specific command:
+
+```bash
+ruby scripts/agentic_pipeline_harness.rb documents
+```
+
+Use that command when changing document upload callbacks, `ProcessDocumentJob`,
+`Agentic::DocumentSummaryPipeline`, `Agents::DocumentSummarizer`, prompt/schema
+seeds, or document summary persistence.
+
 Keep the harness mostly measurement and guidance. If a harness change alters
 production app behavior, treat that as suspicious and ask whether it belongs in
 the product change instead.

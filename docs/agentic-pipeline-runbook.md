@@ -1,13 +1,12 @@
 # Agentic Pipeline Runbook
 
-This runbook protects the shared agentic pipeline machinery, not the product
-behavior of every pipeline that uses it.
+This runbook protects the shared agentic pipeline machinery and the current
+document-summary pipeline lifecycle.
 
-Implementation-specific behavior belongs in the runbook and tests for that
-feature. For example, a future document intake harness should prove upload,
-OCR, categorization, summarization, persistence, and user-visible result
-semantics. This generic harness only proves that the pipeline framework is
-healthy.
+Implementation-specific behavior belongs in targeted harness commands and
+tests. The generic checks prove that the pipeline framework is healthy. The
+document checks prove the upload-to-summary lifecycle that PaperBridge depends
+on now.
 
 ## Critical Path Contract
 
@@ -37,6 +36,49 @@ The generic harness does not protect:
 - Every provider/model combination in production data.
 - Cost ceilings beyond making provider/model drift visible.
 
+## Document Summary Pipeline Contract
+
+The document pipeline harness protects these product-level guarantees:
+
+- `Document` is the first-class domain record for uploads and processing state.
+- Each `Document` belongs to an `Account` and a `User`.
+- Each `Document` has one Active Storage attachment named `file`.
+- Active Storage upload completion is followed by `Document.after_create_commit`.
+- The callback marks the document `queued` and enqueues `ProcessDocumentJob`.
+- Development and production use Solid Queue for Active Job-backed document
+  processing. Development stores queue records in `paper_bridge_development_queue`.
+- `ProcessDocumentJob` prepares the document before running the summary
+  pipeline.
+- Text uploads are normalized into `documents.prepared_payload`.
+- PDF uploads are prepared through `Documents::PreparePdf`.
+- PDF preparation renders every page at 225 DPI, OCRs every page, extracts
+  embedded text for every page, and stores page-level artifacts in
+  `DocumentPage` records.
+- `DocumentPage` stores page number, embedded text, OCR text, metadata, status,
+  and a page image attachment.
+- `ProcessDocumentJob` creates a `PipelineRun` for the document subject.
+- `Agentic::DocumentSummaryPipeline` executes `Agents::DocumentSummarizer`.
+- The summarizer consumes the prepared payload and, for PDFs, sends extracted
+  page text plus rendered page screenshots to the configured LLM through the
+  provider abstraction. It returns schema-enforced structured JSON.
+- Pipeline logs, activity entries, and LLM telemetry are recorded on the
+  `PipelineRun`.
+- Deterministic preparation output is persisted to `documents.prepared_payload`.
+- The structured model output is persisted to `documents.summary`.
+- Successful processing marks the document `processed`; failures mark it
+  `failed`.
+
+The current document preparer supports:
+
+- `text/plain`
+- `text/markdown`
+- `text/csv`
+- `application/json`
+- `application/pdf`
+
+Live PDF preparation depends on Poppler and Tesseract binaries. Deterministic
+tests use fake runners so CI does not depend on machine-level packages.
+
 ## Validation Loop
 
 For a quick file-shape check:
@@ -55,6 +97,30 @@ For deterministic framework tests:
 
 ```bash
 ruby scripts/agentic_pipeline_harness.rb tests
+```
+
+For deterministic document lifecycle tests:
+
+```bash
+ruby scripts/agentic_pipeline_harness.rb documents
+```
+
+For local PDF preparation tool availability:
+
+```bash
+ruby scripts/agentic_pipeline_harness.rb pdf-tools
+```
+
+For development queue configuration and enqueue smoke:
+
+```bash
+ruby scripts/agentic_pipeline_harness.rb queue
+```
+
+Run development workers separately from the Rails server:
+
+```bash
+bin/jobs
 ```
 
 Before committing broader agentic framework changes:

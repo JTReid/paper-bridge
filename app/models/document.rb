@@ -9,17 +9,24 @@ class Document < ApplicationRecord
 
   belongs_to :account
   belongs_to :user
+  has_many :document_pages, -> { order(:page_number) }, dependent: :destroy
   has_many :pipeline_runs, as: :subject, dependent: :destroy
 
   has_one_attached :file
 
   enum :status, STATUSES
+  enum :preparation_status, {
+    unprepared: "unprepared",
+    preparing: "preparing",
+    prepared: "prepared",
+    preparation_failed: "failed"
+  }
 
   before_validation :default_title_from_file
   before_validation :cache_file_metadata
   after_create_commit :enqueue_processing_pipeline, if: :file_attached?
 
-  validates :title, :status, presence: true
+  validates :title, :status, :preparation_status, presence: true
   validate :file_is_attached
   validate :account_matches_user
 

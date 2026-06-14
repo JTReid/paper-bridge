@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_06_14_033907) do
+ActiveRecord::Schema[8.1].define(version: 2026_06_14_040243) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -57,6 +57,23 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_14_033907) do
     t.index ["name"], name: "index_agent_types_on_name", unique: true
   end
 
+  create_table "document_pages", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.datetime "created_at", null: false
+    t.bigint "document_id", null: false
+    t.text "embedded_text"
+    t.jsonb "metadata", default: {}, null: false
+    t.text "ocr_text"
+    t.integer "page_number", null: false
+    t.string "status", default: "pending", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id", "document_id"], name: "index_document_pages_on_account_id_and_document_id"
+    t.index ["account_id"], name: "index_document_pages_on_account_id"
+    t.index ["document_id", "page_number"], name: "index_document_pages_on_document_id_and_page_number", unique: true
+    t.index ["document_id"], name: "index_document_pages_on_document_id"
+    t.index ["status"], name: "index_document_pages_on_status"
+  end
+
   create_table "documents", force: :cascade do |t|
     t.bigint "account_id", null: false
     t.bigint "byte_size"
@@ -64,6 +81,10 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_14_033907) do
     t.datetime "created_at", null: false
     t.text "description"
     t.string "original_filename"
+    t.text "preparation_error"
+    t.string "preparation_status", default: "unprepared", null: false
+    t.datetime "prepared_at"
+    t.jsonb "prepared_payload", default: {}, null: false
     t.string "status", default: "uploaded", null: false
     t.datetime "summarized_at"
     t.jsonb "summary", default: {}, null: false
@@ -73,6 +94,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_14_033907) do
     t.index ["account_id", "created_at"], name: "index_documents_on_account_id_and_created_at"
     t.index ["account_id", "status"], name: "index_documents_on_account_id_and_status"
     t.index ["account_id"], name: "index_documents_on_account_id"
+    t.index ["preparation_status"], name: "index_documents_on_preparation_status"
     t.index ["status"], name: "index_documents_on_status"
     t.index ["user_id", "created_at"], name: "index_documents_on_user_id_and_created_at"
     t.index ["user_id"], name: "index_documents_on_user_id"
@@ -153,6 +175,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_14_033907) do
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
   add_foreign_key "agent_types", "llms"
+  add_foreign_key "document_pages", "accounts"
+  add_foreign_key "document_pages", "documents"
   add_foreign_key "documents", "accounts"
   add_foreign_key "documents", "users"
   add_foreign_key "pipeline_activities", "pipeline_runs"

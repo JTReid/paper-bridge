@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require "base64"
+
 module Agents
   class DocumentSummarizer
     include LocallyInteractable
@@ -7,12 +9,6 @@ module Agents
     include Agentic::Instrumented
 
     MAX_INPUT_BYTES = 200_000
-    SUPPORTED_CONTENT_TYPES = [
-      "application/json",
-      "text/csv",
-      "text/markdown",
-      "text/plain"
-    ].freeze
 
     def execute
       call
@@ -41,21 +37,27 @@ module Agents
 
     def setup_content
       @document = locate_document!
-      validate_document_file!
+      validate_prepared_document!
 
-      raw_content = document.file.download
-      @content = normalize_content(raw_content)
+      @content = normalize_content(prompt_content_from_payload)
 
-      raise Agentic::Errors::ConfigurationError, "Uploaded document did not contain readable text" if content.blank?
+      if content.blank?
+        raise Agentic::Errors::ConfigurationError, "Prepared document did not contain readable text or page images" unless pdf_with_page_images?
+
+        @content = "PDF contains no readable extracted text. Use the attached page screenshots as the primary source."
+      end
 
       log_activity(
-        action: "document_text_loaded",
-        message: "Uploaded document text loaded",
+        action: "prepared_document_loaded",
+        message: "Prepared document payload loaded",
         metadata: {
           document_id: document.id,
           filename: document.original_filename,
           content_type: document.content_type,
           byte_size: document.byte_size,
+          preparation_version: prepared_payload["preparation_version"],
+          page_count: prepared_payload["page_count"],
+          image_page_count: image_page_count,
           extracted_bytes: content.bytesize
         }
       )
@@ -83,12 +85,28 @@ module Agents
         end
       end
 
-      def validate_document_file!
+      def validate_prepared_document!
         raise Agentic::Errors::ConfigurationError, "Document file is missing" unless document.file.attached?
+        raise Agentic::Errors::ConfigurationError, "Document has not been prepared" unless document.prepared?
+        raise Agentic::Errors::ConfigurationError, "Prepared document payload is missing" if prepared_payload.blank?
+      end
 
-        return if SUPPORTED_CONTENT_TYPES.include?(document.content_type)
+      def prepared_payload
+        @prepared_payload ||= document.prepared_payload.with_indifferent_access
+      end
 
-        raise Agentic::Errors::ConfigurationError, "Unsupported document content type: #{document.content_type}"
+      def prepared_pdf?
+        prepared_payload["format"] == "pdf"
+      end
+
+      def pdf_with_page_images?
+        prepared_pdf? && image_page_count.positive?
+      end
+
+      def image_page_count
+        return 0 unless prepared_pdf?
+
+        document_pages_by_number.values.count { |page| page.image.attached? }
       end
 
       def normalize_content(raw_content)
@@ -99,13 +117,98 @@ module Agents
       end
 
       def prompt_content
+        return pdf_prompt_content if prepared_pdf?
+
         <<~TEXT
           Filename: #{document.original_filename}
           Content type: #{document.content_type}
+          Preparation version: #{prepared_payload["preparation_version"]}
 
-          Document text:
+          Prepared document text:
           #{content}
         TEXT
+      end
+
+      def pdf_prompt_content
+        content_blocks = [
+          {
+            type: "text",
+            text: <<~TEXT
+              Filename: #{document.original_filename}
+              Content type: #{document.content_type}
+              Preparation version: #{prepared_payload["preparation_version"]}
+              Page screenshots are attached in page order. Use both the extracted text and the screenshots when summarizing.
+            TEXT
+          }
+        ]
+
+        prepared_pages.each do |page|
+          content_blocks << {
+            type: "text",
+            text: pdf_page_text(page)
+          }
+
+          image_content = pdf_page_image_content(page)
+          content_blocks << image_content if image_content.present?
+        end
+
+        content_blocks
+      end
+
+      def prompt_content_from_payload
+        case prepared_payload["format"]
+        when "pdf"
+          pdf_text_content
+        when "text"
+          prepared_payload["full_text"].to_s
+        else
+          prepared_payload["full_text"].to_s
+        end
+      end
+
+      def pdf_text_content
+        prepared_pages.map { |page| pdf_page_text(page) }.join("\n\n")
+      end
+
+      def prepared_pages
+        @prepared_pages ||= Array(prepared_payload["pages"])
+      end
+
+      def pdf_page_text(page)
+        <<~TEXT.strip
+          Page #{page["number"]}
+          Embedded text:
+          #{page["embedded_text"]}
+
+          OCR text:
+          #{page["ocr_text"]}
+        TEXT
+      end
+
+      def pdf_page_image_content(page)
+        page_record = document_pages_by_number[page["number"].to_i]
+        return unless page_record&.image&.attached?
+
+        {
+          type: "image_url",
+          image_url: {
+            url: image_data_url(page_record),
+            detail: "auto"
+          }
+        }
+      end
+
+      def document_pages_by_number
+        @document_pages_by_number ||= document.document_pages
+                                             .includes(image_attachment: :blob)
+                                             .index_by(&:page_number)
+      end
+
+      def image_data_url(page_record)
+        content_type = page_record.image.blob.content_type.presence || "image/png"
+        base64 = Base64.strict_encode64(page_record.image.download)
+
+        "data:#{content_type};base64,#{base64}"
       end
   end
 end

@@ -43,6 +43,29 @@ AGENTIC_CORE_FILES = %w[
   test/services/agentic/telemetry/summary_test.rb
 ].freeze
 
+DOCUMENT_PIPELINE_FILES = %w[
+  app/jobs/process_document_job.rb
+  app/models/document.rb
+  app/models/document_page.rb
+  config/database.yml
+  config/environments/development.rb
+  app/services/agentic/document_summary_pipeline.rb
+  app/services/agents/document_summarizer.rb
+  app/services/documents/pdf_command_runner.rb
+  app/services/documents/prepare.rb
+  app/services/documents/prepare_pdf.rb
+  app/services/documents/prepare_text.rb
+  db/migrate/20260614033907_add_summary_to_documents.rb
+  db/migrate/20260614040236_create_document_pages.rb
+  db/migrate/20260614040243_add_preparation_to_documents.rb
+  test/controllers/documents_controller_test.rb
+  test/jobs/process_document_job_test.rb
+  test/models/document_page_test.rb
+  test/models/document_test.rb
+  test/services/documents/prepare_pdf_test.rb
+  test/services/documents/prepare_text_test.rb
+].freeze
+
 PROVIDER_FILES = %w[
   app/services/agentic/providers/openai.rb
   app/services/agentic/providers/anthropic.rb
@@ -65,6 +88,10 @@ DOCTOR_RUNNER = <<~"RUBY"
     errors << "AgentType \#{agent_type.name} has no llm" if agent_type.llm.blank?
     errors << "AgentType \#{agent_type.name} has no active prompt" if agent_type.prompts.active.empty?
   end
+  required_agent_types = %w[structured_text_summarizer structured_text_validator document_summarizer]
+  missing_agent_types = required_agent_types - AgentType.pluck(:name)
+  errors.concat(missing_agent_types.map { |name| "Required AgentType \#{name} is missing" })
+  errors << "openai_document_summary JsonSchema is missing" unless JsonSchema.exists?(name: "openai_document_summary")
   puts "Agentic provider classes in test DB: \#{provider_classes.any? ? provider_classes.join(", ") : "none"}"
   puts "OpenAI credential present: \#{Agentic::Providers::Openai.api_key_present?}"
   puts "Anthropic credential present: \#{Agentic::Providers::Anthropic.api_key_present?}"
@@ -139,6 +166,42 @@ LIVE_RUNNER = <<~"RUBY"
   puts "Agentic live provider smoke passed for \#{provider_name}:\#{model}."
 RUBY
 
+PDF_TOOLS_RUNNER = <<~"RUBY"
+  required = %w[pdfinfo pdftotext pdftoppm tesseract]
+  missing = required.reject do |executable|
+    ENV.fetch("PATH", "").split(File::PATH_SEPARATOR).any? do |directory|
+      File.executable?(File.join(directory, executable))
+    end
+  end
+  abort("Missing PDF preparation tools: \#{missing.join(", ")}") if missing.any?
+  puts "PDF preparation tools present: \#{required.join(", ")}"
+RUBY
+
+QUEUE_RUNNER = <<~"RUBY"
+  errors = []
+  errors << "Development Active Job adapter is not Solid Queue" unless ActiveJob::Base.queue_adapter.is_a?(ActiveJob::QueueAdapters::SolidQueueAdapter)
+  errors << "Solid Queue is not configured to use the queue database" unless SolidQueue.connects_to == { database: { writing: :queue } }
+  errors << "solid_queue_jobs table is missing" unless SolidQueue::Job.table_exists?
+  errors << "solid_queue_ready_executions table is missing" unless SolidQueue::ReadyExecution.table_exists?
+
+  class HarnessSolidQueueSmokeJob < ApplicationJob
+    def perform; end
+  end
+
+  job = HarnessSolidQueueSmokeJob.perform_later
+  record = SolidQueue::Job.find_by(active_job_id: job.job_id)
+  errors << "Solid Queue did not persist the smoke job" unless record
+  errors << "Solid Queue did not mark the smoke job ready" if record && SolidQueue::ReadyExecution.where(job_id: record.id).empty?
+
+  if record
+    SolidQueue::ReadyExecution.where(job_id: record.id).delete_all
+    record.destroy!
+  end
+
+  abort("Solid Queue harness failed:\\n- \#{errors.join("\\n- ")}") if errors.any?
+  puts "Solid Queue development enqueue smoke passed."
+RUBY
+
 COMMANDS = {
   "docs" => [
     [ "ruby", "scripts/check_docs_index.rb" ]
@@ -156,11 +219,31 @@ COMMANDS = {
       "test/models/user_test.rb"
     ]
   ],
+  "documents" => [
+    [
+      "bin/rails", "test",
+      "test/models/document_test.rb",
+      "test/models/document_page_test.rb",
+      "test/controllers/documents_controller_test.rb",
+      "test/jobs/process_document_job_test.rb",
+      "test/services/documents/prepare_text_test.rb",
+      "test/services/documents/prepare_pdf_test.rb"
+    ]
+  ],
+  "pdf-tools" => [
+    [ "bin/rails", "runner", PDF_TOOLS_RUNNER ]
+  ],
+  "queue" => [
+    [ "bin/rails", "runner", QUEUE_RUNNER ]
+  ],
   "rubocop" => [
     [
       "bin/rubocop",
       "--cache", "false",
+      "app/controllers/documents_controller.rb",
+      "app/jobs",
       "app/models/agent_type.rb",
+      "app/models/document.rb",
       "app/models/json_schema.rb",
       "app/models/llm.rb",
       "app/models/pipeline_activity.rb",
@@ -171,7 +254,13 @@ COMMANDS = {
       "app/services/agentic",
       "app/services/agents",
       "app/services/concerns",
+      "app/services/documents",
+      "test/controllers/documents_controller_test.rb",
+      "test/jobs",
       "test/services/agentic",
+      "test/services/documents",
+      "test/models/document_test.rb",
+      "test/models/document_page_test.rb",
       "test/models/user_test.rb",
       "scripts/check_docs_index.rb",
       "scripts/agentic_pipeline_harness.rb"
@@ -191,9 +280,12 @@ def usage
       static    Check generic agentic pipeline file shape and provider interface
       doctor    Seed/check local test DB provider records and API key visibility
       tests     Run deterministic generic pipeline Minitest coverage
+      documents Run deterministic document upload-to-summary lifecycle coverage
+      pdf-tools Check local Poppler/Tesseract binaries for live PDF preparation
+      queue     Check development Solid Queue adapter/tables/enqueue path
       rubocop   Run RuboCop on generic pipeline files and this harness
       live      Run an explicit live provider smoke using AGENTIC_LIVE_* env vars
-      review    Run docs, static, doctor, tests, and rubocop
+      review    Run docs, static, doctor, tests, documents, and rubocop
   USAGE
 end
 
@@ -220,6 +312,9 @@ def static_check_passed?
 
   missing_files = AGENTIC_CORE_FILES.reject { |relative_path| ROOT.join(relative_path).file? }
   failures.concat(missing_files.map { |path| "Missing expected Agentic Pipeline file: #{path}" })
+
+  missing_document_files = DOCUMENT_PIPELINE_FILES.reject { |relative_path| ROOT.join(relative_path).file? }
+  failures.concat(missing_document_files.map { |path| "Missing expected Document Pipeline file: #{path}" })
 
   tracked_agentic_files = IO.popen(
     [ "git", "-C", ROOT.to_s, "ls-files", "app/services/agentic", "app/services/agents" ],
@@ -254,6 +349,7 @@ def static_check_passed?
   end
 
   puts "Expected Agentic Pipeline files exist."
+  puts "Expected Document Pipeline files exist."
   puts "Pipeline subclasses checked: #{pipeline_subclasses.map { |path| path.relative_path_from(ROOT) }.join(", ")}"
   puts "Provider files checked: #{PROVIDER_FILES.join(", ")}"
   true
@@ -271,6 +367,7 @@ when "review"
   ok &&= static_check_passed?
   ok &&= COMMANDS.fetch("doctor").all? { |cmd| run_command(cmd) }
   ok &&= COMMANDS.fetch("tests").all? { |cmd| run_command(cmd) }
+  ok &&= COMMANDS.fetch("documents").all? { |cmd| run_command(cmd) }
   ok &&= COMMANDS.fetch("rubocop").all? { |cmd| run_command(cmd) }
   exit(ok ? 0 : 1)
 when *COMMANDS.keys
