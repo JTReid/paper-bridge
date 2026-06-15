@@ -1,12 +1,12 @@
 # Agentic Pipeline Runbook
 
 This runbook protects the shared agentic pipeline machinery and the current
-document-ingestion pipeline lifecycle.
+document-ingestion and vector-search pipeline lifecycles.
 
 Implementation-specific behavior belongs in targeted harness commands and
 tests. The generic checks prove that the pipeline framework is healthy. The
-document checks prove the upload-to-ingestion lifecycle that PaperBridge depends
-on now.
+document checks prove the upload-to-ingestion and search lifecycles that
+PaperBridge depends on now.
 
 ## Critical Path Contract
 
@@ -74,6 +74,33 @@ The document pipeline harness protects these product-level guarantees:
 - Successful processing marks the document `processed`; failures mark it
   `failed`.
 
+## Document Search Pipeline Contract
+
+The search pipeline harness protects these product-level guarantees:
+
+- `GET /search` is authenticated.
+- Blank search queries render without creating a `PipelineRun` or calling an
+  LLM provider.
+- Nonblank search queries create a `PipelineRun` for the current account.
+- `Agentic::DocumentSearchPipeline` executes `Agents::QueryEmbedder` and
+  `Agents::VectorRetriever`.
+- `Agents::QueryEmbedder` embeds the user query with the configured embedding
+  model through the provider abstraction.
+- `Agents::VectorRetriever` performs local pgvector retrieval against
+  `DocumentEmbedding` records.
+- Retrieval is constrained by account before results are ranked.
+- Retrieval is constrained by `Documents::SearchAccessProfile` labels before
+  results are ranked.
+- Search results expose chunk text, label, document title, page number,
+  distance, and similarity.
+- Pipeline logs, activity entries, and LLM telemetry are recorded on the
+  `PipelineRun`.
+
+Current access profiles are role-to-label mappings. Account-owner roles can
+search every chunk label. Professional roles are constrained to the labels they
+should reasonably access, such as teacher roles searching education, behavior,
+and general chunks.
+
 The current document preparer supports:
 
 - `text/plain`
@@ -105,7 +132,7 @@ For deterministic framework tests:
 ruby scripts/agentic_pipeline_harness.rb tests
 ```
 
-For deterministic document lifecycle tests:
+For deterministic document upload, ingestion, and search lifecycle tests:
 
 ```bash
 ruby scripts/agentic_pipeline_harness.rb documents

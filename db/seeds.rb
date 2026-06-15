@@ -37,6 +37,11 @@ openai_embeddings.update!(provider_class: "Agentic::Providers::Openai")
     "document_embedder",
     openai_embeddings,
     "Embed PaperBridge document chunks for vector search indexing."
+  ],
+  [
+    "query_embedder",
+    openai_embeddings,
+    "Embed user search queries for account-scoped PaperBridge vector retrieval."
   ]
 ].each do |name, llm, directive|
   agent_type = AgentType.find_or_create_by!(name: name) do |record|

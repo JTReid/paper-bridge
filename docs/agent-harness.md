@@ -49,7 +49,10 @@ ruby scripts/agentic_pipeline_harness.rb documents
 Use that command when changing document upload callbacks, `ProcessDocumentJob`,
 `Agentic::DocumentIngestionPipeline`, `Agents::DocumentChunker`,
 `Agents::DocumentEmbedder`, prompt/schema seeds, chunk persistence, or embedding
-persistence.
+persistence. The same command also covers the first search pipeline:
+`GET /search`, `Agentic::DocumentSearchPipeline`, `Agents::QueryEmbedder`,
+`Agents::VectorRetriever`, account-scoped vector retrieval, and role-derived
+chunk-label filtering.
 
 Keep the harness mostly measurement and guidance. If a harness change alters
 production app behavior, treat that as suspicious and ask whether it belongs in

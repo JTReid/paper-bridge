@@ -1,5 +1,6 @@
 Rails.application.routes.draw do
   devise_for :users
+  get "search" => "search#index"
   resources :documents, only: %i[index show new create destroy]
 
   # Define your application routes per the DSL in https://guides.rubyonrails.org/routing.html

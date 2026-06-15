@@ -21,6 +21,11 @@ Scoutspace.
   deterministic hash, document order, and the page where the chunk starts.
 - `DocumentEmbedding` stores generated pgvector embeddings for chunks, including
   provider/model strings, dimensions, distance metric, and the vector value.
+- `Documents::SearchAccessProfile` maps the current actor role to allowed
+  chunk labels. This is the current authorization seam for search.
+- `Documents::VectorSearch` performs account-scoped, label-scoped pgvector
+  retrieval and returns chunks with document, page, distance, and similarity
+  metadata.
 - `Documents::Prepare` is the single entry point for deterministic document
   preparation. It routes text uploads to `Documents::PrepareText` and PDFs to
   `Documents::PreparePdf`.
@@ -46,6 +51,11 @@ Scoutspace.
   `Agentic::DocumentIngestionPipeline`, creates page-aware labeled chunks, and
   persists OpenAI `text-embedding-3-large` embeddings in Postgres through
   pgvector.
+- `GET /search` creates a `PipelineRun` for nonblank queries, runs
+  `Agentic::DocumentSearchPipeline`, embeds the user query with
+  `text-embedding-3-large`, and retrieves matching chunks through pgvector.
+- Search retrieval is constrained to the current account and to labels allowed
+  by `Documents::SearchAccessProfile`.
 - Development and production Active Job processing uses Solid Queue. In
   development, queue tables live in `paper_bridge_development_queue`, and
   workers are started with `bin/jobs`.

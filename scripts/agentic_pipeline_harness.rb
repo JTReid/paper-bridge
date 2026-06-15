@@ -44,6 +44,7 @@ AGENTIC_CORE_FILES = %w[
 ].freeze
 
 DOCUMENT_PIPELINE_FILES = %w[
+  app/controllers/search_controller.rb
   app/jobs/process_document_job.rb
   app/models/document.rb
   app/models/document_chunk.rb
@@ -52,12 +53,17 @@ DOCUMENT_PIPELINE_FILES = %w[
   config/database.yml
   config/environments/development.rb
   app/services/agentic/document_ingestion_pipeline.rb
+  app/services/agentic/document_search_pipeline.rb
   app/services/agents/document_chunker.rb
   app/services/agents/document_embedder.rb
+  app/services/agents/query_embedder.rb
+  app/services/agents/vector_retriever.rb
   app/services/documents/pdf_command_runner.rb
   app/services/documents/prepare.rb
   app/services/documents/prepare_pdf.rb
   app/services/documents/prepare_text.rb
+  app/services/documents/search_access_profile.rb
+  app/services/documents/vector_search.rb
   db/migrate/20260614033907_add_summary_to_documents.rb
   db/migrate/20260614040236_create_document_pages.rb
   db/migrate/20260614040243_add_preparation_to_documents.rb
@@ -65,6 +71,7 @@ DOCUMENT_PIPELINE_FILES = %w[
   db/migrate/20260614230726_create_document_chunks.rb
   db/migrate/20260614230727_create_document_embeddings.rb
   test/controllers/documents_controller_test.rb
+  test/controllers/search_controller_test.rb
   test/jobs/process_document_job_test.rb
   test/models/document_chunk_test.rb
   test/models/document_embedding_test.rb
@@ -72,6 +79,8 @@ DOCUMENT_PIPELINE_FILES = %w[
   test/models/document_test.rb
   test/services/documents/prepare_pdf_test.rb
   test/services/documents/prepare_text_test.rb
+  test/services/documents/search_access_profile_test.rb
+  test/services/documents/vector_search_test.rb
 ].freeze
 
 PROVIDER_FILES = %w[
@@ -96,7 +105,7 @@ DOCTOR_RUNNER = <<~"RUBY"
     errors << "AgentType \#{agent_type.name} has no llm" if agent_type.llm.blank?
     errors << "AgentType \#{agent_type.name} has no active prompt" if agent_type.prompts.active.empty?
   end
-  required_agent_types = %w[structured_text_summarizer structured_text_validator document_chunker document_embedder]
+  required_agent_types = %w[structured_text_summarizer structured_text_validator document_chunker document_embedder query_embedder]
   missing_agent_types = required_agent_types - AgentType.pluck(:name)
   errors.concat(missing_agent_types.map { |name| "Required AgentType \#{name} is missing" })
   errors << "openai_document_chunks JsonSchema is missing" unless JsonSchema.exists?(name: "openai_document_chunks")
@@ -235,9 +244,12 @@ COMMANDS = {
       "test/models/document_chunk_test.rb",
       "test/models/document_embedding_test.rb",
       "test/controllers/documents_controller_test.rb",
+      "test/controllers/search_controller_test.rb",
       "test/jobs/process_document_job_test.rb",
       "test/services/documents/prepare_text_test.rb",
-      "test/services/documents/prepare_pdf_test.rb"
+      "test/services/documents/prepare_pdf_test.rb",
+      "test/services/documents/search_access_profile_test.rb",
+      "test/services/documents/vector_search_test.rb"
     ]
   ],
   "pdf-tools" => [
@@ -251,6 +263,7 @@ COMMANDS = {
       "bin/rubocop",
       "--cache", "false",
       "app/controllers/documents_controller.rb",
+      "app/controllers/search_controller.rb",
       "app/jobs",
       "app/models/agent_type.rb",
       "app/models/document.rb",
@@ -268,6 +281,7 @@ COMMANDS = {
       "app/services/concerns",
       "app/services/documents",
       "test/controllers/documents_controller_test.rb",
+      "test/controllers/search_controller_test.rb",
       "test/jobs",
       "test/services/agentic",
       "test/services/documents",
@@ -294,7 +308,7 @@ def usage
       static    Check generic agentic pipeline file shape and provider interface
       doctor    Seed/check local test DB provider records and API key visibility
       tests     Run deterministic generic pipeline Minitest coverage
-      documents Run deterministic document upload-to-ingestion lifecycle coverage
+      documents Run deterministic document upload, ingestion, and search lifecycle coverage
       pdf-tools Check local Poppler/Tesseract binaries for live PDF preparation
       queue     Check development Solid Queue adapter/tables/enqueue path
       rubocop   Run RuboCop on generic pipeline files and this harness
