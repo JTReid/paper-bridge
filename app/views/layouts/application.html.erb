@@ -19,17 +19,21 @@
     <link rel="apple-touch-icon" href="/icon.png">
 
     <%# Includes all stylesheet files in app/assets/stylesheets %>
-    <%= stylesheet_link_tag :app, "data-turbo-track": "reload" %>
+    <%= stylesheet_link_tag "tailwind", "application", "data-turbo-track": "reload" %>
     <%= javascript_importmap_tags %>
   </head>
 
-  <body>
+  <body class="min-h-screen bg-slate-50 text-slate-950 antialiased">
     <% if notice.present? %>
-      <p class="notice"><%= notice %></p>
+      <div class="mx-auto mt-4 max-w-7xl px-4 sm:px-6 lg:px-8">
+        <p class="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-900"><%= notice %></p>
+      </div>
     <% end %>
 
     <% if alert.present? %>
-      <p class="alert"><%= alert %></p>
+      <div class="mx-auto mt-4 max-w-7xl px-4 sm:px-6 lg:px-8">
+        <p class="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-900"><%= alert %></p>
+      </div>
     <% end %>
 
     <%= yield %>

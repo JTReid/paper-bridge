@@ -1,51 +1,132 @@
-<main>
-  <p><%= link_to "Back to documents", documents_path %></p>
+<% chunks = @document.document_chunks.includes(:document_page) %>
+<% status_styles = {
+  "uploaded" => "border-slate-200 bg-slate-100 text-slate-700",
+  "queued" => "border-amber-200 bg-amber-50 text-amber-800",
+  "processing" => "border-sky-200 bg-sky-50 text-sky-800",
+  "processed" => "border-emerald-200 bg-emerald-50 text-emerald-800",
+  "failed" => "border-red-200 bg-red-50 text-red-800"
+} %>
 
-  <h1><%= @document.title %></h1>
+<main class="mx-auto flex max-w-7xl flex-col gap-8 px-4 py-8 sm:px-6 lg:px-8">
+  <nav>
+    <%= link_to documents_path, class: "inline-flex items-center text-sm font-medium text-slate-600 hover:text-slate-950" do %>
+      <span aria-hidden="true" class="mr-2">&larr;</span>
+      Back to documents
+    <% end %>
+  </nav>
 
-  <% if @document.description.present? %>
-    <p><%= @document.description %></p>
-  <% end %>
+  <section class="border-b border-slate-200 pb-6">
+    <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+      <div class="min-w-0">
+        <div class="mb-3 flex flex-wrap items-center gap-3">
+          <span class="inline-flex rounded-md border px-2.5 py-1 text-xs font-semibold uppercase <%= status_styles.fetch(@document.status, status_styles["uploaded"]) %>">
+            <%= @document.status.humanize %>
+          </span>
 
-  <dl>
-    <dt>Status</dt>
-    <dd><%= @document.status.humanize %></dd>
+          <% if @document.file.attached? %>
+            <%= link_to "Download file", rails_blob_path(@document.file, disposition: "attachment"), class: "text-sm font-medium text-emerald-700 hover:text-emerald-900" %>
+          <% end %>
+        </div>
 
-    <dt>Original filename</dt>
-    <dd><%= @document.original_filename %></dd>
+        <h1 class="text-3xl font-semibold text-slate-950"><%= @document.title %></h1>
 
-    <dt>Content type</dt>
-    <dd><%= @document.content_type %></dd>
+        <% if @document.description.present? %>
+          <p class="mt-3 max-w-3xl text-base leading-7 text-slate-600"><%= @document.description %></p>
+        <% end %>
+      </div>
 
-    <dt>Size</dt>
-    <dd><%= number_to_human_size(@document.byte_size) if @document.byte_size %></dd>
-  </dl>
+      <%= button_to "Delete document", @document, method: :delete, form: { data: { turbo_confirm: "Delete this document?" } }, class: "inline-flex justify-center rounded-md border border-red-200 bg-white px-3 py-2 text-sm font-semibold text-red-700 shadow-sm hover:bg-red-50" %>
+    </div>
+  </section>
 
-  <% if @document.file.attached? %>
-    <p><%= link_to "Download file", rails_blob_path(@document.file, disposition: "attachment") %></p>
-  <% end %>
+  <section class="grid gap-6 lg:grid-cols-[minmax(0,1fr)_18rem]">
+    <div class="space-y-6">
+      <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <div class="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+          <p class="text-xs font-semibold uppercase text-slate-500">Chunks</p>
+          <p class="mt-2 text-2xl font-semibold text-slate-950"><%= chunks.count %></p>
+        </div>
 
-  <% if @document.document_chunks.any? %>
-    <section>
-      <h2>Ingestion</h2>
-      <dl>
-        <dt>Chunks</dt>
-        <dd><%= @document.document_chunks.count %></dd>
+        <div class="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+          <p class="text-xs font-semibold uppercase text-slate-500">Embeddings</p>
+          <p class="mt-2 text-2xl font-semibold text-slate-950"><%= @document.document_embeddings.count %></p>
+        </div>
 
-        <dt>Embeddings</dt>
-        <dd><%= @document.document_embeddings.count %></dd>
+        <div class="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+          <p class="text-xs font-semibold uppercase text-slate-500">Pages</p>
+          <p class="mt-2 text-2xl font-semibold text-slate-950"><%= @document.document_pages.count %></p>
+        </div>
+
+        <div class="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+          <p class="text-xs font-semibold uppercase text-slate-500">Size</p>
+          <p class="mt-2 text-2xl font-semibold text-slate-950"><%= @document.byte_size ? number_to_human_size(@document.byte_size) : "Unknown" %></p>
+        </div>
+      </div>
+
+      <section>
+        <div class="mb-4 flex items-end justify-between gap-4">
+          <div>
+            <h2 class="text-xl font-semibold text-slate-950">Chunks</h2>
+            <p class="mt-1 text-sm text-slate-600">Page-aware chunks extracted from the uploaded document.</p>
+          </div>
+        </div>
+
+        <% if chunks.any? %>
+          <div class="space-y-4">
+            <% chunks.each do |chunk| %>
+              <article class="rounded-lg border border-slate-200 bg-white shadow-sm">
+                <header class="flex flex-col gap-3 border-b border-slate-100 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <h3 class="text-sm font-semibold text-slate-950">
+                      <%= chunk.label.humanize %> chunk <%= chunk.chunk_index %>
+                    </h3>
+                    <p class="mt-1 text-xs font-medium uppercase text-slate-500">
+                      Starts on page <%= chunk.document_page.page_number %>
+                    </p>
+                  </div>
+
+                  <span class="inline-flex w-fit rounded-md bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700">
+                    <%= chunk.content.length %> chars
+                  </span>
+                </header>
+
+                <pre class="max-h-96 overflow-auto whitespace-pre-wrap break-words px-4 py-4 text-sm leading-6 text-slate-800"><%= chunk.content %></pre>
+              </article>
+            <% end %>
+          </div>
+        <% else %>
+          <div class="rounded-lg border border-dashed border-slate-300 bg-white px-4 py-10 text-center">
+            <p class="text-sm font-medium text-slate-700">No chunks have been created yet.</p>
+            <p class="mt-1 text-sm text-slate-500">The ingestion job may still be running.</p>
+          </div>
+        <% end %>
+      </section>
+    </div>
+
+    <aside class="h-fit rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+      <h2 class="text-sm font-semibold uppercase text-slate-500">File Details</h2>
+
+      <dl class="mt-4 divide-y divide-slate-100 text-sm">
+        <div class="py-3">
+          <dt class="font-medium text-slate-500">Original filename</dt>
+          <dd class="mt-1 break-words text-slate-950"><%= @document.original_filename %></dd>
+        </div>
+
+        <div class="py-3">
+          <dt class="font-medium text-slate-500">Content type</dt>
+          <dd class="mt-1 break-words text-slate-950"><%= @document.content_type %></dd>
+        </div>
+
+        <div class="py-3">
+          <dt class="font-medium text-slate-500">Uploaded</dt>
+          <dd class="mt-1 text-slate-950"><%= l @document.created_at, format: :long %></dd>
+        </div>
+
+        <div class="py-3">
+          <dt class="font-medium text-slate-500">Last updated</dt>
+          <dd class="mt-1 text-slate-950"><%= l @document.updated_at, format: :long %></dd>
+        </div>
       </dl>
-
-      <h3>Chunks</h3>
-      <% @document.document_chunks.includes(:document_page).each do |chunk| %>
-        <article>
-          <h4><%= chunk.label.humanize %> chunk <%= chunk.chunk_index %></h4>
-          <p>Starts on page <%= chunk.document_page.page_number %></p>
-          <pre><%= chunk.content %></pre>
-        </article>
-      <% end %>
-    </section>
-  <% end %>
-
-  <%= button_to "Delete document", @document, method: :delete, form: { data: { turbo_confirm: "Delete this document?" } } %>
+    </aside>
+  </section>
 </main>
