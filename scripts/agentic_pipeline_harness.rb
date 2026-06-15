@@ -57,6 +57,7 @@ DOCUMENT_PIPELINE_FILES = %w[
   app/services/agents/document_chunker.rb
   app/services/agents/document_embedder.rb
   app/services/agents/query_embedder.rb
+  app/services/agents/search_answer_generator.rb
   app/services/agents/vector_retriever.rb
   app/services/documents/pdf_command_runner.rb
   app/services/documents/prepare.rb
@@ -105,10 +106,11 @@ DOCTOR_RUNNER = <<~"RUBY"
     errors << "AgentType \#{agent_type.name} has no llm" if agent_type.llm.blank?
     errors << "AgentType \#{agent_type.name} has no active prompt" if agent_type.prompts.active.empty?
   end
-  required_agent_types = %w[structured_text_summarizer structured_text_validator document_chunker document_embedder query_embedder]
+  required_agent_types = %w[structured_text_summarizer structured_text_validator document_chunker document_embedder query_embedder search_answer_generator]
   missing_agent_types = required_agent_types - AgentType.pluck(:name)
   errors.concat(missing_agent_types.map { |name| "Required AgentType \#{name} is missing" })
   errors << "openai_document_chunks JsonSchema is missing" unless JsonSchema.exists?(name: "openai_document_chunks")
+  errors << "openai_search_answer JsonSchema is missing" unless JsonSchema.exists?(name: "openai_search_answer")
   puts "Agentic provider classes in test DB: \#{provider_classes.any? ? provider_classes.join(", ") : "none"}"
   puts "OpenAI credential present: \#{Agentic::Providers::Openai.api_key_present?}"
   puts "Anthropic credential present: \#{Agentic::Providers::Anthropic.api_key_present?}"

@@ -12,6 +12,11 @@ openai = Llm.find_or_create_by!(name: "gpt-5.4-nano") do |llm|
 end
 openai.update!(provider_class: "Agentic::Providers::Openai")
 
+openai_mini = Llm.find_or_create_by!(name: "gpt-5.4-mini") do |llm|
+  llm.provider_class = "Agentic::Providers::Openai"
+end
+openai_mini.update!(provider_class: "Agentic::Providers::Openai")
+
 openai_embeddings = Llm.find_or_create_by!(name: "text-embedding-3-large") do |llm|
   llm.provider_class = "Agentic::Providers::Openai"
 end
@@ -42,6 +47,11 @@ openai_embeddings.update!(provider_class: "Agentic::Providers::Openai")
     "query_embedder",
     openai_embeddings,
     "Embed user search queries for account-scoped PaperBridge vector retrieval."
+  ],
+  [
+    "search_answer_generator",
+    openai_mini,
+    "Answer PaperBridge search questions using only the retrieved evidence chunks. Cite supporting chunks for material claims and state limitations when evidence is incomplete."
   ]
 ].each do |name, llm, directive|
   agent_type = AgentType.find_or_create_by!(name: name) do |record|
@@ -113,10 +123,38 @@ document_chunks_schema = {
   required: %w[chunks]
 }
 
+search_answer_schema = {
+  type: "object",
+  additionalProperties: false,
+  properties: {
+    answer: { type: "string" },
+    citations: {
+      type: "array",
+      items: {
+        type: "object",
+        additionalProperties: false,
+        properties: {
+          chunk_id: { type: "integer" },
+          document_title: { type: "string" },
+          page_number: { type: "integer" },
+          quote: { type: "string" }
+        },
+        required: %w[chunk_id document_title page_number quote]
+      }
+    },
+    limitations: {
+      type: "array",
+      items: { type: "string" }
+    }
+  },
+  required: %w[answer citations limitations]
+}
+
 {
   "structured_summary" => summary_schema,
   "structured_validation" => validation_schema,
-  "document_chunks" => document_chunks_schema
+  "document_chunks" => document_chunks_schema,
+  "search_answer" => search_answer_schema
 }.each do |name, schema|
   openai_schema = JsonSchema.find_or_initialize_by(name: "openai_#{name}")
   openai_schema.schema = {

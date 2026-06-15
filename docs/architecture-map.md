@@ -53,7 +53,8 @@ Scoutspace.
   pgvector.
 - `GET /search` creates a `PipelineRun` for nonblank queries, runs
   `Agentic::DocumentSearchPipeline`, embeds the user query with
-  `text-embedding-3-large`, and retrieves matching chunks through pgvector.
+  `text-embedding-3-large`, retrieves matching chunks through pgvector, and
+  synthesizes a structured answer with citations using `gpt-5.4-mini`.
 - Search retrieval is constrained to the current account and to labels allowed
   by `Documents::SearchAccessProfile`.
 - Development and production Active Job processing uses Solid Queue. In

@@ -51,8 +51,9 @@ Use that command when changing document upload callbacks, `ProcessDocumentJob`,
 `Agents::DocumentEmbedder`, prompt/schema seeds, chunk persistence, or embedding
 persistence. The same command also covers the first search pipeline:
 `GET /search`, `Agentic::DocumentSearchPipeline`, `Agents::QueryEmbedder`,
-`Agents::VectorRetriever`, account-scoped vector retrieval, and role-derived
-chunk-label filtering.
+`Agents::VectorRetriever`, `Agents::SearchAnswerGenerator`, account-scoped
+vector retrieval, role-derived chunk-label filtering, and structured answer
+synthesis with citations.
 
 Keep the harness mostly measurement and guidance. If a harness change alters
 production app behavior, treat that as suspicious and ask whether it belongs in

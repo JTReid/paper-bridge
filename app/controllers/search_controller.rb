@@ -14,7 +14,8 @@ class SearchController < ApplicationController
     pipeline_run = PipelineRun.create!(subject: current_account, user: current_user)
     pipeline = Agentic::DocumentSearchPipeline.new(
       context: pipeline_context(pipeline_run),
-      connection: llm_connection
+      connection: llm_connection,
+      synthesize_answer: true
     )
 
     pipeline.execute
@@ -22,10 +23,12 @@ class SearchController < ApplicationController
 
     @results = response[:results]
     @result_count = response[:result_count]
+    @answer = response[:answer]
     @pipeline_run = pipeline_run
   rescue Agentic::Error => e
     @search_error = e.message
     @results = []
+    @answer = nil
   end
 
   private

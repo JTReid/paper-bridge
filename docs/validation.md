@@ -31,11 +31,12 @@ deterministic Minitest coverage. The `documents` command covers the current
 document upload-to-ingestion lifecycle and the vector search lifecycle,
 including callback enqueueing, job execution, PDF preparation, page OCR/image
 artifacts, page-aware chunk creation, pgvector embedding persistence,
-account-scoped and label-scoped retrieval, pipeline records, and telemetry with
-fake PDF tooling and fake LLM/embedding calls. The `pdf-tools` command checks
-local Poppler/Tesseract availability for live PDF preparation; it is optional
-and not part of default CI. The `queue` command checks the development Solid
-Queue adapter, queue tables, and a throwaway enqueue path.
+account-scoped and label-scoped retrieval, structured answer synthesis with
+citations, pipeline records, and telemetry with fake PDF tooling and fake
+LLM/embedding calls. The `pdf-tools` command checks local Poppler/Tesseract
+availability for live PDF preparation; it is optional and not part of default
+CI. The `queue` command checks the development Solid Queue adapter, queue
+tables, and a throwaway enqueue path.
 
 PDF ingestion coverage asserts the chunker sends extracted page text and
 rendered page screenshots together in one multimodal OpenAI payload per page.
