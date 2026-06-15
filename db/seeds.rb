@@ -52,6 +52,11 @@ openai_embeddings.update!(provider_class: "Agentic::Providers::Openai")
     "search_answer_generator",
     openai_mini,
     "Answer PaperBridge search questions using only the retrieved evidence chunks. Cite supporting chunks for material claims and state limitations when evidence is incomplete."
+  ],
+  [
+    "timeline_event_extractor",
+    openai_mini,
+    "Extract source-grounded care timeline events from PaperBridge document chunks. Preserve dates, derive dates from age plus date of birth only when supported by evidence, and cite the source chunk for every event."
   ]
 ].each do |name, llm, directive|
   agent_type = AgentType.find_or_create_by!(name: name) do |record|
@@ -150,11 +155,60 @@ search_answer_schema = {
   required: %w[answer citations limitations]
 }
 
+timeline_events_schema = {
+  type: "object",
+  additionalProperties: false,
+  properties: {
+    events: {
+      type: "array",
+      items: {
+        type: "object",
+        additionalProperties: false,
+        properties: {
+          document_chunk_id: { type: "integer" },
+          event_type: {
+            type: "string",
+            enum: TimelineEvent::EVENT_TYPES
+          },
+          title: { type: "string" },
+          description: { type: "string" },
+          occurred_on: { type: "string" },
+          started_on: { type: "string" },
+          ended_on: { type: "string" },
+          date_precision: {
+            type: "string",
+            enum: TimelineEvent::DATE_PRECISIONS
+          },
+          date_source: {
+            type: "string",
+            enum: TimelineEvent::DATE_SOURCES
+          },
+          source_quote: { type: "string" }
+        },
+        required: %w[
+          document_chunk_id
+          event_type
+          title
+          description
+          occurred_on
+          started_on
+          ended_on
+          date_precision
+          date_source
+          source_quote
+        ]
+      }
+    }
+  },
+  required: %w[events]
+}
+
 {
   "structured_summary" => summary_schema,
   "structured_validation" => validation_schema,
   "document_chunks" => document_chunks_schema,
-  "search_answer" => search_answer_schema
+  "search_answer" => search_answer_schema,
+  "timeline_events" => timeline_events_schema
 }.each do |name, schema|
   openai_schema = JsonSchema.find_or_initialize_by(name: "openai_#{name}")
   openai_schema.schema = {

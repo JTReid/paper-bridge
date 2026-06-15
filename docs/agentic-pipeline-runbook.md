@@ -57,8 +57,8 @@ The document pipeline harness protects these product-level guarantees:
 - `DocumentPage` stores page number, embedded text, OCR text, metadata, status,
   and a page image attachment.
 - `ProcessDocumentJob` creates a `PipelineRun` for the document subject.
-- `Agentic::DocumentIngestionPipeline` executes `Agents::DocumentChunker` and
-  `Agents::DocumentEmbedder`.
+- `Agentic::DocumentIngestionPipeline` executes `Agents::DocumentChunker`,
+  `Agents::DocumentEmbedder`, and `Agents::TimelineEventExtractor`.
 - The chunker processes prepared pages with previous/current/next page context,
   sends page text and screenshots through the provider abstraction, and creates
   labeled `DocumentChunk` records.
@@ -66,11 +66,17 @@ The document pipeline harness protects these product-level guarantees:
   include continuation text from the next page when needed for coherence.
 - `DocumentEmbedding` stores generated pgvector embeddings for chunks using
   provider/model strings, dimensions, distance metric, and the vector value.
+- `TimelineEvent` stores source-grounded timeline events extracted from chunks,
+  including event type, title, description, dates, date precision/source, source
+  quote, metadata, and the source `DocumentChunk`.
+- Timeline events may use exact dates, ranges, age-derived dates, approximate
+  dates, or undated records when the source evidence does not contain a date.
 - Pipeline logs, activity entries, and LLM telemetry are recorded on the
   `PipelineRun`.
 - Deterministic preparation output is persisted to `documents.prepared_payload`.
 - The structured chunk output is persisted to `document_chunks`.
 - The embedding output is persisted to `document_embeddings`.
+- The structured timeline output is persisted to `timeline_events`.
 - Successful processing marks the document `processed`; failures mark it
   `failed`.
 
@@ -138,7 +144,8 @@ For deterministic framework tests:
 ruby scripts/agentic_pipeline_harness.rb tests
 ```
 
-For deterministic document upload, ingestion, and search lifecycle tests:
+For deterministic document upload, ingestion, timeline extraction, and search
+lifecycle tests:
 
 ```bash
 ruby scripts/agentic_pipeline_harness.rb documents

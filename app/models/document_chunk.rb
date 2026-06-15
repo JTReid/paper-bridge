@@ -16,6 +16,7 @@ class DocumentChunk < ApplicationRecord
   belongs_to :document_page
 
   has_many :document_embeddings, dependent: :destroy
+  has_many :timeline_events, dependent: :destroy
 
   validates :content, :content_hash, :label, :chunk_index, presence: true
   validates :label, inclusion: { in: LABELS }

@@ -10,6 +10,7 @@ class DocumentPage < ApplicationRecord
   belongs_to :document
 
   has_many :document_chunks, -> { order(:chunk_index) }, dependent: :destroy
+  has_many :timeline_events, through: :document_chunks
 
   has_one_attached :image
 

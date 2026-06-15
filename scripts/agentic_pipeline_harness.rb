@@ -45,11 +45,13 @@ AGENTIC_CORE_FILES = %w[
 
 DOCUMENT_PIPELINE_FILES = %w[
   app/controllers/search_controller.rb
+  app/controllers/timeline_controller.rb
   app/jobs/process_document_job.rb
   app/models/document.rb
   app/models/document_chunk.rb
   app/models/document_embedding.rb
   app/models/document_page.rb
+  app/models/timeline_event.rb
   config/database.yml
   config/environments/development.rb
   app/services/agentic/document_ingestion_pipeline.rb
@@ -58,6 +60,7 @@ DOCUMENT_PIPELINE_FILES = %w[
   app/services/agents/document_embedder.rb
   app/services/agents/query_embedder.rb
   app/services/agents/search_answer_generator.rb
+  app/services/agents/timeline_event_extractor.rb
   app/services/agents/vector_retriever.rb
   app/services/documents/pdf_command_runner.rb
   app/services/documents/prepare.rb
@@ -71,13 +74,16 @@ DOCUMENT_PIPELINE_FILES = %w[
   db/migrate/20260614230725_enable_pgvector.rb
   db/migrate/20260614230726_create_document_chunks.rb
   db/migrate/20260614230727_create_document_embeddings.rb
+  db/migrate/20260615020405_create_timeline_events.rb
   test/controllers/documents_controller_test.rb
   test/controllers/search_controller_test.rb
+  test/controllers/timeline_controller_test.rb
   test/jobs/process_document_job_test.rb
   test/models/document_chunk_test.rb
   test/models/document_embedding_test.rb
   test/models/document_page_test.rb
   test/models/document_test.rb
+  test/models/timeline_event_test.rb
   test/services/documents/prepare_pdf_test.rb
   test/services/documents/prepare_text_test.rb
   test/services/documents/search_access_profile_test.rb
@@ -106,11 +112,12 @@ DOCTOR_RUNNER = <<~"RUBY"
     errors << "AgentType \#{agent_type.name} has no llm" if agent_type.llm.blank?
     errors << "AgentType \#{agent_type.name} has no active prompt" if agent_type.prompts.active.empty?
   end
-  required_agent_types = %w[structured_text_summarizer structured_text_validator document_chunker document_embedder query_embedder search_answer_generator]
+  required_agent_types = %w[structured_text_summarizer structured_text_validator document_chunker document_embedder query_embedder search_answer_generator timeline_event_extractor]
   missing_agent_types = required_agent_types - AgentType.pluck(:name)
   errors.concat(missing_agent_types.map { |name| "Required AgentType \#{name} is missing" })
   errors << "openai_document_chunks JsonSchema is missing" unless JsonSchema.exists?(name: "openai_document_chunks")
   errors << "openai_search_answer JsonSchema is missing" unless JsonSchema.exists?(name: "openai_search_answer")
+  errors << "openai_timeline_events JsonSchema is missing" unless JsonSchema.exists?(name: "openai_timeline_events")
   puts "Agentic provider classes in test DB: \#{provider_classes.any? ? provider_classes.join(", ") : "none"}"
   puts "OpenAI credential present: \#{Agentic::Providers::Openai.api_key_present?}"
   puts "Anthropic credential present: \#{Agentic::Providers::Anthropic.api_key_present?}"
@@ -247,6 +254,7 @@ COMMANDS = {
       "test/models/document_embedding_test.rb",
       "test/controllers/documents_controller_test.rb",
       "test/controllers/search_controller_test.rb",
+      "test/controllers/timeline_controller_test.rb",
       "test/jobs/process_document_job_test.rb",
       "test/services/documents/prepare_text_test.rb",
       "test/services/documents/prepare_pdf_test.rb",
@@ -266,6 +274,7 @@ COMMANDS = {
       "--cache", "false",
       "app/controllers/documents_controller.rb",
       "app/controllers/search_controller.rb",
+      "app/controllers/timeline_controller.rb",
       "app/jobs",
       "app/models/agent_type.rb",
       "app/models/document.rb",
@@ -277,6 +286,7 @@ COMMANDS = {
       "app/models/pipeline_log.rb",
       "app/models/pipeline_run.rb",
       "app/models/prompt.rb",
+      "app/models/timeline_event.rb",
       "app/models/user.rb",
       "app/services/agentic",
       "app/services/agents",
@@ -284,6 +294,7 @@ COMMANDS = {
       "app/services/documents",
       "test/controllers/documents_controller_test.rb",
       "test/controllers/search_controller_test.rb",
+      "test/controllers/timeline_controller_test.rb",
       "test/jobs",
       "test/services/agentic",
       "test/services/documents",
@@ -291,6 +302,7 @@ COMMANDS = {
       "test/models/document_page_test.rb",
       "test/models/document_chunk_test.rb",
       "test/models/document_embedding_test.rb",
+      "test/models/timeline_event_test.rb",
       "test/models/user_test.rb",
       "scripts/check_docs_index.rb",
       "scripts/agentic_pipeline_harness.rb"
@@ -310,7 +322,7 @@ def usage
       static    Check generic agentic pipeline file shape and provider interface
       doctor    Seed/check local test DB provider records and API key visibility
       tests     Run deterministic generic pipeline Minitest coverage
-      documents Run deterministic document upload, ingestion, and search lifecycle coverage
+      documents Run deterministic document upload, ingestion, timeline, and search lifecycle coverage
       pdf-tools Check local Poppler/Tesseract binaries for live PDF preparation
       queue     Check development Solid Queue adapter/tables/enqueue path
       rubocop   Run RuboCop on generic pipeline files and this harness

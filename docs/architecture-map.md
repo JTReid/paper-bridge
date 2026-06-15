@@ -21,6 +21,9 @@ Scoutspace.
   deterministic hash, document order, and the page where the chunk starts.
 - `DocumentEmbedding` stores generated pgvector embeddings for chunks, including
   provider/model strings, dimensions, distance metric, and the vector value.
+- `TimelineEvent` stores source-grounded care timeline events extracted from
+  chunks. Each event belongs to one `DocumentChunk`, so attribution flows back
+  through the chunk, document page, document, and account.
 - `Documents::SearchAccessProfile` maps the current actor role to allowed
   chunk labels. This is the current authorization seam for search.
 - `Documents::VectorSearch` performs account-scoped, label-scoped pgvector
@@ -50,11 +53,14 @@ Scoutspace.
 - `ProcessDocumentJob` prepares uploads, creates a `PipelineRun`, runs
   `Agentic::DocumentIngestionPipeline`, creates page-aware labeled chunks, and
   persists OpenAI `text-embedding-3-large` embeddings in Postgres through
-  pgvector.
+  pgvector. The same ingestion pipeline extracts chunk-sourced timeline events
+  with `gpt-5.4-mini`.
 - `GET /search` creates a `PipelineRun` for nonblank queries, runs
   `Agentic::DocumentSearchPipeline`, embeds the user query with
   `text-embedding-3-large`, retrieves matching chunks through pgvector, and
   synthesizes a structured answer with citations using `gpt-5.4-mini`.
+- `GET /timeline` shows the current account's extracted timeline events in
+  chronological order.
 - Search retrieval is constrained to the current account and to labels allowed
   by `Documents::SearchAccessProfile`.
 - Development and production Active Job processing uses Solid Queue. In

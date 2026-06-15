@@ -1,0 +1,13 @@
+first_evaluation:
+  document_chunk: one
+  event_type: evaluation
+  title: Initial evaluation
+  description: Evaluation record was reviewed.
+  occurred_on: 2023-07-21
+  started_on:
+  ended_on:
+  date_precision: exact
+  date_source: explicit
+  source_quote: Evaluation date July 21, 2023.
+  content_hash: 4c58edb3f6c0ce318ba2e127bbeb9e75f438d5e5c9550dfc33c19ff049d5ebaa
+  metadata: {}

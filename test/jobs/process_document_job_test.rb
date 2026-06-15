@@ -21,13 +21,14 @@ class ProcessDocumentJobTest < ActiveJob::TestCase
         payload = JSON.parse(kwargs.fetch(:payload))
 
         return embedding_response(payload) if kwargs.fetch(:url).include?("/embeddings")
+        return timeline_response(payload) if schema_name(payload) == "timeline_events"
+        return chunk_response(payload) if schema_name(payload) == "document_chunks"
 
-        chunk_response(payload)
+        raise "Unexpected process document test request: #{kwargs.fetch(:url)}"
       end
 
       def self.chunk_response(payload)
-        content = payload.dig("messages", 1, "content")
-        text = content.is_a?(Array) ? content.select { |part| part["type"] == "text" }.map { |part| part["text"] }.join("\n") : content.to_s
+        text = text_content(payload)
         label = text.include?("IEP") || text.include?("PDF") ? "education" : "legal"
 
         {
@@ -53,6 +54,40 @@ class ProcessDocumentJobTest < ActiveJob::TestCase
         }.to_json
       end
 
+      def self.timeline_response(payload)
+        chunk_id = text_content(payload)[/document_chunk_id:\s*(\d+)/, 1].to_i
+
+        {
+          choices: [
+            {
+              message: {
+                content: {
+                  events: [
+                    {
+                      document_chunk_id: chunk_id,
+                      event_type: "evaluation",
+                      title: "Uploaded document reviewed",
+                      description: "The uploaded document was processed as evidence.",
+                      occurred_on: "2023-07-21",
+                      started_on: "",
+                      ended_on: "",
+                      date_precision: "exact",
+                      date_source: "explicit",
+                      source_quote: "Chunk created from text content."
+                    }
+                  ]
+                }.to_json
+              }
+            }
+          ],
+          usage: {
+            prompt_tokens: 40,
+            completion_tokens: 30,
+            total_tokens: 70
+          }
+        }.to_json
+      end
+
       def self.embedding_response(payload)
         inputs = Array(payload.fetch("input"))
 
@@ -70,6 +105,17 @@ class ProcessDocumentJobTest < ActiveJob::TestCase
             total_tokens: 12
           }
         }.to_json
+      end
+
+      def self.schema_name(payload)
+        payload.dig("response_format", "json_schema", "name")
+      end
+
+      def self.text_content(payload)
+        content = payload.dig("messages", 1, "content")
+        return content.to_s unless content.is_a?(Array)
+
+        content.select { |part| part["type"] == "text" }.map { |part| part["text"] }.join("\n")
       end
     end
   end
@@ -127,9 +173,11 @@ class ProcessDocumentJobTest < ActiveJob::TestCase
 
     document.reload
     pipeline_run = document.pipeline_runs.last
-    chunk_request = FakeConnection.requests.find { |request| request.fetch(:url).include?("/chat/completions") }
+    chunk_request = chat_request_for("document_chunks")
+    timeline_request = chat_request_for("timeline_events")
     embedding_request = FakeConnection.requests.find { |request| request.fetch(:url).include?("/embeddings") }
     chunk_payload = JSON.parse(chunk_request.fetch(:payload))
+    timeline_payload = JSON.parse(timeline_request.fetch(:payload))
     embedding_payload = JSON.parse(embedding_request.fetch(:payload))
 
     assert_equal "processed", document.status
@@ -138,17 +186,23 @@ class ProcessDocumentJobTest < ActiveJob::TestCase
     assert_equal 1, document.document_pages.count
     assert_equal 1, document.document_chunks.count
     assert_equal 1, document.document_embeddings.count
+    assert_equal 1, document.timeline_events.count
     assert_equal "legal", document.document_chunks.first.label
     assert_equal "text-embedding-3-large", document.document_embeddings.first.model
     assert_equal 3_072, document.document_embeddings.first.dimensions
+    assert_equal "evaluation", document.timeline_events.first.event_type
+    assert_equal document.document_chunks.first, document.timeline_events.first.document_chunk
     assert_equal "completed", pipeline_run.state
     assert_equal "gpt-5.4-nano", chunk_payload.fetch("model")
+    assert_equal "gpt-5.4-mini", timeline_payload.fetch("model")
     assert_equal "text-embedding-3-large", embedding_payload.fetch("model")
     assert_includes chunk_payload.dig("messages", 1, "content").first.fetch("text"), "This is the uploaded test document."
+    assert_includes timeline_payload.dig("messages", 1, "content"), "document_chunk_id: #{document.document_chunks.first.id}"
     assert_equal [ document.document_chunks.first.content ], embedding_payload.fetch("input")
     assert pipeline_run.pipeline_log.entries.any? { |entry| entry["event_type"] == "llm_call" }
     assert pipeline_run.pipeline_activity.entries.any? { |entry| entry["action"] == "document_chunked" }
     assert pipeline_run.pipeline_activity.entries.any? { |entry| entry["action"] == "document_chunks_embedded" }
+    assert pipeline_run.pipeline_activity.entries.any? { |entry| entry["action"] == "timeline_events_extracted" }
   end
 
   test "prepares PDFs before chunking and embedding them" do
@@ -159,7 +213,7 @@ class ProcessDocumentJobTest < ActiveJob::TestCase
     ProcessDocumentJob.perform_now(document)
 
     document.reload
-    chunk_request = FakeConnection.requests.find { |request| request.fetch(:url).include?("/chat/completions") }
+    chunk_request = chat_request_for("document_chunks")
     payload = JSON.parse(chunk_request.fetch(:payload))
 
     assert_equal "processed", document.status
@@ -191,7 +245,7 @@ class ProcessDocumentJobTest < ActiveJob::TestCase
     ProcessDocumentJob.perform_now(document)
 
     document.reload
-    chunk_request = FakeConnection.requests.find { |request| request.fetch(:url).include?("/chat/completions") }
+    chunk_request = chat_request_for("document_chunks")
     payload = JSON.parse(chunk_request.fetch(:payload))
     user_content = payload.dig("messages", 1, "content")
 
@@ -235,5 +289,13 @@ class ProcessDocumentJobTest < ActiveJob::TestCase
           content_type: "application/pdf"
         }
       )
+    end
+
+    def chat_request_for(schema_name)
+      FakeConnection.requests.find do |request|
+        next false unless request.fetch(:url).include?("/chat/completions")
+
+        JSON.parse(request.fetch(:payload)).dig("response_format", "json_schema", "name") == schema_name
+      end
     end
 end

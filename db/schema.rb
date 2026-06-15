@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_06_14_230727) do
+ActiveRecord::Schema[8.1].define(version: 2026_06_15_020405) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "vector"
@@ -192,6 +192,27 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_14_230727) do
     t.index ["agent_type_id"], name: "index_prompts_on_agent_type_id"
   end
 
+  create_table "timeline_events", force: :cascade do |t|
+    t.string "content_hash", null: false
+    t.datetime "created_at", null: false
+    t.string "date_precision", null: false
+    t.string "date_source", null: false
+    t.text "description", null: false
+    t.bigint "document_chunk_id", null: false
+    t.date "ended_on"
+    t.string "event_type", null: false
+    t.jsonb "metadata", default: {}, null: false
+    t.date "occurred_on"
+    t.text "source_quote", null: false
+    t.date "started_on"
+    t.string "title", null: false
+    t.datetime "updated_at", null: false
+    t.index ["date_source", "date_precision"], name: "index_timeline_events_on_date_source_and_date_precision"
+    t.index ["document_chunk_id", "content_hash"], name: "index_timeline_events_on_document_chunk_id_and_content_hash", unique: true
+    t.index ["document_chunk_id"], name: "index_timeline_events_on_document_chunk_id"
+    t.index ["event_type", "occurred_on"], name: "index_timeline_events_on_event_type_and_occurred_on"
+  end
+
   create_table "users", force: :cascade do |t|
     t.bigint "account_id", null: false
     t.datetime "created_at", null: false
@@ -223,5 +244,6 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_14_230727) do
   add_foreign_key "pipeline_logs", "pipeline_runs"
   add_foreign_key "pipeline_runs", "users"
   add_foreign_key "prompts", "agent_types"
+  add_foreign_key "timeline_events", "document_chunks"
   add_foreign_key "users", "accounts"
 end
