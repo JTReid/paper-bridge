@@ -51,41 +51,53 @@
 
     <% if @query.present? %>
       <% if @answer.present? %>
-        <section class="rounded-2xl border border-primary/10 bg-white p-6">
-          <div class="mb-4 flex items-center justify-between gap-4">
-            <div class="flex items-center gap-2">
-              <%= pb_icon("brain", class_name: "h-4 w-4 text-primary") %>
-              <span class="text-sm font-semibold text-primary">AI Response</span>
+        <% citations = Array(@answer[:citations]) %>
+        <div class="space-y-6"<% if citations.any? %> data-controller="citations-toggle"<% end %>>
+          <section class="rounded-2xl border border-primary/10 bg-white p-6">
+            <div class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div class="flex items-center gap-2">
+                <%= pb_icon("brain", class_name: "h-4 w-4 text-primary") %>
+                <span class="text-sm font-semibold text-primary">AI Response</span>
+              </div>
+              <div class="flex flex-wrap items-center gap-2">
+                <% if citations.any? %>
+                  <button type="button" class="inline-flex h-8 items-center justify-center rounded-full border border-primary/20 bg-primary/5 px-3 text-xs font-medium text-primary transition-colors hover:bg-primary/10" aria-expanded="false" aria-controls="ai-answer-citations" data-citations-toggle-target="button" data-action="citations-toggle#toggle">
+                    <%= pb_icon("file-text", class_name: "mr-1.5 h-3.5 w-3.5") %>
+                    <span data-citations-toggle-target="showLabel">Show citations</span>
+                    <span data-citations-toggle-target="hideLabel" hidden>Hide citations</span>
+                  </button>
+                <% end %>
+                <% if @pipeline_run %>
+                  <span class="text-[10px] font-medium text-muted-foreground">Run #<%= @pipeline_run.id %></span>
+                <% end %>
+              </div>
             </div>
-            <% if @pipeline_run %>
-              <span class="text-[10px] font-medium text-muted-foreground">Run #<%= @pipeline_run.id %></span>
-            <% end %>
-          </div>
-          <div class="text-sm leading-relaxed text-foreground">
-            <%= simple_format(@answer[:answer]) %>
-          </div>
-          <p class="mt-4 text-[10px] italic text-muted-foreground">This is for informational purposes only and does not constitute professional advice.</p>
-        </section>
-
-        <% if Array(@answer[:citations]).any? %>
-          <section class="space-y-3">
-            <div>
-              <h2 class="text-base font-bold text-primary">Citations</h2>
-              <p class="mt-1 text-sm text-muted-foreground">Evidence used to compose this answer.</p>
+            <div class="text-sm leading-relaxed text-foreground">
+              <%= simple_format(@answer[:answer]) %>
             </div>
-            <div class="grid grid-cols-1 gap-3 lg:grid-cols-2">
-              <% Array(@answer[:citations]).each do |citation| %>
-                <article class="rounded-2xl border border-border/50 bg-white p-4">
-                  <p class="text-sm font-semibold text-foreground"><%= citation[:document_title] %>, page <%= citation[:page_number] %></p>
-                  <p class="mt-1 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Chunk <%= citation[:chunk_id] %></p>
-                  <% if citation[:quote].present? %>
-                    <p class="mt-3 text-sm leading-relaxed text-muted-foreground"><%= citation[:quote] %></p>
-                  <% end %>
-                </article>
-              <% end %>
-            </div>
+            <p class="mt-4 text-[10px] italic text-muted-foreground">This is for informational purposes only and does not constitute professional advice.</p>
           </section>
-        <% end %>
+
+          <% if citations.any? %>
+            <section id="ai-answer-citations" class="space-y-3" hidden data-citations-toggle-target="content">
+              <div>
+                <h2 class="text-base font-bold text-primary">Citations</h2>
+                <p class="mt-1 text-sm text-muted-foreground">Evidence used to compose this answer.</p>
+              </div>
+              <div class="grid grid-cols-1 gap-3 lg:grid-cols-2">
+                <% citations.each do |citation| %>
+                  <article class="rounded-2xl border border-border/50 bg-white p-4">
+                    <p class="text-sm font-semibold text-foreground"><%= citation[:document_title] %>, page <%= citation[:page_number] %></p>
+                    <p class="mt-1 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Chunk <%= citation[:chunk_id] %></p>
+                    <% if citation[:quote].present? %>
+                      <p class="mt-3 text-sm leading-relaxed text-muted-foreground"><%= citation[:quote] %></p>
+                    <% end %>
+                  </article>
+                <% end %>
+              </div>
+            </section>
+          <% end %>
+        </div>
 
         <% if Array(@answer[:limitations]).any? %>
           <section class="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
