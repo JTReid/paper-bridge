@@ -7,7 +7,16 @@ class Document < ApplicationRecord
     failed: "failed"
   }.freeze
 
+  CATEGORIES = {
+    educational: "educational",
+    medical: "medical",
+    therapy: "therapy",
+    insurance: "insurance",
+    general: "general"
+  }.freeze
+
   belongs_to :account
+  belongs_to :dependent
   belongs_to :user
   has_many :document_pages, -> { order(:page_number) }, dependent: :destroy
   has_many :document_chunks, -> { order(:chunk_index) }, dependent: :destroy
@@ -18,6 +27,7 @@ class Document < ApplicationRecord
   has_one_attached :file
 
   enum :status, STATUSES
+  enum :category, CATEGORIES
   enum :preparation_status, {
     unprepared: "unprepared",
     preparing: "preparing",
@@ -29,9 +39,10 @@ class Document < ApplicationRecord
   before_validation :cache_file_metadata
   after_create_commit :enqueue_processing_pipeline, if: :file_attached?
 
-  validates :title, :status, :preparation_status, presence: true
+  validates :title, :status, :preparation_status, :category, presence: true
   validate :file_is_attached
   validate :account_matches_user
+  validate :account_matches_dependent
 
   private
 
@@ -63,8 +74,14 @@ class Document < ApplicationRecord
     end
 
     def account_matches_user
-      return if account.blank? || user.blank? || account_id == user.account_id
+      return if account.blank? || user.blank? || user.account_memberships.exists?(account_id: account_id)
 
-      errors.add(:account, "must match the uploading user")
+      errors.add(:account, "must be manageable by the uploading user")
+    end
+
+    def account_matches_dependent
+      return if account.blank? || dependent.blank? || account_id == dependent.account_id
+
+      errors.add(:account, "must match the dependent")
     end
 end

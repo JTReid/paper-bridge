@@ -1,11 +1,13 @@
-class SearchController < ApplicationController
+class AiAssistantController < ApplicationController
   before_action :authenticate_user!
 
   class_attribute :llm_connection, default: RestClient
 
   def index
+    set_dependent_from_param
     @query = params[:q].to_s.strip
-    @access_profile = Documents::SearchAccessProfile.for(current_user)
+    @access_profile = Documents::SearchAccessProfile.for(current_user, account: current_account, dependent: @dependent)
+    @documents = (@dependent ? @dependent.documents : current_account.documents).order(created_at: :desc)
     @results = []
     @search_error = nil
 
@@ -33,8 +35,10 @@ class SearchController < ApplicationController
 
   private
 
-    def current_account
-      current_user.account
+    def set_dependent_from_param
+      return if params[:dependent_id].blank?
+
+      @dependent = current_account.dependents.find(params[:dependent_id])
     end
 
     def pipeline_context(pipeline_run)
@@ -42,6 +46,7 @@ class SearchController < ApplicationController
         pipeline_run_gid: pipeline_run.to_global_id.to_s,
         account_gid: current_account.to_global_id.to_s,
         actor_gid: current_user.to_global_id.to_s,
+        dependent_gid: @dependent&.to_global_id&.to_s,
         query: @query,
         access_profile: @access_profile,
         limit: 10

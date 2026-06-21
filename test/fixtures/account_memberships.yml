@@ -1,0 +1,14 @@
+family_admin_greenfield:
+  account: greenfield
+  user: family_admin
+  role: admin
+
+account_member_greenfield:
+  account: greenfield
+  user: account_member
+  role: member
+
+other_admin:
+  account: other
+  user: other_user
+  role: admin

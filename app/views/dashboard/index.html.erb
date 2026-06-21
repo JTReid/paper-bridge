@@ -1,0 +1,101 @@
+<% content_for :title, "Dashboard | PaperBridge" %>
+
+<%= app_shell(active: :dashboard) do %>
+  <div class="space-y-10 pb-10">
+    <header class="flex flex-col gap-4 pt-2 sm:flex-row sm:items-end sm:justify-between">
+      <div>
+        <p class="mb-1 text-xs font-medium uppercase tracking-widest text-accent">Your Family Hub</p>
+        <h1 class="text-3xl font-bold tracking-tight text-primary">Good to see you.</h1>
+        <p class="mt-1.5 text-sm text-muted-foreground">Everything in one place, always under control.</p>
+      </div>
+      <%= link_to new_dependent_path, class: "inline-flex h-10 items-center justify-center rounded-full bg-accent px-5 text-sm font-medium text-accent-foreground shadow-sm transition-all duration-200 hover:bg-accent/80" do %>
+        <%= pb_icon("plus", class_name: "mr-1.5 h-4 w-4") %>
+        Add Dependent
+      <% end %>
+    </header>
+
+    <section>
+      <div class="mb-5 flex items-center justify-between">
+        <h2 class="text-lg font-bold text-primary">Dependents</h2>
+        <%= link_to dependents_path, class: "flex items-center gap-1 text-xs font-medium text-primary transition-opacity hover:opacity-70" do %>
+          Manage
+          <%= pb_icon("arrow-right", class_name: "h-3 w-3") %>
+        <% end %>
+      </div>
+
+      <% if @dependents.any? %>
+        <div class="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+          <% @dependents.each_with_index do |dependent, index| %>
+            <% colors = ["bg-blue-50 text-blue-700 border-blue-100", "bg-violet-50 text-violet-700 border-violet-100", "bg-amber-50 text-amber-700 border-amber-100", "bg-teal-50 text-teal-700 border-teal-100", "bg-rose-50 text-rose-700 border-rose-100"] %>
+            <%= link_to dependent_path(dependent), class: "group rounded-2xl border border-border/60 bg-white p-6 transition-all duration-200 hover:border-accent/50 hover:shadow-md" do %>
+              <div class="flex items-center gap-4">
+                <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border text-sm font-bold <%= colors[index % colors.length] %>">
+                  <%= dependent.name.split.map { |word| word.first }.join.first(2).upcase %>
+                </div>
+                <div class="min-w-0 flex-1">
+                  <p class="truncate text-sm font-bold text-foreground transition-colors group-hover:text-primary"><%= dependent.name %></p>
+                  <p class="mt-0.5 text-xs text-muted-foreground"><%= [dependent.grade, dependent.school].compact_blank.join(" · ").presence || "Profile ready" %></p>
+                </div>
+                <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-blue-50 hover:text-primary">
+                  <%= pb_icon("pencil", class_name: "h-3.5 w-3.5") %>
+                </div>
+              </div>
+            <% end %>
+          <% end %>
+        </div>
+      <% else %>
+        <div class="rounded-2xl border border-border/60 bg-white p-8 shadow-sm">
+          <div class="mx-auto max-w-md text-center">
+            <div class="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+              <%= pb_icon("users", class_name: "h-5 w-5") %>
+            </div>
+            <p class="text-sm font-semibold text-foreground">No dependents yet</p>
+            <p class="mt-1 text-sm text-muted-foreground">Start by adding a dependent to organize their care records in one place.</p>
+            <%= link_to "Add Dependent", new_dependent_path, class: "mt-5 inline-flex rounded-full bg-primary px-5 py-2 text-xs font-medium text-white hover:bg-primary/90" %>
+          </div>
+        </div>
+      <% end %>
+    </section>
+
+    <section class="rounded-2xl border border-border/50 bg-white p-6 shadow-sm">
+      <div class="mb-5 flex items-center justify-between">
+        <div class="flex items-center gap-2.5">
+          <div class="flex h-8 w-8 items-center justify-center rounded-xl bg-primary/10">
+            <%= pb_icon("calendar-days", class_name: "h-4 w-4 text-primary") %>
+          </div>
+          <div>
+            <h2 class="text-base font-semibold text-foreground">Family Calendar</h2>
+          </div>
+        </div>
+        <button type="button" disabled class="inline-flex h-8 cursor-not-allowed items-center rounded-full bg-primary/40 px-3 text-xs font-medium text-white">
+          <%= pb_icon("plus", class_name: "mr-1 h-3.5 w-3.5") %>
+          Add
+        </button>
+      </div>
+
+      <div class="py-8 text-center">
+        <%= pb_icon("calendar-days", class_name: "mx-auto mb-2 h-8 w-8 text-muted-foreground/40") %>
+        <p class="text-sm text-muted-foreground">No upcoming events</p>
+        <p class="mt-1 text-xs text-muted-foreground">Calendar events will appear here once the calendar workflow is connected.</p>
+      </div>
+
+      <% if @dependents.any? %>
+        <div class="mt-4 flex flex-wrap gap-2 border-t border-border/50 pt-4">
+          <% @dependents.each_with_index do |dependent, index| %>
+            <% colors = ["bg-blue-500", "bg-violet-500", "bg-amber-500", "bg-teal-500", "bg-rose-500"] %>
+            <%= link_to dependent_path(dependent), class: "flex items-center gap-1.5 rounded-full bg-muted/50 px-2.5 py-1 transition-colors hover:bg-muted" do %>
+              <span class="h-2 w-2 rounded-full <%= colors[index % colors.length] %>"></span>
+              <span class="text-[11px] font-medium text-foreground"><%= dependent.name %></span>
+            <% end %>
+          <% end %>
+        </div>
+      <% end %>
+    </section>
+
+    <footer class="flex items-center justify-center gap-6 border-t border-border/40 py-4">
+      <% ["You control what gets shared", "Your data stays private", "Only invited people can see this"].each do |message| %>
+        <p class="hidden text-[11px] text-muted-foreground sm:block"><%= message %></p>
+      <% end %>
+    </footer>
+  </div>
+<% end %>

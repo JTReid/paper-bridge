@@ -15,4 +15,15 @@ class DeviseSessionsControllerTest < ActionDispatch::IntegrationTest
     assert_select "a[href='#{new_user_registration_path}']", "Create one"
     assert_select "a[href='#{new_user_password_path}']", "Forgot your password?"
   end
+
+  test "signs in to dashboard" do
+    post user_session_path, params: {
+      user: {
+        email: users(:family_admin).email,
+        password: "password"
+      }
+    }
+
+    assert_redirected_to dashboard_path
+  end
 end

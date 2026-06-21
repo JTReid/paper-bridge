@@ -91,8 +91,10 @@ class Documents::PreparePdfTest < ActiveSupport::TestCase
     def create_pdf_document
       Document.create!(
         account: accounts(:greenfield),
+        dependent: dependents(:emma),
         user: users(:family_admin),
         title: "PDF Document",
+        category: :educational,
         file: {
           io: StringIO.new("%PDF-1.4\n% fake test pdf"),
           filename: "document.pdf",

@@ -21,21 +21,24 @@ class DeviseRegistrationsControllerTest < ActionDispatch::IntegrationTest
   test "creates account with submitted workspace name" do
     assert_difference -> { User.count }, 1 do
       assert_difference -> { Account.count }, 1 do
-        post user_registration_path, params: {
-          user: {
-            account_name: "Harbor Family",
-            name: "Taylor Harbor",
-            email: "taylor-harbor@example.test",
-            password: "password",
-            password_confirmation: "password"
+        assert_difference -> { AccountMembership.count }, 1 do
+          post user_registration_path, params: {
+            user: {
+              account_name: "Harbor Family",
+              name: "Taylor Harbor",
+              email: "taylor-harbor@example.test",
+              password: "password",
+              password_confirmation: "password"
+            }
           }
-        }
+        end
       end
     end
 
     user = User.find_by!(email: "taylor-harbor@example.test")
-    assert_response :redirect
+    assert_redirected_to dashboard_path
     assert_equal "Taylor Harbor", user.name
     assert_equal "Harbor Family", user.account.name
+    assert user.can_manage_account?(user.account)
   end
 end

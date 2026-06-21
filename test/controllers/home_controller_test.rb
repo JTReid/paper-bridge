@@ -6,8 +6,10 @@ class HomeControllerTest < ActionDispatch::IntegrationTest
 
     assert_response :success
     assert_includes response.body, "PaperBridge"
-    assert_includes response.body, "Sign in"
-    assert_includes response.body, "Create account"
+    assert_includes response.body, "Sign In"
+    assert_includes response.body, "Get Started"
+    assert_includes response.body, "Turn overwhelming paperwork into"
+    assert_select "[data-controller='reveal']"
   end
 
   test "shows workspace actions for signed in users" do
@@ -16,8 +18,8 @@ class HomeControllerTest < ActionDispatch::IntegrationTest
     get root_path
 
     assert_response :success
-    assert_includes response.body, "Open documents"
-    assert_includes response.body, "Search indexed document chunks"
-    assert_includes response.body, users(:family_admin).account.name
+    assert_includes response.body, "Open dashboard"
+    assert_includes response.body, "Dashboard"
+    assert_includes response.body, "Spend less time searching through documents"
   end
 end

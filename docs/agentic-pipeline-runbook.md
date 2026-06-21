@@ -84,10 +84,11 @@ The document pipeline harness protects these product-level guarantees:
 
 The search pipeline harness protects these product-level guarantees:
 
-- `GET /search` is authenticated.
+- `GET /dependents/:dependent_id/ai-assistant` is authenticated.
 - Blank search queries render without creating a `PipelineRun` or calling an
   LLM provider.
-- Nonblank search queries create a `PipelineRun` for the current account.
+- Nonblank search queries create a `PipelineRun` for the current account and
+  selected dependent.
 - `Agentic::DocumentSearchPipeline` can run retrieval-only for debugging, or
   retrieval plus answer synthesis for the product UI.
 - In answer mode, it executes `Agents::QueryEmbedder`,

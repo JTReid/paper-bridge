@@ -50,11 +50,12 @@ Use that command when changing document upload callbacks, `ProcessDocumentJob`,
 `Agentic::DocumentIngestionPipeline`, `Agents::DocumentChunker`,
 `Agents::DocumentEmbedder`, `Agents::TimelineEventExtractor`, prompt/schema
 seeds, chunk persistence, embedding persistence, or chunk-sourced timeline event
-persistence. The same command also covers the first search pipeline:
-`GET /search`, `Agentic::DocumentSearchPipeline`, `Agents::QueryEmbedder`,
-`Agents::VectorRetriever`, `Agents::SearchAnswerGenerator`, account-scoped
-vector retrieval, role-derived chunk-label filtering, structured answer
-synthesis with citations, and the read-only `GET /timeline` view.
+persistence. The same command also covers the dependent-scoped AI assistant:
+`GET /dependents/:dependent_id/ai-assistant`,
+`Agentic::DocumentSearchPipeline`, `Agents::QueryEmbedder`,
+`Agents::VectorRetriever`, `Agents::SearchAnswerGenerator`, account- and
+dependent-scoped vector retrieval, role-derived chunk-label filtering, and
+structured answer synthesis with citations.
 
 Keep the harness mostly measurement and guidance. If a harness change alters
 production app behavior, treat that as suspicious and ask whether it belongs in

@@ -268,8 +268,10 @@ class ProcessDocumentJobTest < ActiveJob::TestCase
     def create_document
       Document.create!(
         account: accounts(:greenfield),
+        dependent: dependents(:emma),
         user: users(:family_admin),
         title: "Power of Attorney",
+        category: :general,
         file: {
           io: StringIO.new("This is the uploaded test document."),
           filename: "power-of-attorney.txt",
@@ -281,8 +283,10 @@ class ProcessDocumentJobTest < ActiveJob::TestCase
     def create_pdf_document
       Document.create!(
         account: accounts(:greenfield),
+        dependent: dependents(:emma),
         user: users(:family_admin),
         title: "PDF Document",
+        category: :educational,
         file: {
           io: StringIO.new("%PDF-1.4\n% fake test pdf"),
           filename: "document.pdf",

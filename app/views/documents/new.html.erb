@@ -1,16 +1,22 @@
-<main class="mx-auto max-w-3xl px-4 py-8 sm:px-6 lg:px-8">
-  <nav>
-    <%= link_to documents_path, class: "inline-flex items-center text-sm font-medium text-slate-600 hover:text-slate-950" do %>
-      <span aria-hidden="true" class="mr-2">&larr;</span>
-      Back to documents
-    <% end %>
-  </nav>
+<% content_for :title, "Upload Document | PaperBridge" %>
 
-  <header class="mt-8 border-b border-slate-200 pb-6">
-    <h1 class="text-3xl font-semibold text-slate-950">Upload Document</h1>
-  </header>
+<%= app_shell(active: :documents, dependent: @dependent) do %>
+  <div class="mx-auto max-w-3xl space-y-8">
+    <nav>
+      <%= link_to dependent_documents_path(@dependent), class: "inline-flex items-center text-sm font-medium text-slate-600 hover:text-slate-950" do %>
+        <span aria-hidden="true" class="mr-2">&larr;</span>
+        Back to documents
+      <% end %>
+    </nav>
 
-  <section class="mt-8">
+    <header class="border-b border-slate-200 pb-6">
+      <p class="mb-1 text-xs font-medium uppercase tracking-widest text-accent">Care Records</p>
+      <h1 class="text-3xl font-semibold text-slate-950">Upload Document</h1>
+      <% if @dependent %>
+        <p class="mt-2 text-sm text-slate-600">Add a record for <%= @dependent.name %>.</p>
+      <% end %>
+    </header>
+
     <%= render "form", document: @document %>
-  </section>
-</main>
+  </div>
+<% end %>

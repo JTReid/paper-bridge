@@ -3,9 +3,10 @@ require "test_helper"
 class Documents::VectorSearchTest < ActiveSupport::TestCase
   setup do
     @account = accounts(:greenfield)
+    @dependent = dependents(:emma)
     @document = documents(:advance_directive)
     @page = document_pages(:advance_directive_first)
-    @owner_profile = Documents::SearchAccessProfile.new(role: "family_admin")
+    @owner_profile = Documents::SearchAccessProfile.new(role: "admin")
   end
 
   test "returns nearest chunks first" do
@@ -63,17 +64,58 @@ class Documents::VectorSearchTest < ActiveSupport::TestCase
     assert_equal [ account_chunk ], results.map(&:chunk)
   end
 
+  test "filters by dependent before ranking" do
+    other_dependent = Dependent.create!(account: @account, name: "Other Dependent")
+    other_document = Document.create!(
+      account: @account,
+      dependent: other_dependent,
+      user: users(:family_admin),
+      title: "Other dependent document",
+      category: :medical,
+      file: {
+        io: StringIO.new("Other dependent content"),
+        filename: "other-dependent.txt",
+        content_type: "text/plain"
+      }
+    )
+    clear_enqueued_jobs
+    other_page = DocumentPage.create!(
+      account: @account,
+      document: other_document,
+      page_number: 1,
+      embedded_text: "Other dependent page",
+      ocr_text: "",
+      status: "processed"
+    )
+    other_chunk = create_chunk!(
+      "Other dependent medical match",
+      document: other_document,
+      page: other_page,
+      label: "medical",
+      chunk_index: 1
+    )
+    same_dependent_chunk = create_chunk!("Same dependent weaker match", label: "medical", chunk_index: 2)
+
+    create_embedding!(other_chunk, unit_vector(0))
+    create_embedding!(same_dependent_chunk, unit_vector(1))
+
+    results = search(query_embedding: unit_vector(0), dependent: @dependent)
+
+    assert_equal [ same_dependent_chunk ], results.map(&:chunk)
+  end
+
   test "returns an empty result set when no embeddings are indexed" do
     assert_empty search(query_embedding: unit_vector(0))
   end
 
   private
 
-    def search(query_embedding:, access_profile: @owner_profile)
+    def search(query_embedding:, access_profile: @owner_profile, dependent: nil)
       Documents::VectorSearch.new(
         account: @account,
         query_embedding: query_embedding,
-        access_profile: access_profile
+        access_profile: access_profile,
+        dependent: dependent
       ).call
     end
 

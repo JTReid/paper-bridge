@@ -1,0 +1,17 @@
+emma_therapist:
+  account: greenfield
+  dependent: emma
+  user: therapist
+  invited_by: family_admin
+  name: Therapist User
+  email: therapist@example.test
+  role: therapist
+  status: active
+  permissions:
+    educational: false
+    medical: true
+    therapy: true
+    insurance: false
+    general: true
+  invited_at: <%= 1.day.ago %>
+  accepted_at: <%= Time.current %>

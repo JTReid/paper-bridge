@@ -1,8 +1,15 @@
 Rails.application.routes.draw do
   devise_for :users
-  get "search" => "search#index"
-  get "timeline" => "timeline#index"
-  resources :documents, only: %i[index show new create destroy]
+  get "dashboard" => "dashboard#index"
+  resources :dependents
+  get "dependents/:dependent_id/documents" => "documents#index", as: :dependent_documents
+  get "dependents/:dependent_id/documents/new" => "documents#new", as: :new_dependent_document
+  post "dependents/:dependent_id/documents" => "documents#create"
+  get "dependents/:dependent_id/ai-assistant" => "ai_assistant#index", as: :dependent_ai_assistant
+  resources :dependents, only: [] do
+    resources :care_team_memberships, path: "care-team", except: :show
+  end
+  resources :documents, only: %i[show destroy]
 
   # Define your application routes per the DSL in https://guides.rubyonrails.org/routing.html
 

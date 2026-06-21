@@ -1,0 +1,99 @@
+<% content_for :title, "#{@dependent.name} | PaperBridge" %>
+
+<%= app_shell(active: :overview, dependent: @dependent) do %>
+  <div class="space-y-8">
+    <section class="rounded-2xl border border-border/60 bg-white p-7 shadow-sm">
+      <div class="flex flex-col gap-5 sm:flex-row sm:items-center">
+        <div class="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-2xl font-bold text-primary">
+          <%= @dependent.name.split.map { |word| word.first }.join.first(2).upcase %>
+        </div>
+        <div class="min-w-0 flex-1">
+          <h1 class="text-2xl font-bold tracking-tight text-primary"><%= @dependent.name %></h1>
+          <p class="mt-1 text-sm text-muted-foreground">
+            <%= [@dependent.grade, @dependent.school, @dependent.date_of_birth ? "Born #{l(@dependent.date_of_birth, format: :long)}" : nil].compact_blank.join(" · ") %>
+          </p>
+          <% if @dependent.notes.present? %>
+            <p class="mt-2 text-sm leading-relaxed text-muted-foreground"><%= @dependent.notes %></p>
+          <% end %>
+        </div>
+        <div class="flex gap-2">
+          <%= link_to "Edit", edit_dependent_path(@dependent), class: "inline-flex h-9 items-center rounded-full border border-border px-4 text-xs font-medium text-foreground hover:bg-muted" %>
+          <%= link_to "Care Team", dependent_care_team_memberships_path(@dependent), class: "inline-flex h-9 items-center rounded-full bg-primary px-4 text-xs font-medium text-white hover:bg-primary/90" %>
+        </div>
+      </div>
+    </section>
+
+    <section class="grid grid-cols-2 gap-4 lg:grid-cols-5">
+      <% Document.categories.keys.each do |category| %>
+        <% count = @documents.count { |document| document.category == category } %>
+        <%= link_to dependent_documents_path(@dependent), class: "rounded-2xl border border-border/60 bg-white p-5 shadow-sm transition-all hover:border-primary/20 hover:shadow-md" do %>
+          <p class="text-2xl font-bold text-primary"><%= count %></p>
+          <p class="mt-0.5 text-xs capitalize text-muted-foreground"><%= category.humanize %></p>
+        <% end %>
+      <% end %>
+    </section>
+
+    <section class="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
+      <div class="space-y-4">
+        <div class="flex items-center justify-between">
+          <h2 class="text-base font-bold text-primary">Recent Documents</h2>
+          <%= link_to "View all", dependent_documents_path(@dependent), class: "text-xs font-medium text-primary hover:opacity-70" %>
+        </div>
+
+        <% if @documents.any? %>
+          <div class="overflow-hidden rounded-2xl border border-border/60 bg-white shadow-sm">
+            <div class="divide-y divide-border/40">
+              <% @documents.first(5).each do |document| %>
+                <%= link_to document_path(document), class: "flex items-center gap-4 px-5 py-4 transition-colors hover:bg-muted/20" do %>
+                  <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-muted">
+                    <%= pb_icon("file-text", class_name: "h-4 w-4 text-muted-foreground") %>
+                  </div>
+                  <div class="min-w-0 flex-1">
+                    <p class="truncate text-sm font-semibold text-foreground"><%= document.title %></p>
+                    <p class="mt-0.5 text-xs text-muted-foreground"><%= l document.created_at, format: :short %></p>
+                  </div>
+                  <span class="rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground"><%= document.category.humanize %></span>
+                <% end %>
+              <% end %>
+            </div>
+          </div>
+        <% else %>
+          <div class="rounded-2xl border border-border/60 bg-white p-8 text-center shadow-sm">
+            <p class="text-sm font-medium text-foreground">No documents yet</p>
+            <p class="mt-1 text-xs text-muted-foreground">Upload the first record for <%= @dependent.name %>.</p>
+            <%= link_to "Add Document", new_dependent_document_path(@dependent), class: "mt-5 inline-flex rounded-full bg-primary px-5 py-2 text-xs font-medium text-white hover:bg-primary/90" %>
+          </div>
+        <% end %>
+      </div>
+
+      <aside class="space-y-5">
+        <div class="rounded-2xl border border-border/60 bg-white p-5 shadow-sm">
+          <h2 class="text-base font-bold text-primary">AI Assistant</h2>
+          <p class="mt-2 text-sm leading-relaxed text-muted-foreground">Ask questions scoped to this dependent's uploaded evidence.</p>
+          <%= link_to "Open Assistant", dependent_ai_assistant_path(@dependent), class: "mt-5 inline-flex h-9 items-center rounded-full bg-primary px-4 text-xs font-medium text-white hover:bg-primary/90" %>
+        </div>
+
+        <div class="rounded-2xl border border-border/60 bg-white p-5 shadow-sm">
+          <div class="flex items-center justify-between">
+            <h2 class="text-base font-bold text-primary">Care Team</h2>
+            <%= link_to "Manage", dependent_care_team_memberships_path(@dependent), class: "text-xs font-medium text-primary hover:opacity-70" %>
+          </div>
+          <div class="mt-4 space-y-3">
+            <% @care_team_memberships.first(4).each do |membership| %>
+              <div class="flex items-center gap-3">
+                <div class="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary"><%= membership.name.split.map { |word| word.first }.join.first(2).upcase %></div>
+                <div class="min-w-0">
+                  <p class="truncate text-xs font-semibold text-foreground"><%= membership.name %></p>
+                  <p class="text-[10px] capitalize text-muted-foreground"><%= membership.role.humanize %></p>
+                </div>
+              </div>
+            <% end %>
+            <% if @care_team_memberships.empty? %>
+              <p class="text-xs text-muted-foreground">No care team members yet.</p>
+            <% end %>
+          </div>
+        </div>
+      </aside>
+    </section>
+  </div>
+<% end %>

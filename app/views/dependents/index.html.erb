@@ -1,0 +1,65 @@
+<% content_for :title, "Dependents | PaperBridge" %>
+
+<%= app_shell(active: :dependents) do %>
+  <div class="space-y-8">
+    <header class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div>
+        <h1 class="text-2xl font-bold tracking-tight text-foreground md:text-3xl">Dependents</h1>
+        <p class="mt-1 text-sm text-muted-foreground">Manage the people whose records live in this family workspace.</p>
+      </div>
+      <%= link_to new_dependent_path, class: "inline-flex h-9 items-center justify-center rounded-full bg-primary px-4 text-xs font-medium text-white transition-colors hover:bg-primary/90" do %>
+        <%= pb_icon("plus", class_name: "mr-1.5 h-3.5 w-3.5") %>
+        Add Dependent
+      <% end %>
+    </header>
+
+    <% if @dependents.any? %>
+      <section class="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
+        <% @dependents.each_with_index do |dependent, index| %>
+          <% colors = ["bg-blue-50 text-blue-700", "bg-violet-50 text-violet-700", "bg-amber-50 text-amber-700", "bg-teal-50 text-teal-700"] %>
+          <% initials = dependent.name.split.map { |word| word.first }.join.first(2).upcase %>
+          <%= link_to dependent_path(dependent), class: "group rounded-2xl border border-border/50 bg-white p-6 transition-all duration-200 hover:border-primary/20 hover:shadow-md" do %>
+            <div class="mb-4 flex items-center gap-3">
+              <div class="flex h-12 w-12 items-center justify-center rounded-full text-lg font-semibold <%= colors[index % colors.length] %>">
+                <%= initials %>
+              </div>
+              <div class="min-w-0 flex-1">
+                <p class="truncate text-base font-semibold text-foreground"><%= dependent.name %></p>
+                <p class="text-xs text-muted-foreground"><%= [dependent.grade, dependent.school].compact_blank.join(" · ").presence || "Profile ready" %></p>
+              </div>
+              <%= pb_icon("arrow-right", class_name: "h-4 w-4 text-muted-foreground transition-colors group-hover:text-primary") %>
+            </div>
+            <% if dependent.notes.present? %>
+              <p class="line-clamp-2 text-xs leading-relaxed text-muted-foreground"><%= dependent.notes %></p>
+            <% else %>
+              <p class="text-xs leading-relaxed text-muted-foreground">Open this profile to manage documents, AI context, and care team access.</p>
+            <% end %>
+          <% end %>
+        <% end %>
+      </section>
+    <% else %>
+      <section class="rounded-2xl border border-border/50 bg-white p-8">
+        <div class="mx-auto max-w-xl text-center">
+          <div class="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl border border-primary/10 bg-primary/5">
+            <%= pb_icon("user-circle", class_name: "h-5 w-5 text-primary/60") %>
+          </div>
+          <h2 class="text-base font-semibold text-foreground">Add the first dependent</h2>
+          <p class="mt-2 text-sm leading-relaxed text-muted-foreground">Documents, care team access, and AI assistant context will be organized around dependents.</p>
+          <%= link_to "Add Dependent", new_dependent_path, class: "mt-5 inline-flex rounded-full bg-primary px-5 py-2 text-xs font-medium text-white transition-colors hover:bg-primary/90" %>
+        </div>
+      </section>
+    <% end %>
+
+    <section class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <% [["Documents", @documents.count, "file-text"], ["Processed", @documents.count(&:processed?), "sparkles"], ["Dependents", @dependents.count, "users"], ["AI Search", "Ready", "brain"]].each do |label, value, icon| %>
+        <article class="rounded-2xl border border-border/50 bg-muted/40 p-5">
+          <div class="mb-3 flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10">
+            <%= pb_icon(icon, class_name: "h-4 w-4 text-primary") %>
+          </div>
+          <p class="text-xl font-bold text-primary"><%= value %></p>
+          <p class="mt-0.5 text-xs text-muted-foreground"><%= label %></p>
+        </article>
+      <% end %>
+    </section>
+  </div>
+<% end %>

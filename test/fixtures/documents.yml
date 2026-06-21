@@ -1,8 +1,10 @@
 advance_directive:
   account: greenfield
+  dependent: emma
   user: family_admin
   title: Advance Directive
   description: Planning document
+  category: general
   status: uploaded
   original_filename: advance-directive.txt
   content_type: text/plain
@@ -10,9 +12,11 @@ advance_directive:
 
 outside_account:
   account: other
+  dependent: other_dependent
   user: other_user
   title: Outside Account Document
   description: Should not be visible to the greenfield account
+  category: general
   status: uploaded
   original_filename: outside.txt
   content_type: text/plain

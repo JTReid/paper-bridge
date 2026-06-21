@@ -6,10 +6,11 @@ module Documents
 
     DEFAULT_LIMIT = 10
 
-    def initialize(account:, query_embedding:, access_profile:, limit: DEFAULT_LIMIT)
+    def initialize(account:, query_embedding:, access_profile:, dependent: nil, limit: DEFAULT_LIMIT)
       @account = account
       @query_embedding = query_embedding
       @access_profile = access_profile
+      @dependent = dependent
       @limit = limit.to_i.clamp(1, 50)
     end
 
@@ -23,15 +24,17 @@ module Documents
 
     private
 
-      attr_reader :account, :query_embedding, :access_profile, :limit
+      attr_reader :account, :query_embedding, :access_profile, :dependent, :limit
 
       def relation
-        DocumentEmbedding
-          .joins(:document_chunk)
+        scope = DocumentEmbedding
+          .joins(document_chunk: :document)
           .where(document_chunks: { account_id: account.id, label: allowed_labels })
           .includes(document_chunk: [ :document, :document_page ])
           .nearest_neighbors(:embedding, query_embedding, distance: DocumentEmbedding::DISTANCE_METRIC)
-          .limit(limit)
+
+        scope = scope.where(documents: { dependent_id: dependent.id }) if dependent
+        scope.limit(limit)
       end
 
       def allowed_labels

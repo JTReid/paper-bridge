@@ -1,0 +1,136 @@
+<% content_for :title, "AI Assistant | PaperBridge" %>
+
+<%
+  guided_prompts = [
+    "What are the most important updates across these documents?",
+    "What supports or services are mentioned in the records?",
+    "What progress has been documented recently?",
+    "What should I ask about at the next meeting?",
+    "What information appears to be missing?",
+    "Summarize the latest educational evidence."
+  ]
+%>
+
+<%= app_shell(active: :ai_assistant, dependent: @dependent) do %>
+  <div class="space-y-6">
+    <header>
+      <p class="mb-1 text-xs font-medium uppercase tracking-widest text-accent">Advocacy Copilot</p>
+      <h1 class="text-2xl font-bold tracking-tight text-foreground md:text-3xl">AI Assistant</h1>
+      <p class="mt-1 text-sm text-muted-foreground">
+        Ask questions across <%= @dependent ? "#{@dependent.name}'s" : "this family workspace's" %> documents and care records.
+      </p>
+    </header>
+
+    <section class="space-y-2">
+      <p class="text-xs font-medium uppercase tracking-wider text-muted-foreground">Suggested questions</p>
+      <div class="flex flex-wrap gap-2">
+        <% guided_prompts.each do |question| %>
+          <%= link_to question, dependent_ai_assistant_path(@dependent, q: question), class: "rounded-full border border-primary/20 bg-primary/5 px-3 py-1.5 text-left text-xs text-primary transition-colors hover:bg-primary/10" %>
+        <% end %>
+      </div>
+    </section>
+
+    <section class="space-y-4 rounded-2xl border border-border/50 bg-white p-6">
+      <%= form_with url: dependent_ai_assistant_path(@dependent), method: :get, class: "space-y-4" do |form| %>
+        <%= form.text_area :q, value: @query, placeholder: "Ask a question about documents, care progress, or next steps...", class: "min-h-[110px] w-full resize-none rounded-xl border border-border bg-white px-3 py-3 text-sm text-foreground outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/10" %>
+        <div class="flex justify-end">
+          <%= button_tag type: :submit, class: "inline-flex h-9 items-center justify-center rounded-full bg-primary px-4 text-xs font-medium text-white transition-colors hover:bg-primary/90 disabled:opacity-50", disabled: @query.blank? do %>
+            <%= pb_icon("send", class_name: "mr-2 h-3.5 w-3.5") %>
+            Ask
+          <% end %>
+        </div>
+      <% end %>
+    </section>
+
+    <% if @search_error.present? %>
+      <section class="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-900">
+        <p class="font-semibold">AI search failed</p>
+        <p class="mt-1"><%= @search_error %></p>
+      </section>
+    <% end %>
+
+    <% if @query.present? %>
+      <% if @answer.present? %>
+        <section class="rounded-2xl border border-primary/10 bg-white p-6">
+          <div class="mb-4 flex items-center justify-between gap-4">
+            <div class="flex items-center gap-2">
+              <%= pb_icon("brain", class_name: "h-4 w-4 text-primary") %>
+              <span class="text-sm font-semibold text-primary">AI Response</span>
+            </div>
+            <% if @pipeline_run %>
+              <span class="text-[10px] font-medium text-muted-foreground">Run #<%= @pipeline_run.id %></span>
+            <% end %>
+          </div>
+          <div class="text-sm leading-relaxed text-foreground">
+            <%= simple_format(@answer[:answer]) %>
+          </div>
+          <p class="mt-4 text-[10px] italic text-muted-foreground">This is for informational purposes only and does not constitute professional advice.</p>
+        </section>
+
+        <% if Array(@answer[:citations]).any? %>
+          <section class="space-y-3">
+            <div>
+              <h2 class="text-base font-bold text-primary">Citations</h2>
+              <p class="mt-1 text-sm text-muted-foreground">Evidence used to compose this answer.</p>
+            </div>
+            <div class="grid grid-cols-1 gap-3 lg:grid-cols-2">
+              <% Array(@answer[:citations]).each do |citation| %>
+                <article class="rounded-2xl border border-border/50 bg-white p-4">
+                  <p class="text-sm font-semibold text-foreground"><%= citation[:document_title] %>, page <%= citation[:page_number] %></p>
+                  <p class="mt-1 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Chunk <%= citation[:chunk_id] %></p>
+                  <% if citation[:quote].present? %>
+                    <p class="mt-3 text-sm leading-relaxed text-muted-foreground"><%= citation[:quote] %></p>
+                  <% end %>
+                </article>
+              <% end %>
+            </div>
+          </section>
+        <% end %>
+
+        <% if Array(@answer[:limitations]).any? %>
+          <section class="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+            <h2 class="font-semibold">Limitations</h2>
+            <ul class="mt-2 list-disc space-y-1 pl-5">
+              <% Array(@answer[:limitations]).each do |limitation| %>
+                <li><%= limitation %></li>
+              <% end %>
+            </ul>
+          </section>
+        <% end %>
+      <% elsif @results.any? %>
+        <section class="rounded-2xl border border-border/50 bg-white p-6 text-sm text-muted-foreground">
+          Evidence was retrieved, but no answer was generated for this query.
+        </section>
+      <% else %>
+        <section class="rounded-2xl border border-dashed border-border bg-white px-4 py-10 text-center">
+          <p class="text-sm font-medium text-foreground">No matching evidence found.</p>
+          <p class="mt-1 text-sm text-muted-foreground">Try another query or upload documents with processed embeddings.</p>
+        </section>
+      <% end %>
+    <% else %>
+      <section class="grid grid-cols-1 gap-4 md:grid-cols-3">
+        <article class="rounded-2xl border border-border/50 bg-muted/40 p-5">
+          <div class="mb-3 flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10">
+            <%= pb_icon("search", class_name: "h-4 w-4 text-primary") %>
+          </div>
+          <h2 class="text-sm font-semibold text-foreground">Search with citations</h2>
+          <p class="mt-2 text-xs leading-relaxed text-muted-foreground">Answers are grounded in retrieved document chunks.</p>
+        </article>
+        <article class="rounded-2xl border border-border/50 bg-muted/40 p-5">
+          <div class="mb-3 flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10">
+            <%= pb_icon("file-text", class_name: "h-4 w-4 text-primary") %>
+          </div>
+          <h2 class="text-sm font-semibold text-foreground"><%= pluralize(@documents.count, "document") %> available</h2>
+          <p class="mt-2 text-xs leading-relaxed text-muted-foreground">Only documents available to your role are searched.</p>
+        </article>
+        <article class="rounded-2xl border border-border/50 bg-muted/40 p-5">
+          <div class="mb-3 flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10">
+            <%= pb_icon("shield", class_name: "h-4 w-4 text-primary") %>
+          </div>
+          <h2 class="text-sm font-semibold text-foreground">No guessing</h2>
+          <p class="mt-2 text-xs leading-relaxed text-muted-foreground">If the evidence is not present, the assistant should say so.</p>
+        </article>
+      </section>
+    <% end %>
+  </div>
+<% end %>

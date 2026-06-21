@@ -11,6 +11,7 @@ class DocumentTest < ActiveSupport::TestCase
   test "requires an attached file" do
     document = Document.new(
       account: accounts(:greenfield),
+      dependent: dependents(:emma),
       user: users(:family_admin),
       title: "Trust"
     )
@@ -33,7 +34,14 @@ class DocumentTest < ActiveSupport::TestCase
     document = build_document(account: accounts(:other))
 
     assert_not document.valid?
-    assert_includes document.errors[:account], "must match the uploading user"
+    assert_includes document.errors[:account], "must be manageable by the uploading user"
+  end
+
+  test "requires document account to match dependent account" do
+    document = build_document(dependent: dependents(:other_dependent))
+
+    assert_not document.valid?
+    assert_includes document.errors[:account], "must match the dependent"
   end
 
   test "queues processing after create commit" do
@@ -48,11 +56,13 @@ class DocumentTest < ActiveSupport::TestCase
 
   private
 
-    def build_document(account: accounts(:greenfield), user: users(:family_admin), title: "Trust")
+    def build_document(account: accounts(:greenfield), dependent: dependents(:emma), user: users(:family_admin), title: "Trust")
       Document.new(
         account: account,
+        dependent: dependent,
         user: user,
         title: title,
+        category: :general,
         file: {
           io: file_fixture("sample.txt").open,
           filename: "sample.txt",

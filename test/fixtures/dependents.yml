@@ -1,0 +1,11 @@
+emma:
+  account: greenfield
+  name: Emma Greenfield
+  date_of_birth: 2016-04-12
+  grade: 3rd Grade
+  school: Maplewood Elementary
+  notes: Benefits from structured support.
+
+other_dependent:
+  account: other
+  name: Other Dependent

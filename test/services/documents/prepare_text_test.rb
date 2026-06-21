@@ -23,8 +23,10 @@ class Documents::PrepareTextTest < ActiveSupport::TestCase
     def create_text_document
       Document.create!(
         account: accounts(:greenfield),
+        dependent: dependents(:emma),
         user: users(:family_admin),
         title: "Text Document",
+        category: :general,
         file: {
           io: StringIO.new("This text should be summarized."),
           filename: "text-document.txt",

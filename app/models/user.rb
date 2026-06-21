@@ -1,24 +1,31 @@
 class User < ApplicationRecord
-  attr_writer :account_name
-
-  belongs_to :account
+  has_many :account_memberships, dependent: :destroy
+  has_many :accounts, through: :account_memberships
+  has_many :care_team_memberships, dependent: :destroy
   has_many :documents, dependent: :restrict_with_error
-
-  enum :role, {
-    family_admin: "family_admin",
-    profile_user: "profile_user",
-    platform_admin: "platform_admin"
-  }
 
   # Include default devise modules. Others available are:
   # :confirmable, :lockable, :timeoutable, :trackable and :omniauthable
   devise :database_authenticatable, :registerable,
          :recoverable, :rememberable, :validatable
 
-  before_validation :build_account_for_registration, on: :create
+  after_create :create_registration_account_membership, if: :registration_account_requested?
+
+  def account_name=(value)
+    @account_name = value
+    @registration_account_requested = true
+  end
+
+  def account
+    accounts.order("account_memberships.created_at ASC").first
+  end
 
   def can_manage_family_unit?
-    family_admin? || platform_admin?
+    account_memberships.admin.exists?
+  end
+
+  def can_manage_account?(account)
+    account_memberships.admin.exists?(account: account)
   end
 
   def account_name
@@ -27,7 +34,18 @@ class User < ApplicationRecord
 
   private
 
-    def build_account_for_registration
-      self.account ||= Account.new(name: account_name)
+    def account_name_requested?
+      @registration_account_requested
+    end
+
+    def registration_account_requested?
+      @registration_account_requested
+    end
+
+    def create_registration_account_membership
+      return if account_memberships.exists?
+
+      account = Account.create!(name: account_name)
+      account_memberships.create!(account: account, role: :admin)
     end
 end

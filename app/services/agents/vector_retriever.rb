@@ -47,12 +47,22 @@ module Agents
           account: account,
           query_embedding: query_embedding,
           access_profile: access_profile,
+          dependent: dependent,
           limit: limit
         ).call
       end
 
       def account
         @account ||= locate_context_record!(:account_gid, Account)
+      end
+
+      def dependent
+        gid = data.dig(:context, :dependent_gid)
+        return if gid.blank?
+
+        GlobalID::Locator.locate(gid).tap do |record|
+          raise Agentic::Errors::ConfigurationError, "context[:dependent_gid] could not be resolved" unless record.is_a?(Dependent)
+        end
       end
 
       def query_embedding

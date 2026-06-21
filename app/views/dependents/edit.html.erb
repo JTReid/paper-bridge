@@ -1,0 +1,15 @@
+<% content_for :title, "Edit Dependent | PaperBridge" %>
+
+<%= app_shell(active: :dependents) do %>
+  <div class="mx-auto max-w-2xl space-y-6">
+    <header>
+      <%= link_to @dependent, class: "inline-flex items-center text-sm font-medium text-muted-foreground hover:text-foreground" do %>
+        <span aria-hidden="true" class="mr-2">&larr;</span>
+        Back to profile
+      <% end %>
+      <h1 class="mt-6 text-2xl font-bold tracking-tight text-foreground md:text-3xl">Edit Dependent</h1>
+    </header>
+
+    <%= render "form", dependent: @dependent %>
+  </div>
+<% end %>

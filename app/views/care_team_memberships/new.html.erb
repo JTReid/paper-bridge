@@ -1,0 +1,16 @@
+<% content_for :title, "Invite Care Team Member | PaperBridge" %>
+
+<%= app_shell(active: :care_team, dependent: @dependent) do %>
+  <div class="mx-auto max-w-2xl space-y-6">
+    <header>
+      <%= link_to dependent_care_team_memberships_path(@dependent), class: "inline-flex items-center text-sm font-medium text-muted-foreground hover:text-foreground" do %>
+        <span aria-hidden="true" class="mr-2">&larr;</span>
+        Back to care team
+      <% end %>
+      <h1 class="mt-6 text-2xl font-bold tracking-tight text-foreground md:text-3xl">Invite Care Team Member</h1>
+      <p class="mt-1 text-sm text-muted-foreground">Create a login identity and assign read-only access for <%= @dependent.name %>.</p>
+    </header>
+
+    <%= render "form", care_team_membership: @care_team_membership %>
+  </div>
+<% end %>
