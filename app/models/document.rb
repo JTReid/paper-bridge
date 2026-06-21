@@ -38,7 +38,7 @@ class Document < ApplicationRecord
   before_validation :default_title_from_file
   before_validation :cache_file_metadata
   after_create_commit :enqueue_processing_pipeline, if: :file_attached?
-  after_update_commit :broadcast_processing_update, if: :processing_broadcastable_change?
+  after_update_commit :broadcast_processing_update_for_change, if: :processing_broadcastable_change?
 
   validates :title, :status, :preparation_status, :category, presence: true
   validate :file_is_attached
@@ -92,6 +92,10 @@ class Document < ApplicationRecord
 
     def processing_target(prefix)
       ActionView::RecordIdentifier.dom_id(self, prefix)
+    end
+
+    def broadcast_processing_update_for_change
+      broadcast_processing_update(refresh_chunks: previous_changes.key?("status") && (processed? || failed?))
     end
 
     def processing_broadcastable_change?

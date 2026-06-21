@@ -18,9 +18,6 @@ class DocumentChunk < ApplicationRecord
   has_many :document_embeddings, dependent: :destroy
   has_many :timeline_events, dependent: :destroy
 
-  after_create_commit :broadcast_document_processing_update
-  after_destroy_commit :broadcast_document_processing_update
-
   validates :content, :content_hash, :label, :chunk_index, presence: true
   validates :label, inclusion: { in: LABELS }
   validates :chunk_index, uniqueness: { scope: :document_id }
@@ -63,9 +60,5 @@ class DocumentChunk < ApplicationRecord
       return if document.blank? || document_page.blank? || document_page.document_id == document_id
 
       errors.add(:document_page, "must belong to the document")
-    end
-
-    def broadcast_document_processing_update
-      document&.broadcast_processing_update(refresh_chunks: true)
     end
 end

@@ -82,6 +82,12 @@ class DocumentsControllerTest < ActionDispatch::IntegrationTest
 
   test "shows persisted document chunks" do
     document = documents(:advance_directive)
+    document.file.attach(
+      io: file_fixture("sample.txt").open,
+      filename: document.original_filename,
+      content_type: document.content_type
+    )
+    document.update!(status: :processed, preparation_status: :prepared)
     sign_in users(:family_admin)
 
     get document_path(document)
@@ -92,6 +98,9 @@ class DocumentsControllerTest < ActionDispatch::IntegrationTest
     assert_includes response.body, "Legal chunk 1"
     assert_includes response.body, "Embedded page text"
     assert_includes response.body, "Starts on page 1"
+    assert_not_includes response.body, "No chunks have been created yet."
+    assert_includes response.body, "Chunks ready"
+    assert_includes response.body, "Pages ready"
     assert_includes response.body, "turbo-cable-stream-source"
     assert_includes response.body, ActionView::RecordIdentifier.dom_id(document, :processing_status)
     assert_includes response.body, ActionView::RecordIdentifier.dom_id(document, :processing_stats)

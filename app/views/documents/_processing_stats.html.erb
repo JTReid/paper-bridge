@@ -1,21 +1,12 @@
 <div id="<%= dom_id(document, :processing_stats) %>" class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-  <div class="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
-    <p class="text-xs font-semibold uppercase text-slate-500">Chunks</p>
-    <p class="mt-2 text-2xl font-semibold text-slate-950"><%= document.document_chunks.count %></p>
-  </div>
+  <% document_processing_stats(document).each do |stat| %>
+    <div class="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+      <div class="flex min-h-5 items-center justify-between gap-3">
+        <p class="text-xs font-semibold uppercase text-slate-500"><%= stat[:label] %></p>
+        <%= processing_stat_indicator(stat[:state], label: stat[:label]) %>
+      </div>
 
-  <div class="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
-    <p class="text-xs font-semibold uppercase text-slate-500">Embeddings</p>
-    <p class="mt-2 text-2xl font-semibold text-slate-950"><%= document.document_embeddings.count %></p>
-  </div>
-
-  <div class="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
-    <p class="text-xs font-semibold uppercase text-slate-500">Pages</p>
-    <p class="mt-2 text-2xl font-semibold text-slate-950"><%= document.document_pages.count %></p>
-  </div>
-
-  <div class="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
-    <p class="text-xs font-semibold uppercase text-slate-500">Size</p>
-    <p class="mt-2 text-2xl font-semibold text-slate-950"><%= document.byte_size ? number_to_human_size(document.byte_size) : "Unknown" %></p>
-  </div>
+      <p class="mt-2 text-2xl font-semibold text-slate-950"><%= stat[:value] %></p>
+    </div>
+  <% end %>
 </div>
