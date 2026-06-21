@@ -19,6 +19,7 @@ class AiAssistantControllerTest < ActionDispatch::IntegrationTest
     assert_includes response.body, "AI Assistant"
     assert_includes response.body, "Suggested questions"
     assert_includes response.body, "No guessing"
+    assert_no_match(/<button[^>]+disabled/, response.body)
   end
 
   test "renders assistant inside selected dependent workspace" do
