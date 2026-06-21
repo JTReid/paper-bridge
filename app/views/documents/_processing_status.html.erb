@@ -1,0 +1,17 @@
+<% status_styles = {
+  "uploaded" => "border-slate-200 bg-slate-100 text-slate-700",
+  "queued" => "border-amber-200 bg-amber-50 text-amber-800",
+  "processing" => "border-sky-200 bg-sky-50 text-sky-800",
+  "processed" => "border-emerald-200 bg-emerald-50 text-emerald-800",
+  "failed" => "border-red-200 bg-red-50 text-red-800"
+} %>
+
+<div id="<%= dom_id(document, :processing_status) %>" class="mb-3 flex flex-wrap items-center gap-3">
+  <span class="inline-flex rounded-md border px-2.5 py-1 text-xs font-semibold uppercase <%= status_styles.fetch(document.status, status_styles["uploaded"]) %>">
+    <%= document.status.humanize %>
+  </span>
+
+  <% if document.file.attached? %>
+    <%= link_to "Download file", rails_blob_path(document.file, disposition: "attachment"), class: "text-sm font-medium text-emerald-700 hover:text-emerald-900" %>
+  <% end %>
+</div>

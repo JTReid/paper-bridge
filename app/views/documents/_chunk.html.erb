@@ -1,0 +1,18 @@
+<article class="rounded-lg border border-slate-200 bg-white shadow-sm">
+  <header class="flex flex-col gap-3 border-b border-slate-100 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+    <div>
+      <h3 class="text-sm font-semibold text-slate-950">
+        <%= chunk.label.humanize %> chunk <%= chunk.chunk_index %>
+      </h3>
+      <p class="mt-1 text-xs font-medium uppercase text-slate-500">
+        Starts on page <%= chunk.document_page.page_number %>
+      </p>
+    </div>
+
+    <span class="inline-flex w-fit rounded-md bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700">
+      <%= chunk.content.length %> chars
+    </span>
+  </header>
+
+  <pre class="max-h-96 overflow-auto whitespace-pre-wrap break-words px-4 py-4 text-sm leading-6 text-slate-800"><%= chunk.content %></pre>
+</article>

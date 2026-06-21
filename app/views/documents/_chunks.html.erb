@@ -1,0 +1,14 @@
+<% chunks = local_assigns.fetch(:chunks) { document.document_chunks.includes(:document_page) } %>
+
+<div id="<%= dom_id(document, :chunks) %>">
+  <% if chunks.any? %>
+    <div class="space-y-4">
+      <%= render partial: "documents/chunk", collection: chunks, as: :chunk %>
+    </div>
+  <% else %>
+    <div class="rounded-lg border border-dashed border-slate-300 bg-white px-4 py-10 text-center">
+      <p class="text-sm font-medium text-slate-700">No chunks have been created yet.</p>
+      <p class="mt-1 text-sm text-slate-500">The ingestion job may still be running.</p>
+    </div>
+  <% end %>
+</div>

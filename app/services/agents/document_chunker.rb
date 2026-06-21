@@ -10,6 +10,7 @@ module Agents
 
     def execute
       document.document_chunks.destroy_all
+      broadcast_chunk_progress
 
       created_chunks = document_pages.flat_map do |page|
         create_chunks_for_page(page, chunk_page(page))
@@ -200,9 +201,13 @@ module Agents
       end
 
       def create_chunks_for_page(page, parsed_response)
-        Array(parsed_response[:chunks]).filter_map do |chunk_data|
+        created_chunks = Array(parsed_response[:chunks]).filter_map do |chunk_data|
           create_chunk(page, chunk_data)
         end
+
+        broadcast_chunk_progress if created_chunks.any?
+
+        created_chunks
       end
 
       def create_chunk(page, chunk_data)
@@ -232,6 +237,11 @@ module Agents
       def next_chunk_index
         @next_chunk_index ||= 0
         @next_chunk_index += 1
+      end
+
+      def broadcast_chunk_progress
+        document.broadcast_processing_stats_update
+        document.broadcast_chunks_update
       end
   end
 end
