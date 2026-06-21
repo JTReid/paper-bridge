@@ -92,6 +92,11 @@ class DocumentsControllerTest < ActionDispatch::IntegrationTest
     assert_includes response.body, "Legal chunk 1"
     assert_includes response.body, "Embedded page text"
     assert_includes response.body, "Starts on page 1"
+    assert_includes response.body, "turbo-cable-stream-source"
+    assert_includes response.body, ActionView::RecordIdentifier.dom_id(document, :processing_status)
+    assert_includes response.body, ActionView::RecordIdentifier.dom_id(document, :processing_stats)
+    assert_includes response.body, ActionView::RecordIdentifier.dom_id(document, :chunks)
+    assert_includes response.body, ActionView::RecordIdentifier.dom_id(document, :file_details)
   end
 
   test "deletes document and returns to dependent documents" do

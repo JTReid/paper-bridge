@@ -38,13 +38,69 @@ class Document < ApplicationRecord
   before_validation :default_title_from_file
   before_validation :cache_file_metadata
   after_create_commit :enqueue_processing_pipeline, if: :file_attached?
+  after_update_commit :broadcast_processing_update, if: :processing_broadcastable_change?
 
   validates :title, :status, :preparation_status, :category, presence: true
   validate :file_is_attached
   validate :account_matches_user
   validate :account_matches_dependent
 
+  def broadcast_processing_update(refresh_chunks: false)
+    broadcast_processing_status_update
+    broadcast_processing_stats_update
+    broadcast_file_details_update
+    broadcast_chunks_update if refresh_chunks
+  end
+
+  def broadcast_processing_stats_update
+    broadcast_replace_to(
+      self,
+      target: processing_target(:processing_stats),
+      partial: "documents/processing_stats",
+      locals: { document: self }
+    )
+  end
+
+  def broadcast_chunks_update
+    broadcast_replace_to(
+      self,
+      target: processing_target(:chunks),
+      partial: "documents/chunks",
+      locals: { document: self }
+    )
+  end
+
   private
+
+    def broadcast_processing_status_update
+      broadcast_replace_to(
+        self,
+        target: processing_target(:processing_status),
+        partial: "documents/processing_status",
+        locals: { document: self }
+      )
+    end
+
+    def broadcast_file_details_update
+      broadcast_replace_to(
+        self,
+        target: processing_target(:file_details),
+        partial: "documents/file_details",
+        locals: { document: self }
+      )
+    end
+
+    def processing_target(prefix)
+      ActionView::RecordIdentifier.dom_id(self, prefix)
+    end
+
+    def processing_broadcastable_change?
+      previous_changes.key?("status") ||
+        previous_changes.key?("preparation_status") ||
+        previous_changes.key?("preparation_error") ||
+        previous_changes.key?("summary") ||
+        previous_changes.key?("summarized_at")
+    end
 
     def default_title_from_file
       return if title.present? || !file.attached?
