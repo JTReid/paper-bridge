@@ -79,6 +79,14 @@
     transform: translateY(0);
   }
 
+  :target .reveal--pending,
+  :target.reveal--pending {
+    opacity: 1;
+    transform: translateY(0);
+    transition: none;
+    will-change: auto;
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .reveal--pending {
       opacity: 1;
