@@ -8,6 +8,7 @@ class DocumentsController < ApplicationController
     @documents = scope.includes(:dependent, :document_chunks, file_attachment: :blob).order(created_at: :desc).to_a
     @processed_count = @documents.count(&:processed?)
     @processing_count = @documents.count { |document| document.queued? || document.processing? }
+    @share_recipient_options = share_recipient_options
   end
 
   def show
@@ -73,5 +74,17 @@ class DocumentsController < ApplicationController
 
     def document_update_params
       params.require(:document).permit(:title, :description, :category)
+    end
+
+    def share_recipient_options
+      scope = @dependent ? @dependent.care_team_memberships : current_account.care_team_memberships
+
+      scope.order(:name).filter_map do |membership|
+        email = membership.email.to_s.strip
+        next if email.blank?
+
+        name = membership.name.presence || membership.role.humanize
+        [ "#{name} (#{email})", email ]
+      end.uniq { |_label, email| email.downcase }
     end
 end

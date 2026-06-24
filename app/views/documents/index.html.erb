@@ -1,7 +1,7 @@
 <% content_for :title, "Documents | PaperBridge" %>
 
 <%= app_shell(active: :documents, dependent: @dependent) do %>
-  <div class="space-y-8">
+  <div class="space-y-8" data-controller="document-share">
     <header class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
       <div>
         <p class="mb-1 text-xs font-medium uppercase tracking-widest text-accent">Care Records</p>
@@ -46,60 +46,75 @@
     </section>
 
     <% if @documents.any? %>
-      <%= form_with url: share_events_path(dependent_id: @dependent&.id), scope: :share_event, class: "space-y-4" do |form| %>
-        <section class="rounded-2xl border border-border/60 bg-white p-5 shadow-sm">
-          <div class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_18rem]">
-            <div>
-              <h2 class="text-sm font-semibold text-foreground">Share Documents</h2>
-              <p class="mt-1 text-xs text-muted-foreground">Select one or more records below and send the original files by email.</p>
+      <section class="overflow-hidden rounded-2xl border border-border/60 bg-white shadow-sm">
+        <div class="divide-y divide-border/40">
+          <% @documents.each do |document| %>
+            <% label = document.document_chunks.first&.label || "general" %>
+            <% label_class = case label
+              when "medical" then "bg-red-50 text-red-600"
+              when "education" then "bg-blue-50 text-blue-700"
+              when "therapy" then "bg-green-50 text-green-700"
+              when "legal" then "bg-violet-50 text-violet-700"
+              when "financial" then "bg-amber-50 text-amber-700"
+              else "bg-muted text-muted-foreground"
+            end %>
+            <div class="group flex items-center gap-3 px-5 py-4 transition-colors hover:bg-muted/20">
+              <%= check_box_tag "document_selection[]", document.id, false, id: dom_id(document, :share_checkbox), class: "h-4 w-4 rounded border-border text-primary focus:ring-primary", aria: { label: "Select #{document.title} to share" }, data: { document_share_target: "checkbox", document_title: document.title } %>
+              <%= link_to document_path(document), class: "flex min-w-0 flex-1 items-center gap-4" do %>
+                <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-muted transition-colors group-hover:bg-primary/5">
+                  <%= pb_icon("file-text", class_name: "h-4 w-4 text-muted-foreground") %>
+                </div>
+                <div class="min-w-0 flex-1">
+                  <p class="truncate text-sm font-semibold text-foreground"><%= document.title %></p>
+                  <p class="mt-0.5 truncate text-xs text-muted-foreground">
+                    <%= document.original_filename.presence || "Attached file" %>
+                    <span class="ml-2 text-muted-foreground/70">&middot; <%= document.dependent.name %></span>
+                    <span class="ml-2 text-muted-foreground/70">&middot; <%= l document.created_at, format: :short %></span>
+                  </p>
+                </div>
+              <% end %>
+              <span class="hidden rounded-full border-0 px-2 py-0.5 text-[10px] font-medium sm:inline-flex <%= label_class %>">
+                <%= document.category.humanize %>
+              </span>
+              <span class="rounded-full border-0 px-2 py-0.5 text-[10px] font-medium <%= document.processed? ? "bg-green-50 text-green-700" : document.failed? ? "bg-red-50 text-red-500" : "bg-blue-50 text-blue-600" %>">
+                <%= document.status.humanize %>
+              </span>
+              <%= button_tag type: "button", class: "flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-primary/5 hover:text-primary focus:outline-none focus:ring-2 focus:ring-primary/20", aria: { label: "Share #{document.title}" }, data: { action: "document-share#open", document_share_document_id_param: document.id, document_share_document_title_param: document.title } do %>
+                <%= pb_icon("share-2", class_name: "h-4 w-4") %>
+              <% end %>
             </div>
-            <div class="space-y-3">
-              <%= form.email_field :recipient_email, placeholder: "Recipient email", required: true, class: "h-10 w-full rounded-xl border border-border bg-white px-3 text-sm text-foreground outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/10" %>
-              <%= form.text_field :subject, placeholder: "Subject (optional)", class: "h-10 w-full rounded-xl border border-border bg-white px-3 text-sm text-foreground outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/10" %>
-              <%= form.text_area :message, rows: 3, placeholder: "Message (optional)", class: "w-full rounded-xl border border-border bg-white px-3 py-2 text-sm text-foreground outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/10" %>
-              <%= form.submit "Share Selected", class: "inline-flex h-10 w-full items-center justify-center rounded-full bg-primary px-5 text-sm font-medium text-white shadow-sm transition-colors hover:bg-primary/90" %>
-            </div>
-          </div>
-        </section>
+          <% end %>
+        </div>
+      </section>
 
-        <section class="overflow-hidden rounded-2xl border border-border/60 bg-white shadow-sm">
-          <div class="divide-y divide-border/40">
-            <% @documents.each do |document| %>
-              <% label = document.document_chunks.first&.label || "general" %>
-              <% label_class = case label
-                when "medical" then "bg-red-50 text-red-600"
-                when "education" then "bg-blue-50 text-blue-700"
-                when "therapy" then "bg-green-50 text-green-700"
-                when "legal" then "bg-violet-50 text-violet-700"
-                when "financial" then "bg-amber-50 text-amber-700"
-                else "bg-muted text-muted-foreground"
-              end %>
-              <div class="group flex items-center gap-4 px-5 py-4 transition-colors hover:bg-muted/20">
-                <%= check_box_tag "share_event[document_ids][]", document.id, false, id: dom_id(document, :share_checkbox), class: "h-4 w-4 rounded border-border text-primary focus:ring-primary", aria: { label: "Share #{document.title}" } %>
-                <%= link_to document_path(document), class: "flex min-w-0 flex-1 items-center gap-4" do %>
-                  <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-muted transition-colors group-hover:bg-primary/5">
-                    <%= pb_icon("file-text", class_name: "h-4 w-4 text-muted-foreground") %>
-                  </div>
-                  <div class="min-w-0 flex-1">
-                    <p class="truncate text-sm font-semibold text-foreground"><%= document.title %></p>
-                    <p class="mt-0.5 truncate text-xs text-muted-foreground">
-                      <%= document.original_filename.presence || "Attached file" %>
-                      <span class="ml-2 text-muted-foreground/70">&middot; <%= document.dependent.name %></span>
-                      <span class="ml-2 text-muted-foreground/70">&middot; <%= l document.created_at, format: :short %></span>
-                    </p>
-                  </div>
-                <% end %>
-                <span class="hidden rounded-full border-0 px-2 py-0.5 text-[10px] font-medium sm:inline-flex <%= label_class %>">
-                  <%= document.category.humanize %>
-                </span>
-                <span class="rounded-full border-0 px-2 py-0.5 text-[10px] font-medium <%= document.processed? ? "bg-green-50 text-green-700" : document.failed? ? "bg-red-50 text-red-500" : "bg-blue-50 text-blue-600" %>">
-                  <%= document.status.humanize %>
-                </span>
+      <div class="fixed inset-0 z-50 hidden overflow-y-auto bg-slate-950/35 px-4 py-6 backdrop-blur-sm sm:px-6" data-document-share-target="modal" data-action="click->document-share#closeOnBackdrop keydown@window->document-share#closeWithKeyboard" aria-hidden="true">
+        <div class="mx-auto flex min-h-full w-full max-w-3xl items-center" data-document-share-backdrop="true">
+          <%= form_with url: share_events_path(dependent_id: @dependent&.id), scope: :share_event, class: "w-full rounded-2xl border border-border/60 bg-white p-6 shadow-2xl shadow-slate-950/20 sm:p-7", role: "dialog", aria: { modal: "true", labelledby: "share-documents-title" }, data: { action: "click->document-share#keepOpen" } do |form| %>
+            <div data-document-share-target="selectedFields"></div>
+            <div class="mb-3 flex justify-end">
+              <button type="button" class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-border/70 bg-white text-slate-600 shadow-sm transition-colors hover:bg-muted hover:text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20" data-action="document-share#close" aria-label="Close share dialog">
+                <%= pb_icon("x", class_name: "h-4 w-4") %>
+              </button>
+            </div>
+            <div class="grid gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
+              <div>
+                <h2 id="share-documents-title" class="text-sm font-semibold text-foreground">Share Documents</h2>
+                <p class="mt-1 text-sm text-muted-foreground">Select one or more records below and send the original files by email.</p>
+                <p class="mt-2 text-xs font-medium text-primary" data-document-share-target="selectedSummary"></p>
               </div>
-            <% end %>
-          </div>
-        </section>
-      <% end %>
+              <div class="space-y-3">
+                <% if @share_recipient_options.any? %>
+                  <%= select_tag "care_team_recipient", options_for_select(@share_recipient_options), include_blank: "Choose care team email", class: "h-11 w-full rounded-xl border border-border bg-white px-3 text-sm text-foreground outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/10", data: { action: "change->document-share#selectRecipient" } %>
+                <% end %>
+                <%= form.email_field :recipient_email, placeholder: "Recipient email", required: true, class: "h-11 w-full rounded-xl border border-border bg-white px-3 text-sm text-foreground outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/10", data: { document_share_target: "recipientEmail" } %>
+                <%= form.text_field :subject, placeholder: "Subject (optional)", class: "h-11 w-full rounded-xl border border-border bg-white px-3 text-sm text-foreground outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/10" %>
+                <%= form.text_area :message, rows: 4, placeholder: "Message (optional)", class: "w-full resize-none rounded-xl border border-border bg-white px-3 py-2 text-sm text-foreground outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/10" %>
+                <%= form.submit "Share Selected", class: "inline-flex h-11 w-full items-center justify-center rounded-full bg-primary px-5 text-sm font-medium text-white shadow-sm transition-colors hover:bg-primary/90" %>
+              </div>
+            </div>
+          <% end %>
+        </div>
+      </div>
     <% else %>
       <section class="rounded-2xl border border-border/60 bg-white p-8 shadow-sm">
         <div class="mx-auto max-w-xl text-center">
