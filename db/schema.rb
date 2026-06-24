@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_06_20_010100) do
+ActiveRecord::Schema[8.1].define(version: 2026_06_24_010107) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "vector"
@@ -247,6 +247,34 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_20_010100) do
     t.index ["agent_type_id"], name: "index_prompts_on_agent_type_id"
   end
 
+  create_table "share_events", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.datetime "created_at", null: false
+    t.text "error_message"
+    t.text "message"
+    t.string "recipient_email", null: false
+    t.bigint "sender_id", null: false
+    t.datetime "sent_at"
+    t.string "status", default: "pending", null: false
+    t.string "subject"
+    t.datetime "updated_at", null: false
+    t.index ["account_id", "created_at"], name: "index_share_events_on_account_id_and_created_at"
+    t.index ["account_id"], name: "index_share_events_on_account_id"
+    t.index ["sender_id", "created_at"], name: "index_share_events_on_sender_id_and_created_at"
+    t.index ["sender_id"], name: "index_share_events_on_sender_id"
+    t.index ["status", "created_at"], name: "index_share_events_on_status_and_created_at"
+  end
+
+  create_table "shared_documents", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.bigint "document_id", null: false
+    t.bigint "share_event_id", null: false
+    t.datetime "updated_at", null: false
+    t.index ["document_id"], name: "index_shared_documents_on_document_id"
+    t.index ["share_event_id", "document_id"], name: "index_shared_documents_on_share_event_id_and_document_id", unique: true
+    t.index ["share_event_id"], name: "index_shared_documents_on_share_event_id"
+  end
+
   create_table "timeline_events", force: :cascade do |t|
     t.string "content_hash", null: false
     t.datetime "created_at", null: false
@@ -304,5 +332,9 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_20_010100) do
   add_foreign_key "pipeline_logs", "pipeline_runs"
   add_foreign_key "pipeline_runs", "users"
   add_foreign_key "prompts", "agent_types"
+  add_foreign_key "share_events", "accounts"
+  add_foreign_key "share_events", "users", column: "sender_id"
+  add_foreign_key "shared_documents", "documents"
+  add_foreign_key "shared_documents", "share_events"
   add_foreign_key "timeline_events", "document_chunks"
 end

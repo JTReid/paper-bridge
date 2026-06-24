@@ -23,6 +23,8 @@ class Document < ApplicationRecord
   has_many :document_embeddings, through: :document_chunks
   has_many :timeline_events, through: :document_chunks
   has_many :pipeline_runs, as: :subject, dependent: :destroy
+  has_many :shared_documents, dependent: :destroy
+  has_many :share_events, through: :shared_documents
 
   has_one_attached :file
 

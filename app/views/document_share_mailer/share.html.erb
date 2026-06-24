@@ -1,0 +1,22 @@
+<p><%= @share_event.sender.name.presence || @share_event.sender.email %> shared <%= pluralize(@documents.count, "PaperBridge document") %> with you.</p>
+
+<% if @share_event.message.present? %>
+  <%= simple_format(@share_event.message) %>
+<% end %>
+
+<p>Original files are attached to this email.</p>
+
+<ul>
+  <% @documents.each do |document| %>
+    <li>
+      <strong><%= document.title %></strong>
+      <% if document.category.present? %>
+        (<%= document.category.humanize %>)
+      <% end %>
+      <% if document.summary.to_h["summary"].present? %>
+        <br>
+        <%= truncate(document.summary.to_h["summary"], length: 240) %>
+      <% end %>
+    </li>
+  <% end %>
+</ul>

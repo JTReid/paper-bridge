@@ -9,6 +9,7 @@ Rails.application.routes.draw do
   resources :dependents, only: [] do
     resources :care_team_memberships, path: "care-team", except: :show
   end
+  resources :share_events, only: :create
   resources :documents, only: %i[show edit update destroy]
 
   # Define your application routes per the DSL in https://guides.rubyonrails.org/routing.html

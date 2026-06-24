@@ -19,6 +19,9 @@ class DocumentsControllerTest < ActionDispatch::IntegrationTest
     assert_includes response.body, "Care Records"
     assert_includes response.body, dependent_ai_assistant_path(dependent)
     assert_includes response.body, documents(:advance_directive).title
+    assert_includes response.body, "Share Documents"
+    assert_includes response.body, "Share Selected"
+    assert_includes response.body, ActionView::RecordIdentifier.dom_id(documents(:advance_directive), :share_checkbox)
   end
 
   test "renders upload form inside selected dependent workspace" do

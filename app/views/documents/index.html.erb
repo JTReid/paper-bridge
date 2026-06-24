@@ -46,40 +46,60 @@
     </section>
 
     <% if @documents.any? %>
-      <section class="overflow-hidden rounded-2xl border border-border/60 bg-white shadow-sm">
-        <div class="divide-y divide-border/40">
-          <% @documents.each do |document| %>
-            <% label = document.document_chunks.first&.label || "general" %>
-            <% label_class = case label
-              when "medical" then "bg-red-50 text-red-600"
-              when "education" then "bg-blue-50 text-blue-700"
-              when "therapy" then "bg-green-50 text-green-700"
-              when "legal" then "bg-violet-50 text-violet-700"
-              when "financial" then "bg-amber-50 text-amber-700"
-              else "bg-muted text-muted-foreground"
-            end %>
-            <%= link_to document_path(document), class: "group flex items-center gap-4 px-5 py-4 transition-colors hover:bg-muted/20" do %>
-              <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-muted transition-colors group-hover:bg-primary/5">
-                <%= pb_icon("file-text", class_name: "h-4 w-4 text-muted-foreground") %>
+      <%= form_with url: share_events_path(dependent_id: @dependent&.id), scope: :share_event, class: "space-y-4" do |form| %>
+        <section class="rounded-2xl border border-border/60 bg-white p-5 shadow-sm">
+          <div class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_18rem]">
+            <div>
+              <h2 class="text-sm font-semibold text-foreground">Share Documents</h2>
+              <p class="mt-1 text-xs text-muted-foreground">Select one or more records below and send the original files by email.</p>
+            </div>
+            <div class="space-y-3">
+              <%= form.email_field :recipient_email, placeholder: "Recipient email", required: true, class: "h-10 w-full rounded-xl border border-border bg-white px-3 text-sm text-foreground outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/10" %>
+              <%= form.text_field :subject, placeholder: "Subject (optional)", class: "h-10 w-full rounded-xl border border-border bg-white px-3 text-sm text-foreground outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/10" %>
+              <%= form.text_area :message, rows: 3, placeholder: "Message (optional)", class: "w-full rounded-xl border border-border bg-white px-3 py-2 text-sm text-foreground outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/10" %>
+              <%= form.submit "Share Selected", class: "inline-flex h-10 w-full items-center justify-center rounded-full bg-primary px-5 text-sm font-medium text-white shadow-sm transition-colors hover:bg-primary/90" %>
+            </div>
+          </div>
+        </section>
+
+        <section class="overflow-hidden rounded-2xl border border-border/60 bg-white shadow-sm">
+          <div class="divide-y divide-border/40">
+            <% @documents.each do |document| %>
+              <% label = document.document_chunks.first&.label || "general" %>
+              <% label_class = case label
+                when "medical" then "bg-red-50 text-red-600"
+                when "education" then "bg-blue-50 text-blue-700"
+                when "therapy" then "bg-green-50 text-green-700"
+                when "legal" then "bg-violet-50 text-violet-700"
+                when "financial" then "bg-amber-50 text-amber-700"
+                else "bg-muted text-muted-foreground"
+              end %>
+              <div class="group flex items-center gap-4 px-5 py-4 transition-colors hover:bg-muted/20">
+                <%= check_box_tag "share_event[document_ids][]", document.id, false, id: dom_id(document, :share_checkbox), class: "h-4 w-4 rounded border-border text-primary focus:ring-primary", aria: { label: "Share #{document.title}" } %>
+                <%= link_to document_path(document), class: "flex min-w-0 flex-1 items-center gap-4" do %>
+                  <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-muted transition-colors group-hover:bg-primary/5">
+                    <%= pb_icon("file-text", class_name: "h-4 w-4 text-muted-foreground") %>
+                  </div>
+                  <div class="min-w-0 flex-1">
+                    <p class="truncate text-sm font-semibold text-foreground"><%= document.title %></p>
+                    <p class="mt-0.5 truncate text-xs text-muted-foreground">
+                      <%= document.original_filename.presence || "Attached file" %>
+                      <span class="ml-2 text-muted-foreground/70">&middot; <%= document.dependent.name %></span>
+                      <span class="ml-2 text-muted-foreground/70">&middot; <%= l document.created_at, format: :short %></span>
+                    </p>
+                  </div>
+                <% end %>
+                <span class="hidden rounded-full border-0 px-2 py-0.5 text-[10px] font-medium sm:inline-flex <%= label_class %>">
+                  <%= document.category.humanize %>
+                </span>
+                <span class="rounded-full border-0 px-2 py-0.5 text-[10px] font-medium <%= document.processed? ? "bg-green-50 text-green-700" : document.failed? ? "bg-red-50 text-red-500" : "bg-blue-50 text-blue-600" %>">
+                  <%= document.status.humanize %>
+                </span>
               </div>
-              <div class="min-w-0 flex-1">
-                <p class="truncate text-sm font-semibold text-foreground"><%= document.title %></p>
-                <p class="mt-0.5 truncate text-xs text-muted-foreground">
-                  <%= document.original_filename.presence || "Attached file" %>
-                  <span class="ml-2 text-muted-foreground/70">&middot; <%= document.dependent.name %></span>
-                  <span class="ml-2 text-muted-foreground/70">&middot; <%= l document.created_at, format: :short %></span>
-                </p>
-              </div>
-              <span class="hidden rounded-full border-0 px-2 py-0.5 text-[10px] font-medium sm:inline-flex <%= label_class %>">
-                <%= document.category.humanize %>
-              </span>
-              <span class="rounded-full border-0 px-2 py-0.5 text-[10px] font-medium <%= document.processed? ? "bg-green-50 text-green-700" : document.failed? ? "bg-red-50 text-red-500" : "bg-blue-50 text-blue-600" %>">
-                <%= document.status.humanize %>
-              </span>
             <% end %>
-          <% end %>
-        </div>
-      </section>
+          </div>
+        </section>
+      <% end %>
     <% else %>
       <section class="rounded-2xl border border-border/60 bg-white p-8 shadow-sm">
         <div class="mx-auto max-w-xl text-center">

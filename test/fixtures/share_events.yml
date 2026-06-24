@@ -1,0 +1,20 @@
+# Read about fixtures at https://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
+
+one:
+  account: greenfield
+  sender: family_admin
+  recipient_email: teacher@example.test
+  subject: Shared documents
+  message: Please review.
+  status: sent
+  sent_at: 2026-06-23 20:01:03
+
+two:
+  account: other
+  sender: other_user
+  recipient_email: doctor@example.test
+  subject: Outside documents
+  message: Please review.
+  status: pending
+  sent_at:
+  error_message:
