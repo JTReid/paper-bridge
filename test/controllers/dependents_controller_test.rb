@@ -13,7 +13,7 @@ class DependentsControllerTest < ActionDispatch::IntegrationTest
     get dependents_path
 
     assert_response :success
-    assert_includes response.body, "Dependents"
+    assert_includes response.body, "Users"
     assert_includes response.body, dependents(:emma).name
     assert_not_includes response.body, dependents(:other_dependent).name
   end

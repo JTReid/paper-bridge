@@ -4,7 +4,7 @@
   actor_label = current_user.name.presence || current_user.email
 
   if dependent_context
-    dependent_initials = dependent.name.to_s.split.map { |word| word.first }.join.first(2).presence || "D"
+    dependent_initials = dependent.name.to_s.split.map { |word| word.first }.join.first(2).presence || "U"
     dependent_meta = [dependent.grade, dependent.school].compact_blank.join(" - ")
     nav_items = [
       { key: :overview, label: "Overview", path: dependent_path(dependent), icon: "user-circle" },
@@ -15,7 +15,7 @@
   else
     nav_items = [
       { key: :dashboard, label: "Dashboard", path: dashboard_path, icon: "sparkles" },
-      { key: :dependents, label: "Dependents", path: dependents_path, icon: "users" }
+      { key: :dependents, label: "Users", path: dependents_path, icon: "users" }
     ]
   end
 %>

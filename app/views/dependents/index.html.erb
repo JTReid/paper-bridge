@@ -1,15 +1,15 @@
-<% content_for :title, "Dependents | PaperBridge" %>
+<% content_for :title, "Users | PaperBridge" %>
 
 <%= app_shell(active: :dependents) do %>
   <div class="space-y-8">
     <header class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
       <div>
-        <h1 class="text-2xl font-bold tracking-tight text-foreground md:text-3xl">Dependents</h1>
+        <h1 class="text-2xl font-bold tracking-tight text-foreground md:text-3xl">Users</h1>
         <p class="mt-1 text-sm text-muted-foreground">Manage the people whose records live in this family workspace.</p>
       </div>
       <%= link_to new_dependent_path, class: "inline-flex h-9 items-center justify-center rounded-full bg-primary px-4 text-xs font-medium text-white transition-colors hover:bg-primary/90" do %>
         <%= pb_icon("plus", class_name: "mr-1.5 h-3.5 w-3.5") %>
-        Add Dependent
+        Add User
       <% end %>
     </header>
 
@@ -43,15 +43,15 @@
           <div class="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl border border-primary/10 bg-primary/5">
             <%= pb_icon("user-circle", class_name: "h-5 w-5 text-primary/60") %>
           </div>
-          <h2 class="text-base font-semibold text-foreground">Add the first dependent</h2>
-          <p class="mt-2 text-sm leading-relaxed text-muted-foreground">Documents, care team access, and AI assistant context will be organized around dependents.</p>
-          <%= link_to "Add Dependent", new_dependent_path, class: "mt-5 inline-flex rounded-full bg-primary px-5 py-2 text-xs font-medium text-white transition-colors hover:bg-primary/90" %>
+          <h2 class="text-base font-semibold text-foreground">Add the first user</h2>
+          <p class="mt-2 text-sm leading-relaxed text-muted-foreground">Documents, care team access, and AI assistant context will be organized around users.</p>
+          <%= link_to "Add User", new_dependent_path, class: "mt-5 inline-flex rounded-full bg-primary px-5 py-2 text-xs font-medium text-white transition-colors hover:bg-primary/90" %>
         </div>
       </section>
     <% end %>
 
     <section class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-      <% [["Documents", @documents.count, "file-text"], ["Processed", @documents.count(&:processed?), "sparkles"], ["Dependents", @dependents.count, "users"], ["AI Search", "Ready", "brain"]].each do |label, value, icon| %>
+      <% [["Documents", @documents.count, "file-text"], ["Processed", @documents.count(&:processed?), "sparkles"], ["Users", @dependents.count, "users"], ["AI Search", "Ready", "brain"]].each do |label, value, icon| %>
         <article class="rounded-2xl border border-border/50 bg-muted/40 p-5">
           <div class="mb-3 flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10">
             <%= pb_icon(icon, class_name: "h-4 w-4 text-primary") %>

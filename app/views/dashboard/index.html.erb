@@ -10,13 +10,13 @@
       </div>
       <%= link_to new_dependent_path, class: "inline-flex h-10 items-center justify-center rounded-full bg-accent px-5 text-sm font-medium text-accent-foreground shadow-sm transition-all duration-200 hover:bg-accent/80" do %>
         <%= pb_icon("plus", class_name: "mr-1.5 h-4 w-4") %>
-        Add Dependent
+        Add User
       <% end %>
     </header>
 
     <section>
       <div class="mb-5 flex items-center justify-between">
-        <h2 class="text-lg font-bold text-primary">Dependents</h2>
+        <h2 class="text-lg font-bold text-primary">Users</h2>
         <%= link_to dependents_path, class: "flex items-center gap-1 text-xs font-medium text-primary transition-opacity hover:opacity-70" do %>
           Manage
           <%= pb_icon("arrow-right", class_name: "h-3 w-3") %>
@@ -49,9 +49,9 @@
             <div class="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 text-primary">
               <%= pb_icon("users", class_name: "h-5 w-5") %>
             </div>
-            <p class="text-sm font-semibold text-foreground">No dependents yet</p>
-            <p class="mt-1 text-sm text-muted-foreground">Start by adding a dependent to organize their care records in one place.</p>
-            <%= link_to "Add Dependent", new_dependent_path, class: "mt-5 inline-flex rounded-full bg-primary px-5 py-2 text-xs font-medium text-white hover:bg-primary/90" %>
+            <p class="text-sm font-semibold text-foreground">No users yet</p>
+            <p class="mt-1 text-sm text-muted-foreground">Start by adding a user to organize their care records in one place.</p>
+            <%= link_to "Add User", new_dependent_path, class: "mt-5 inline-flex rounded-full bg-primary px-5 py-2 text-xs font-medium text-white hover:bg-primary/90" %>
           </div>
         </div>
       <% end %>

@@ -16,7 +16,7 @@ class DashboardControllerTest < ActionDispatch::IntegrationTest
     assert_includes response.body, "Your Family Hub"
     assert_includes response.body, "Family Calendar"
     assert_includes response.body, "No upcoming events"
-    assert_includes response.body, "Dependents"
+    assert_includes response.body, "Users"
     assert_includes response.body, dependents(:emma).name
     assert_not_includes response.body, "AI Assistant"
     assert_not_includes response.body, "All Profiles"
