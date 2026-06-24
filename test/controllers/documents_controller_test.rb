@@ -124,6 +124,64 @@ class DocumentsControllerTest < ActionDispatch::IntegrationTest
     assert_includes response.body, ActionView::RecordIdentifier.dom_id(document, :file_details)
   end
 
+  test "renders edit form for basic document details" do
+    document = documents(:advance_directive)
+    document.file.attach(
+      io: file_fixture("sample.txt").open,
+      filename: document.original_filename,
+      content_type: document.content_type
+    )
+    sign_in users(:family_admin)
+
+    get edit_document_path(document)
+
+    assert_response :success
+    assert_includes response.body, "Edit Document"
+    assert_includes response.body, document.title
+    assert_includes response.body, "Save changes"
+    assert_includes response.body, document_path(document)
+    assert_not_includes response.body, "type=\"file\""
+  end
+
+  test "updates basic document details without enqueueing processing" do
+    document = documents(:advance_directive)
+    document.file.attach(
+      io: file_fixture("sample.txt").open,
+      filename: document.original_filename,
+      content_type: document.content_type
+    )
+    document.update!(status: :processed, preparation_status: :prepared)
+    sign_in users(:family_admin)
+
+    assert_no_enqueued_jobs only: ProcessDocumentJob do
+      patch document_path(document), params: {
+        document: {
+          title: "Updated Planning Document",
+          description: "Updated notes",
+          category: "medical",
+          file: Rack::Test::UploadedFile.new(file_fixture("sample.txt"), "text/plain")
+        }
+      }
+    end
+
+    document.reload
+    assert_redirected_to document_path(document)
+    assert_equal "Updated Planning Document", document.title
+    assert_equal "Updated notes", document.description
+    assert_equal "medical", document.category
+    assert_equal "processed", document.status
+    assert_equal "prepared", document.preparation_status
+    assert_equal "advance-directive.txt", document.original_filename
+  end
+
+  test "does not edit documents from another account" do
+    sign_in users(:family_admin)
+
+    get edit_document_path(documents(:outside_account))
+
+    assert_response :not_found
+  end
+
   test "deletes document and returns to dependent documents" do
     document = documents(:advance_directive)
     sign_in users(:family_admin)

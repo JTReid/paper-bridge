@@ -1,7 +1,7 @@
 class DocumentsController < ApplicationController
   before_action :authenticate_user!
   before_action :set_dependent_from_param
-  before_action :set_document, only: %i[show destroy]
+  before_action :set_document, only: %i[show edit update destroy]
 
   def index
     scope = @dependent ? @dependent.documents : current_account.documents
@@ -11,6 +11,9 @@ class DocumentsController < ApplicationController
   end
 
   def show
+  end
+
+  def edit
   end
 
   def new
@@ -29,6 +32,14 @@ class DocumentsController < ApplicationController
       redirect_to @document, notice: "Document uploaded."
     else
       render :new, status: :unprocessable_entity
+    end
+  end
+
+  def update
+    if @document.update(document_update_params)
+      redirect_to @document, notice: "Document updated."
+    else
+      render :edit, status: :unprocessable_entity
     end
   end
 
@@ -58,5 +69,9 @@ class DocumentsController < ApplicationController
 
     def document_params
       params.require(:document).permit(:title, :description, :category, :file)
+    end
+
+    def document_update_params
+      params.require(:document).permit(:title, :description, :category)
     end
 end
