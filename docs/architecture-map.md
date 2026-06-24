@@ -59,10 +59,11 @@ from Scoutspace.
 - PDF preparation currently uses Poppler and Tesseract locally: embedded text
   extraction, 300 DPI page rendering, and OCR for every page.
 - `ProcessDocumentJob` prepares uploads, creates a `PipelineRun`, runs
-  `Agentic::DocumentIngestionPipeline`, creates page-aware labeled chunks, and
-  persists OpenAI `text-embedding-3-large` embeddings in Postgres through
-  pgvector. The same ingestion pipeline extracts chunk-sourced timeline events
-  with `gpt-5.4-mini`.
+  `Agentic::DocumentIngestionPipeline`, creates page-aware labeled chunks,
+  generates a source-grounded document summary, and persists OpenAI
+  `text-embedding-3-large` embeddings in Postgres through pgvector. The same
+  ingestion pipeline extracts chunk-sourced timeline events with
+  `gpt-5.4-mini`.
 - `GET /dependents/:dependent_id/ai-assistant` creates a `PipelineRun` for
   nonblank queries, runs `Agentic::DocumentSearchPipeline`, embeds the user
   query with `text-embedding-3-large`, retrieves matching chunks through

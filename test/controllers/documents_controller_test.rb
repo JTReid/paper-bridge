@@ -87,7 +87,19 @@ class DocumentsControllerTest < ActionDispatch::IntegrationTest
       filename: document.original_filename,
       content_type: document.content_type
     )
-    document.update!(status: :processed, preparation_status: :prepared)
+    document.update!(
+      status: :processed,
+      preparation_status: :prepared,
+      summary: {
+        title: "Advance Directive Summary",
+        summary: "This document covers legal planning needs.",
+        key_points: [
+          "Legal authority is documented.",
+          "Planning details are available for review."
+        ]
+      },
+      summarized_at: Time.zone.local(2026, 6, 14, 12, 0, 0)
+    )
     sign_in users(:family_admin)
 
     get document_path(document)
@@ -96,6 +108,9 @@ class DocumentsControllerTest < ActionDispatch::IntegrationTest
     assert_includes response.body, "All Profiles"
     assert_includes response.body, dependent_documents_path(document.dependent)
     assert_includes response.body, "Legal chunk 1"
+    assert_includes response.body, "Summary"
+    assert_includes response.body, "This document covers legal planning needs."
+    assert_includes response.body, "Legal authority is documented."
     assert_includes response.body, "Embedded page text"
     assert_includes response.body, "Starts on page 1"
     assert_not_includes response.body, "No chunks have been created yet."
@@ -104,6 +119,7 @@ class DocumentsControllerTest < ActionDispatch::IntegrationTest
     assert_includes response.body, "turbo-cable-stream-source"
     assert_includes response.body, ActionView::RecordIdentifier.dom_id(document, :processing_status)
     assert_includes response.body, ActionView::RecordIdentifier.dom_id(document, :processing_stats)
+    assert_includes response.body, ActionView::RecordIdentifier.dom_id(document, :summary)
     assert_includes response.body, ActionView::RecordIdentifier.dom_id(document, :chunks)
     assert_includes response.body, ActionView::RecordIdentifier.dom_id(document, :file_details)
   end

@@ -22,6 +22,7 @@ class ProcessDocumentJobTest < ActiveJob::TestCase
 
         return embedding_response(payload) if kwargs.fetch(:url).include?("/embeddings")
         return timeline_response(payload) if schema_name(payload) == "timeline_events"
+        return summary_response(payload) if schema_name(payload) == "document_summary"
         return chunk_response(payload) if schema_name(payload) == "document_chunks"
 
         raise "Unexpected process document test request: #{kwargs.fetch(:url)}"
@@ -50,6 +51,32 @@ class ProcessDocumentJobTest < ActiveJob::TestCase
             prompt_tokens: 30,
             completion_tokens: 20,
             total_tokens: 50
+          }
+        }.to_json
+      end
+
+      def self.summary_response(payload)
+        text = text_content(payload)
+
+        {
+          choices: [
+            {
+              message: {
+                content: {
+                  title: "Generated document summary",
+                  summary: "Summary based on #{text.include?("Chunk created from PDF") ? "PDF" : "text"} chunks.",
+                  key_points: [
+                    "Uses document chunks as summary evidence.",
+                    "Includes the processed chunk content."
+                  ]
+                }.to_json
+              }
+            }
+          ],
+          usage: {
+            prompt_tokens: 35,
+            completion_tokens: 25,
+            total_tokens: 60
           }
         }.to_json
       end
@@ -174,9 +201,11 @@ class ProcessDocumentJobTest < ActiveJob::TestCase
     document.reload
     pipeline_run = document.pipeline_runs.last
     chunk_request = chat_request_for("document_chunks")
+    summary_request = chat_request_for("document_summary")
     timeline_request = chat_request_for("timeline_events")
     embedding_request = FakeConnection.requests.find { |request| request.fetch(:url).include?("/embeddings") }
     chunk_payload = JSON.parse(chunk_request.fetch(:payload))
+    summary_payload = JSON.parse(summary_request.fetch(:payload))
     timeline_payload = JSON.parse(timeline_request.fetch(:payload))
     embedding_payload = JSON.parse(embedding_request.fetch(:payload))
 
@@ -187,6 +216,12 @@ class ProcessDocumentJobTest < ActiveJob::TestCase
     assert_equal 1, document.document_chunks.count
     assert_equal 1, document.document_embeddings.count
     assert_equal 1, document.timeline_events.count
+    assert_equal "Summary based on text chunks.", document.summary.fetch("summary")
+    assert_equal [ "Uses document chunks as summary evidence.", "Includes the processed chunk content." ], document.summary.fetch("key_points")
+    assert_equal "document_summarizer", document.summary.dig("metadata", "source")
+    assert_equal 1, document.summary.dig("metadata", "chunk_count")
+    assert_not document.summary.dig("metadata", "evidence_truncated")
+    assert document.summarized_at.present?
     assert_equal "legal", document.document_chunks.first.label
     assert_equal "text-embedding-3-large", document.document_embeddings.first.model
     assert_equal 3_072, document.document_embeddings.first.dimensions
@@ -194,13 +229,17 @@ class ProcessDocumentJobTest < ActiveJob::TestCase
     assert_equal document.document_chunks.first, document.timeline_events.first.document_chunk
     assert_equal "completed", pipeline_run.state
     assert_equal "gpt-5.4-nano", chunk_payload.fetch("model")
+    assert_equal "gpt-5.4-mini", summary_payload.fetch("model")
     assert_equal "gpt-5.4-mini", timeline_payload.fetch("model")
     assert_equal "text-embedding-3-large", embedding_payload.fetch("model")
     assert_includes chunk_payload.dig("messages", 1, "content").first.fetch("text"), "This is the uploaded test document."
+    assert_includes summary_payload.dig("messages", 1, "content"), "document_chunk_id: #{document.document_chunks.first.id}"
+    assert_includes summary_payload.dig("messages", 1, "content"), document.document_chunks.first.content
     assert_includes timeline_payload.dig("messages", 1, "content"), "document_chunk_id: #{document.document_chunks.first.id}"
     assert_equal [ document.document_chunks.first.content ], embedding_payload.fetch("input")
     assert pipeline_run.pipeline_log.entries.any? { |entry| entry["event_type"] == "llm_call" }
     assert pipeline_run.pipeline_activity.entries.any? { |entry| entry["action"] == "document_chunked" }
+    assert pipeline_run.pipeline_activity.entries.any? { |entry| entry["action"] == "document_summarized" }
     assert pipeline_run.pipeline_activity.entries.any? { |entry| entry["action"] == "document_chunks_embedded" }
     assert pipeline_run.pipeline_activity.entries.any? { |entry| entry["action"] == "timeline_events_extracted" }
   end

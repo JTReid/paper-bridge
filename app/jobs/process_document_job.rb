@@ -20,9 +20,7 @@ class ProcessDocumentJob < ApplicationJob
     pipeline.execute
 
     document.update!(
-      status: :processed,
-      summary: {},
-      summarized_at: nil
+      status: :processed
     )
   rescue Agentic::Errors::ConfigurationError => e
     mark_document_failed(document, e)

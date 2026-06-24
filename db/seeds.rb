@@ -39,6 +39,11 @@ openai_embeddings.update!(provider_class: "Agentic::Providers::Openai")
     "Create coherent, page-aware search chunks from prepared PaperBridge document pages. Use adjacent-page context for continuity, keep headings with their bodies, label each chunk with the configured taxonomy, and return only fields allowed by the configured schema."
   ],
   [
+    "document_summarizer",
+    openai_mini,
+    "Summarize PaperBridge document chunks as concise, source-grounded structured JSON. Include only facts supported by the supplied chunks and return only fields allowed by the configured schema."
+  ],
+  [
     "document_embedder",
     openai_embeddings,
     "Embed PaperBridge document chunks for vector search indexing."
@@ -205,6 +210,7 @@ timeline_events_schema = {
 
 {
   "structured_summary" => summary_schema,
+  "document_summary" => summary_schema,
   "structured_validation" => validation_schema,
   "document_chunks" => document_chunks_schema,
   "search_answer" => search_answer_schema,

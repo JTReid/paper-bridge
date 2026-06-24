@@ -1,0 +1,48 @@
+<% summary = document.summary.to_h.with_indifferent_access %>
+<% key_points = Array(summary[:key_points]).filter_map { |point| point.to_s.squish.presence } %>
+
+<section id="<%= dom_id(document, :summary) %>" class="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+  <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+    <div>
+      <h2 class="text-xl font-semibold text-slate-950">Summary</h2>
+      <% if document.summarized_at.present? %>
+        <p class="mt-1 text-xs text-slate-500">Generated <%= l document.summarized_at, format: :short %></p>
+      <% end %>
+    </div>
+
+    <% if document.processing? || document.queued? %>
+      <span class="inline-flex w-fit items-center rounded-full bg-sky-50 px-2.5 py-1 text-xs font-medium text-sky-700">
+        Processing
+      </span>
+    <% elsif document.failed? %>
+      <span class="inline-flex w-fit items-center rounded-full bg-red-50 px-2.5 py-1 text-xs font-medium text-red-700">
+        Failed
+      </span>
+    <% elsif document.summarized_at.present? %>
+      <span class="inline-flex w-fit items-center rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700">
+        Ready
+      </span>
+    <% end %>
+  </div>
+
+  <% if summary[:summary].present? %>
+    <p class="mt-4 text-sm leading-6 text-slate-700"><%= summary[:summary] %></p>
+
+    <% if key_points.any? %>
+      <ul class="mt-4 space-y-2">
+        <% key_points.each do |point| %>
+          <li class="flex gap-2 text-sm leading-6 text-slate-700">
+            <span class="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-primary"></span>
+            <span><%= point %></span>
+          </li>
+        <% end %>
+      </ul>
+    <% end %>
+  <% elsif document.processing? || document.queued? %>
+    <p class="mt-4 text-sm text-slate-600">Summary will appear when processing completes.</p>
+  <% elsif document.failed? && summary.dig(:error, :message).present? %>
+    <p class="mt-4 text-sm text-red-700"><%= summary.dig(:error, :message) %></p>
+  <% else %>
+    <p class="mt-4 text-sm text-slate-600">No summary has been generated yet.</p>
+  <% end %>
+</section>

@@ -58,7 +58,8 @@ The document pipeline harness protects these product-level guarantees:
   and a page image attachment.
 - `ProcessDocumentJob` creates a `PipelineRun` for the document subject.
 - `Agentic::DocumentIngestionPipeline` executes `Agents::DocumentChunker`,
-  `Agents::DocumentEmbedder`, and `Agents::TimelineEventExtractor`.
+  `Agents::DocumentSummarizer`, `Agents::DocumentEmbedder`, and
+  `Agents::TimelineEventExtractor`.
 - The chunker processes prepared pages with previous/current/next page context,
   sends page text and screenshots through the provider abstraction, and creates
   labeled `DocumentChunk` records.
@@ -75,6 +76,8 @@ The document pipeline harness protects these product-level guarantees:
   `PipelineRun`.
 - Deterministic preparation output is persisted to `documents.prepared_payload`.
 - The structured chunk output is persisted to `document_chunks`.
+- The structured summary output is persisted to `documents.summary` with
+  `documents.summarized_at`.
 - The embedding output is persisted to `document_embeddings`.
 - The structured timeline output is persisted to `timeline_events`.
 - Successful processing marks the document `processed`; failures mark it

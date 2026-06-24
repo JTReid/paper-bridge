@@ -48,6 +48,7 @@ class Document < ApplicationRecord
   def broadcast_processing_update(refresh_chunks: false)
     broadcast_processing_status_update
     broadcast_processing_stats_update
+    broadcast_summary_update
     broadcast_file_details_update
     broadcast_chunks_update if refresh_chunks
   end
@@ -86,6 +87,15 @@ class Document < ApplicationRecord
         self,
         target: processing_target(:file_details),
         partial: "documents/file_details",
+        locals: { document: self }
+      )
+    end
+
+    def broadcast_summary_update
+      broadcast_replace_to(
+        self,
+        target: processing_target(:summary),
+        partial: "documents/summary",
         locals: { document: self }
       )
     end
