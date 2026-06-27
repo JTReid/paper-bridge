@@ -245,3 +245,5 @@ timeline_events_schema = {
   }
   anthropic_schema.save!
 end
+
+load Rails.root.join("db/seeds/qa_harness.rb") if ENV["PAPER_BRIDGE_SEED_QA"].present?

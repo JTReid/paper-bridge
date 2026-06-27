@@ -40,6 +40,7 @@ product harness contracts yet.
 ```bash
 ruby scripts/paper_bridge_qa_harness.rb doctor
 ruby scripts/paper_bridge_qa_harness.rb static
+ruby scripts/paper_bridge_qa_harness.rb seed
 ruby scripts/paper_bridge_qa_harness.rb db
 ruby scripts/paper_bridge_qa_harness.rb assets
 ruby scripts/paper_bridge_qa_harness.rb smoke
@@ -51,8 +52,14 @@ ruby scripts/paper_bridge_qa_harness.rb review
 ```
 
 This harness runs against `RAILS_ENV=test`, prepares the test DB, loads
-fixtures, builds Tailwind, starts a local Rails test server, and runs
-Playwright browser checks against `http://127.0.0.1:3100` by default.
+fixtures and synthetic QA seed data, builds Tailwind, starts a local Rails test
+server, and runs Playwright browser checks against `http://127.0.0.1:3100` by
+default.
+
+Use `seed` when development needs the synthetic processed-document and edge-case
+corpus. This loads 11 documents, 25 pages, 71 chunks, 67 embeddings, 54 timeline
+events, care-team recipients, share history, and representative pipeline records
+under the `PaperBridge QA Harness` account.
 
 Use `smoke` for fast browser confidence. Use `bughunt BUG_ID` when reproducing
 or verifying browser-visible defects; it records screenshots, traces, and videos

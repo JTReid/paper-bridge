@@ -28,6 +28,7 @@ check enforces that every tracked, non-ignored Markdown file is linked here.
 | [Document Sharing](runbooks/document-sharing.md) | Current email-attachment sharing behavior and validation surface. |
 | [QA Troubleshooting](runbooks/qa-troubleshooting.md) | Local QA harness for browser bug reproduction, artifacts, and verification. |
 | [Browser QA](runbooks/browser-qa.md) | Playwright folder structure, environment, and direct iteration commands. |
+| [QA Seed Data](runbooks/qa-seed-data.md) | Synthetic processed-document corpus for development QA and bug hunting. |
 | [Negative Error-State Probes](runbooks/negative-error-state-probes.md) | Recommended future QA probes for invalid, empty, failed, and edge-case product states. |
 
 ## Product References

@@ -6,8 +6,28 @@ future Playwright/QA pass, not current product commitments.
 
 ## TODO
 
-- Revisit this runbook and decide the first negative error-state Playwright specs
-  to implement.
+- Decide whether zero-permission care team invites should be valid.
+- Decide whether unsupported document upload file types should be restricted.
+- Add deeper AI no-evidence browser coverage once the QA harness has a
+  deterministic fake LLM/vector-search path.
+
+## Implemented First Pass
+
+- Sharing Mailpit QA verifies successful document sharing sends an email with
+  expected recipient, subject, body text, and attachment count.
+- Sharing Mailpit QA verifies no email is sent when no documents are selected.
+- Sharing Mailpit QA verifies blank recipient submission stays in browser-native
+  validation and sends no email.
+- Sharing Mailpit QA verifies malformed recipient is rejected server-side and
+  sends no email.
+- Care team QA verifies blank email, malformed email, and duplicate invite
+  behavior.
+- Document QA verifies blank title edits show a validation error instead of
+  silently restoring the filename.
+- Mobile QA verifies blank recipient sharing and blank-email care team invites
+  on a narrow viewport.
+- Controller coverage verifies AI assistant pipeline failures render the
+  intended fallback UI.
 
 ## Recommendation
 

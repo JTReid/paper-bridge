@@ -30,6 +30,20 @@ class DocumentTest < ActiveSupport::TestCase
     assert_equal file_fixture("sample.txt").size, document.byte_size
   end
 
+  test "does not default blank title on persisted documents" do
+    document = documents(:advance_directive)
+    document.file.attach(
+      io: file_fixture("sample.txt").open,
+      filename: "sample.txt",
+      content_type: "text/plain"
+    )
+
+    document.title = ""
+
+    assert_not document.valid?
+    assert_includes document.errors[:title], "can't be blank"
+  end
+
   test "requires document account to match uploading user account" do
     document = build_document(account: accounts(:other))
 

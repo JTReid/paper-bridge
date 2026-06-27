@@ -14,6 +14,7 @@ class ShareEvent < ApplicationRecord
   enum :status, STATUSES
 
   validates :recipient_email, :status, presence: true
+  validates :recipient_email, format: { with: URI::MailTo::EMAIL_REGEXP }, allow_blank: true
   validate :sender_belongs_to_account
 
   def mark_sent!

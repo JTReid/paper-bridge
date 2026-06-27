@@ -12,6 +12,18 @@ class ShareEventTest < ActiveSupport::TestCase
     assert_includes share_event.errors[:sender], "must belong to the account"
   end
 
+  test "requires a valid recipient email" do
+    share_event = ShareEvent.new(
+      account: accounts(:greenfield),
+      sender: users(:family_admin),
+      recipient_email: "not-an-email",
+      status: :pending
+    )
+
+    assert_not share_event.valid?
+    assert_includes share_event.errors[:recipient_email], "is invalid"
+  end
+
   test "marks share events sent and failed" do
     share_event = share_events(:one)
 

@@ -51,7 +51,7 @@
           <% @documents.each do |document| %>
             <% label = document.document_chunks.first&.label || "general" %>
             <% label_class = case label
-              when "medical" then "bg-red-50 text-red-600"
+              when "medical" then "bg-red-50 text-red-700"
               when "education" then "bg-blue-50 text-blue-700"
               when "therapy" then "bg-green-50 text-green-700"
               when "legal" then "bg-violet-50 text-violet-700"
@@ -76,7 +76,7 @@
               <span class="hidden rounded-full border-0 px-2 py-0.5 text-[10px] font-medium sm:inline-flex <%= label_class %>">
                 <%= document.category.humanize %>
               </span>
-              <span class="rounded-full border-0 px-2 py-0.5 text-[10px] font-medium <%= document.processed? ? "bg-green-50 text-green-700" : document.failed? ? "bg-red-50 text-red-500" : "bg-blue-50 text-blue-600" %>">
+              <span class="rounded-full border-0 px-2 py-0.5 text-[10px] font-medium <%= document.processed? ? "bg-green-50 text-green-700" : document.failed? ? "bg-red-50 text-red-700" : "bg-blue-50 text-blue-600" %>">
                 <%= document.status.humanize %>
               </span>
               <%= button_tag type: "button", class: "flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-primary/5 hover:text-primary focus:outline-none focus:ring-2 focus:ring-primary/20", aria: { label: "Share #{document.title}" }, data: { action: "document-share#open", document_share_document_id_param: document.id, document_share_document_title_param: document.title, testid: "document-share-button-#{document.id}" } do %>

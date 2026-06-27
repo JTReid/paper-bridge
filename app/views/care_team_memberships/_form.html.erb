@@ -1,6 +1,6 @@
 <%= form_with model: [@dependent, care_team_membership], class: "space-y-5 rounded-2xl border border-border/50 bg-white p-6 shadow-sm", data: { testid: "care-team-form" } do |form| %>
   <% if care_team_membership.errors.any? %>
-    <div class="rounded-xl border border-red-200 bg-red-50 p-4 text-red-900" role="alert">
+    <div class="rounded-xl border border-red-200 bg-red-50 p-4 text-red-900" role="alert" data-testid="care-team-form-errors">
       <h2 class="text-sm font-semibold"><%= pluralize(care_team_membership.errors.count, "error") %> prevented this care team member from saving</h2>
       <ul class="mt-2 list-disc space-y-1 pl-5 text-sm">
         <% care_team_membership.errors.full_messages.each do |message| %>

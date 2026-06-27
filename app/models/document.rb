@@ -119,6 +119,7 @@ class Document < ApplicationRecord
     end
 
     def default_title_from_file
+      return unless new_record?
       return if title.present? || !file.attached?
 
       self.title = file.blob.filename.base

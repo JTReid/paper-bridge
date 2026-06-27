@@ -23,6 +23,7 @@ module DocumentsHelper
         :span,
         content_tag(:span, "", class: "block h-3 w-3 animate-spin rounded-full border-2 border-sky-200 border-t-sky-700"),
         class: "inline-flex h-5 w-5 items-center justify-center rounded-full bg-sky-50 ring-1 ring-sky-200",
+        role: "status",
         title: "Working on #{label.downcase}",
         aria: { label: "Working on #{label.downcase}" }
       )
@@ -64,6 +65,7 @@ module DocumentsHelper
         :span,
         pb_icon(icon, class_name: "h-3 w-3"),
         class: "inline-flex h-5 w-5 items-center justify-center rounded-full ring-1 #{classes}",
+        role: "img",
         title: label,
         aria: { label: label }
       )

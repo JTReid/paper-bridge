@@ -52,6 +52,10 @@ Run Playwright through the QA harness unless you are iterating on a single spec.
 The harness prepares the DB, loads fixtures, builds Tailwind, starts Rails, and
 then runs Playwright.
 
+The test DB prep also loads the synthetic QA seed corpus. Specs that need the
+seeded account can sign in as `qa-family-admin@example.test / password` and use
+the `Avery Morgan` workspace.
+
 ## Direct Playwright Iteration
 
 When a QA server is already running, a single spec can be run directly:

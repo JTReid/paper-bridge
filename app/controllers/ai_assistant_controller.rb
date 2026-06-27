@@ -27,7 +27,7 @@ class AiAssistantController < ApplicationController
     @result_count = response[:result_count]
     @answer = response[:answer]
     @pipeline_run = pipeline_run
-  rescue Agentic::Error => e
+  rescue Agentic::Errors::Error => e
     @search_error = e.message
     @results = []
     @answer = nil

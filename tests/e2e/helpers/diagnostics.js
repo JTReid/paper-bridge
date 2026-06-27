@@ -6,6 +6,10 @@ const IGNORED_CONSOLE_ERROR_PATTERNS = [
   /server responded with a status of 422/i,
 ];
 
+const IGNORED_PAGE_ERROR_PATTERNS = [
+  /AbortError: The user aborted a request/i,
+];
+
 export function installDiagnostics(page) {
   const consoleErrors = [];
   const pageErrors = [];
@@ -22,7 +26,10 @@ export function installDiagnostics(page) {
   });
 
   page.on('pageerror', (error) => {
-    pageErrors.push(`${error.name}: ${error.message}`);
+    const text = `${error.name}: ${error.message}`;
+    if (IGNORED_PAGE_ERROR_PATTERNS.some((pattern) => pattern.test(text))) return;
+
+    pageErrors.push(text);
   });
 
   page.on('response', (response) => {

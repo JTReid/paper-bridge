@@ -24,6 +24,11 @@ export async function waitForMailpitMessage(request, predicate, options = {}) {
   throw new Error(`No matching Mailpit message found. Messages: ${JSON.stringify(messages)}`);
 }
 
+export async function expectNoMailpitMessages(request) {
+  const messages = await listMailpitMessages(request);
+  expect(messages).toEqual([]);
+}
+
 export async function getMailpitMessageText(request, messageId) {
   const response = await request.get(`${MAILPIT_API_URL}/view/${messageId}.txt`);
   expect(response.ok(), `Mailpit text view failed with ${response.status()}`).toBeTruthy();

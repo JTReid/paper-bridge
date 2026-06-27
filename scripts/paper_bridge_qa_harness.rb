@@ -29,9 +29,21 @@ QA_DATA_RUNNER = <<~"RUBY"
   end
 RUBY
 
+QA_DB_CLEANUP_RUNNER = <<~"RUBY"
+  PipelineActivity.delete_all
+  PipelineLog.delete_all
+  PipelineRun.delete_all
+  Account.find_by(name: "PaperBridge QA Harness")&.destroy
+  ActiveStorage::VariantRecord.delete_all
+  ActiveStorage::Attachment.delete_all
+  ActiveStorage::Blob.delete_all
+RUBY
+
 STATIC_FILES = %w[
   docs/runbooks/qa-troubleshooting.md
   docs/runbooks/browser-qa.md
+  docs/runbooks/qa-seed-data.md
+  db/seeds/qa_harness.rb
   scripts/paper_bridge_qa_harness.rb
   playwright.config.js
   package.json
@@ -48,6 +60,9 @@ STATIC_FILES = %w[
   tests/e2e/product/document_sharing_mailpit.spec.js
   tests/e2e/product/document_management.spec.js
   tests/e2e/product/care_team.spec.js
+  tests/e2e/product/care_team_negative.spec.js
+  tests/e2e/product/mobile_negative.spec.js
+  tests/e2e/product/qa_seed_edge_states.spec.js
   tests/e2e/product/ai_assistant.spec.js
   tests/e2e/regressions/README.md
 ].freeze
@@ -59,6 +74,7 @@ def usage
     Commands:
       doctor   Check local QA prerequisites
       static   Check QA harness files exist
+      seed     Load deterministic development QA seed data
       db       Prepare test DB, load fixtures, and apply QA data setup
       assets   Build generated Tailwind CSS
       server   Prepare QA env and run a Rails test server in the foreground
@@ -98,12 +114,19 @@ end
 
 def prepare_database
   run_command([ "bin/rails", "db:prepare" ], env: { "RAILS_ENV" => "test" }) &&
+    run_command([ "bin/rails", "runner", QA_DB_CLEANUP_RUNNER ], env: { "RAILS_ENV" => "test" }) &&
     run_command([ "bin/rails", "db:fixtures:load" ], env: { "RAILS_ENV" => "test" }) &&
+    run_command([ "bin/rails", "db:seed" ], env: { "RAILS_ENV" => "test", "PAPER_BRIDGE_SEED_QA" => "1" }) &&
     run_command([ "bin/rails", "runner", QA_DATA_RUNNER ], env: { "RAILS_ENV" => "test" })
 end
 
 def build_assets
   run_command([ "bin/rails", "tailwindcss:build" ])
+end
+
+def seed_development
+  run_command([ "bin/rails", "db:prepare" ], env: { "RAILS_ENV" => "development" }) &&
+    run_command([ "bin/rails", "db:seed" ], env: { "RAILS_ENV" => "development", "PAPER_BRIDGE_SEED_QA" => "1" })
 end
 
 def app_responding?
@@ -280,6 +303,8 @@ when "doctor"
   doctor_passed?
 when "static"
   static_check_passed?
+when "seed"
+  seed_development
 when "db"
   prepare_database
 when "assets"

@@ -6,7 +6,7 @@
   "failed" => "border-red-200 bg-red-50 text-red-800"
 } %>
 
-<div id="<%= dom_id(document, :processing_status) %>" class="mb-3 flex flex-wrap items-center gap-3">
+<div id="<%= dom_id(document, :processing_status) %>" class="mb-3 flex flex-wrap items-center gap-3" data-testid="document-processing-status">
   <span class="inline-flex rounded-md border px-2.5 py-1 text-xs font-semibold uppercase <%= status_styles.fetch(document.status, status_styles["uploaded"]) %>">
     <%= document.status.humanize %>
   </span>
