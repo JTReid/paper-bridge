@@ -12,10 +12,56 @@ ruby scripts/check_docs_index.rb
 This verifies that required agent-facing docs exist and that Markdown files in
 `docs/` are linked from `docs/README.md`.
 
+## Current Product Shape Harness
+
+```bash
+ruby scripts/paper_bridge_harness.rb static
+ruby scripts/paper_bridge_harness.rb assets
+ruby scripts/paper_bridge_harness.rb foundation
+ruby scripts/paper_bridge_harness.rb access
+ruby scripts/paper_bridge_harness.rb sharing
+ruby scripts/paper_bridge_harness.rb product
+ruby scripts/paper_bridge_harness.rb review
+```
+
+This product-level harness covers behavior implemented in the Rails app today:
+public/auth entry points, registration-created accounts, dashboard and
+dependent workspace navigation, dependent profile access, care team invitations,
+category permissions, search-access mapping, and email-attachment document
+sharing.
+
+Future product requirements that are not implemented yet, such as billing,
+calendar persistence, in-app notifications, audit-log exports, tokenized sharing
+links, document version history, and mobile behavior, are intentionally not
+product harness contracts yet.
+
+## QA Troubleshooting Harness
+
+```bash
+ruby scripts/paper_bridge_qa_harness.rb doctor
+ruby scripts/paper_bridge_qa_harness.rb static
+ruby scripts/paper_bridge_qa_harness.rb db
+ruby scripts/paper_bridge_qa_harness.rb assets
+ruby scripts/paper_bridge_qa_harness.rb smoke
+ruby scripts/paper_bridge_qa_harness.rb browser
+ruby scripts/paper_bridge_qa_harness.rb bughunt
+ruby scripts/paper_bridge_qa_harness.rb rubocop
+ruby scripts/paper_bridge_qa_harness.rb review
+```
+
+This harness runs against `RAILS_ENV=test`, prepares the test DB, loads
+fixtures, builds Tailwind, starts a local Rails test server, and runs
+Playwright browser checks against `http://127.0.0.1:3100` by default.
+
+Use `smoke` for fast browser confidence. Use `bughunt` when reproducing or
+verifying browser-visible defects; it records screenshots, traces, and videos
+under `tmp/qa-artifacts/`.
+
 ## Agentic Pipeline Harness
 
 ```bash
 ruby scripts/agentic_pipeline_harness.rb static
+ruby scripts/agentic_pipeline_harness.rb assets
 ruby scripts/agentic_pipeline_harness.rb doctor
 ruby scripts/agentic_pipeline_harness.rb tests
 ruby scripts/agentic_pipeline_harness.rb documents

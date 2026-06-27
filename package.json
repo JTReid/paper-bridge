@@ -1,0 +1,33 @@
+{
+  "name": "paper-bridge",
+  "version": "1.0.0",
+  "description": "This README would normally document whatever steps are necessary to get the application up and running.",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs",
+    "lib": "lib",
+    "test": "test"
+  },
+  "scripts": {
+    "qa:browser": "playwright test --project=chromium",
+    "qa:smoke": "playwright test tests/e2e/smoke --project=chromium",
+    "qa:bughunt": "QA_ARTIFACT_MODE=always playwright test --project=chromium",
+    "qa:report": "playwright show-report tmp/qa-artifacts/playwright-report"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/JTReid/paper-bridge.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/JTReid/paper-bridge/issues"
+  },
+  "homepage": "https://github.com/JTReid/paper-bridge#readme",
+  "devDependencies": {
+    "@playwright/test": "^1.61.1",
+    "@types/node": "^26.0.1"
+  }
+}

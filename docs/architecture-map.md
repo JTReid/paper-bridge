@@ -18,6 +18,12 @@ from Scoutspace.
 - `Document` is the first-class upload record. It owns processing state,
   category, dependent ownership, preparation state, prepared payload JSON, and one Active
   Storage file attachment.
+- `ShareEvent` records current email-based document sharing attempts, including
+  sender, recipient email, message metadata, status, sent timestamp, and errors.
+- `SharedDocument` joins shared documents to a share event and enforces account
+  ownership consistency.
+- `DocumentShareMailer` sends the currently selected documents as email
+  attachments. Tokenized external sharing links are not implemented yet.
 - `DocumentPage` is the first-class PDF page record. It stores embedded text,
   OCR text, preparation metadata, page status, and one rendered page image
   attachment.
@@ -50,8 +56,10 @@ from Scoutspace.
 
 ## Current Boundaries
 
-- Authentication, accounts, dependents, account memberships, document uploads,
-  document categories, care team memberships, and document pages are real.
+- Public entry, authentication, account registration, accounts, dependents,
+  account memberships, document uploads, document categories, care team
+  memberships, current email-attachment document sharing, and document pages are
+  real.
 - Admin/member authorization lives on `AccountMembership`. Care team document
   search authorization is derived from dependent-scoped `CareTeamMembership`
   category permissions.

@@ -37,6 +37,7 @@ AGENTIC_CORE_FILES = %w[
   app/services/concerns/pipeline_notifiable.rb
   db/migrate/20260614023700_create_agentic_pipeline.rb
   docs/agentic-pipeline-runbook.md
+  docs/runbooks/agentic-pipeline.md
   test/services/agentic/pipeline_test.rb
   test/services/agentic/providers/anthropic_test.rb
   test/services/agentic/providers/openai_test.rb
@@ -68,6 +69,8 @@ DOCUMENT_PIPELINE_FILES = %w[
   app/services/documents/prepare_text.rb
   app/services/documents/search_access_profile.rb
   app/services/documents/vector_search.rb
+  docs/runbooks/document-ingestion.md
+  docs/runbooks/ai-assistant-search.md
   db/migrate/20260614033907_add_summary_to_documents.rb
   db/migrate/20260614040236_create_document_pages.rb
   db/migrate/20260614040243_add_preparation_to_documents.rb
@@ -232,6 +235,9 @@ COMMANDS = {
   "docs" => [
     [ "ruby", "scripts/check_docs_index.rb" ]
   ],
+  "assets" => [
+    [ "bin/rails", "tailwindcss:build" ]
+  ],
   "doctor" => [
     [ "bin/rails", "runner", "-e", "test", DOCTOR_RUNNER ]
   ],
@@ -246,12 +252,14 @@ COMMANDS = {
     ]
   ],
   "documents" => [
+    [ "bin/rails", "tailwindcss:build" ],
     [
       "bin/rails", "test",
       "test/models/document_test.rb",
       "test/models/document_page_test.rb",
       "test/models/document_chunk_test.rb",
       "test/models/document_embedding_test.rb",
+      "test/models/timeline_event_test.rb",
       "test/controllers/documents_controller_test.rb",
       "test/controllers/ai_assistant_controller_test.rb",
       "test/jobs/process_document_job_test.rb",
@@ -316,6 +324,7 @@ def usage
 
     Commands:
       docs      Check agent-facing docs are indexed
+      assets    Build generated Tailwind CSS for Rails view tests
       static    Check generic agentic pipeline file shape and provider interface
       doctor    Seed/check local test DB provider records and API key visibility
       tests     Run deterministic generic pipeline Minitest coverage

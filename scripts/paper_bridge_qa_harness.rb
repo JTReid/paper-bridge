@@ -1,0 +1,229 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+require "fileutils"
+require "net/http"
+require "pathname"
+require "time"
+require "timeout"
+
+ROOT = Pathname.new(__dir__).join("..").realpath
+QA_PORT = ENV.fetch("QA_PORT", "3100")
+QA_HOST = ENV.fetch("QA_HOST", "127.0.0.1")
+QA_BASE_URL = ENV.fetch("QA_BASE_URL", "http://#{QA_HOST}:#{QA_PORT}")
+ARTIFACT_ROOT = ROOT.join("tmp/qa-artifacts")
+SERVER_LOG = ARTIFACT_ROOT.join("logs/rails-test-server.log")
+
+STATIC_FILES = %w[
+  docs/runbooks/qa-troubleshooting.md
+  docs/runbooks/browser-qa.md
+  scripts/paper_bridge_qa_harness.rb
+  playwright.config.js
+  package.json
+  package-lock.json
+  tests/e2e/helpers/auth.js
+  tests/e2e/smoke/public_home.spec.js
+  tests/e2e/smoke/auth.spec.js
+  tests/e2e/product/dependent_workspace.spec.js
+  tests/e2e/product/document_sharing.spec.js
+  tests/e2e/product/care_team.spec.js
+  tests/e2e/product/ai_assistant.spec.js
+  tests/e2e/regressions/README.md
+].freeze
+
+def usage
+  puts(<<~USAGE)
+    Usage: ruby scripts/paper_bridge_qa_harness.rb COMMAND
+
+    Commands:
+      doctor   Check local QA prerequisites
+      static   Check QA harness files exist
+      db       Prepare test DB and load deterministic fixtures
+      assets   Build generated Tailwind CSS
+      server   Prepare QA env and run a Rails test server in the foreground
+      smoke    Run fast Chromium browser smoke checks
+      browser  Run all Chromium browser QA checks
+      bughunt  Run all Chromium browser checks with screenshots, videos, and traces always on
+      rubocop  Run RuboCop on the QA harness Ruby script
+      review   Run docs, static, doctor, development harness checks, and browser smoke
+  USAGE
+end
+
+def run_command(command, env: {})
+  puts("\n--- #{[ env_summary(env), command.join(" ") ].compact.join(" ")} ---")
+  system(env, *command, chdir: ROOT.to_s)
+end
+
+def env_summary(env)
+  return nil if env.empty?
+
+  env.map { |key, value| "#{key}=#{value}" }.join(" ")
+end
+
+def ensure_artifact_dirs
+  FileUtils.mkdir_p(ARTIFACT_ROOT.join("logs"))
+  FileUtils.mkdir_p(ARTIFACT_ROOT.join("screenshots"))
+  FileUtils.mkdir_p(ARTIFACT_ROOT.join("traces"))
+  FileUtils.mkdir_p(ARTIFACT_ROOT.join("videos"))
+end
+
+def prepare_database
+  run_command([ "bin/rails", "db:prepare" ], env: { "RAILS_ENV" => "test" }) &&
+    run_command([ "bin/rails", "db:fixtures:load" ], env: { "RAILS_ENV" => "test" })
+end
+
+def build_assets
+  run_command([ "bin/rails", "tailwindcss:build" ])
+end
+
+def app_responding?
+  response = Net::HTTP.get_response(URI("#{QA_BASE_URL}/up"))
+  response.is_a?(Net::HTTPSuccess)
+rescue Errno::ECONNREFUSED, Errno::EADDRNOTAVAIL, SocketError, Net::OpenTimeout, Net::ReadTimeout
+  false
+end
+
+def wait_for_server(timeout_seconds: 30)
+  Timeout.timeout(timeout_seconds) do
+    sleep 0.25 until app_responding?
+  end
+  true
+rescue Timeout::Error
+  warn("Rails test server did not respond at #{QA_BASE_URL}. See #{SERVER_LOG.relative_path_from(ROOT)}")
+  false
+end
+
+def start_server
+  return nil if app_responding?
+
+  ensure_artifact_dirs
+  log = File.open(SERVER_LOG, "a")
+  log.puts("\n--- starting Rails test server at #{Time.now.utc.iso8601} ---")
+  log.flush
+
+  spawn(
+    { "RAILS_ENV" => "test", "PORT" => QA_PORT },
+    "bin/rails", "server", "-p", QA_PORT, "-b", QA_HOST,
+    chdir: ROOT.to_s,
+    out: log,
+    err: log,
+    pgroup: true
+  ).tap do |pid|
+    unless wait_for_server
+      stop_server(pid)
+      return false
+    end
+  end
+end
+
+def stop_server(pid)
+  return if pid.nil? || pid == false
+
+  Process.kill("TERM", -pid)
+  Timeout.timeout(10) { Process.wait(pid) }
+rescue Errno::ESRCH, Errno::ECHILD
+  nil
+rescue Timeout::Error
+  Process.kill("KILL", -pid)
+  Process.wait(pid)
+end
+
+def with_server
+  return false unless prepare_database && build_assets
+
+  pid = start_server
+  return false if pid == false
+
+  begin
+    yield
+  ensure
+    stop_server(pid)
+  end
+end
+
+def run_playwright(paths: [], always_record: false)
+  ensure_artifact_dirs
+  command = [ "npx", "playwright", "test", *paths, "--project=chromium" ]
+  env = {
+    "QA_BASE_URL" => QA_BASE_URL
+  }
+  env["QA_ARTIFACT_MODE"] = "always" if always_record
+
+  run_command(command, env: env)
+end
+
+def doctor_passed?
+  checks = [
+    [ "node", "--version" ],
+    [ "npm", "--version" ],
+    [ "npx", "playwright", "--version" ],
+    [ "psql", "postgres", "-tAc", "SELECT default_version FROM pg_available_extensions WHERE name = 'vector'" ]
+  ]
+
+  checks.all? { |command| run_command(command) }
+end
+
+def static_check_passed?
+  failures = STATIC_FILES.reject { |relative_path| ROOT.join(relative_path).file? }
+
+  if failures.any?
+    warn("PaperBridge QA static check failed:\n#{failures.map { |path| "- Missing #{path}" }.join("\n")}")
+    return false
+  end
+
+  puts "Expected QA harness files exist."
+  puts "QA base URL: #{QA_BASE_URL}"
+  puts "QA artifacts: #{ARTIFACT_ROOT.relative_path_from(ROOT)}"
+  true
+end
+
+def run_server_foreground
+  return false unless prepare_database && build_assets
+
+  puts "Starting Rails test server at #{QA_BASE_URL}"
+  exec(
+    { "RAILS_ENV" => "test", "PORT" => QA_PORT },
+    "bin/rails", "server", "-p", QA_PORT, "-b", QA_HOST,
+    chdir: ROOT.to_s
+  )
+end
+
+command = ARGV.fetch(0, nil)
+
+ok = case command
+when nil, "-h", "--help", "help"
+  usage
+  true
+when "doctor"
+  doctor_passed?
+when "static"
+  static_check_passed?
+when "db"
+  prepare_database
+when "assets"
+  build_assets
+when "server"
+  run_server_foreground
+when "smoke"
+  with_server { run_playwright(paths: [ "tests/e2e/smoke" ]) }
+when "browser"
+  with_server { run_playwright }
+when "bughunt"
+  with_server { run_playwright(always_record: true) }
+when "rubocop"
+  run_command([ "bin/rubocop", "--cache", "false", "scripts/paper_bridge_qa_harness.rb" ])
+when "review"
+  run_command([ "ruby", "scripts/check_docs_index.rb" ]) &&
+    static_check_passed? &&
+    doctor_passed? &&
+    run_command([ "bin/rubocop", "--cache", "false", "scripts/paper_bridge_qa_harness.rb" ]) &&
+    run_command([ "ruby", "scripts/paper_bridge_harness.rb", "product" ]) &&
+    run_command([ "ruby", "scripts/agentic_pipeline_harness.rb", "documents" ]) &&
+    with_server { run_playwright(paths: [ "tests/e2e/smoke" ]) }
+else
+  warn("Unknown command: #{command}")
+  usage
+  false
+end
+
+exit(ok ? 0 : 1)

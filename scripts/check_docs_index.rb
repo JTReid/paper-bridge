@@ -13,6 +13,9 @@ REQUIRED_AGENT_LINKS = %w[
   docs/agent-harness.md
   docs/architecture-map.md
   docs/validation.md
+  docs/runbooks/current-product-shape.md
+  docs/runbooks/agentic-pipeline.md
+  docs/runbooks/qa-troubleshooting.md
 ].freeze
 
 def fail_with(message)

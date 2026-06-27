@@ -39,7 +39,21 @@ For each new feature:
    persistence, migrations, background jobs, or asset compilation.
 6. Update docs when durable behavior, commands, or architecture changed.
 
-The document ingestion pipeline is now encoded in the agentic harness as a
+Use [Current Product Shape](runbooks/current-product-shape.md) to decide whether
+behavior is part of the current product harness or future/spec-only scope.
+
+The current implemented product surface is encoded in a product-level harness:
+
+```bash
+ruby scripts/paper_bridge_harness.rb product
+```
+
+Use that command when changing public/auth entry points, registration-created
+accounts, dashboard or dependent workspace navigation, dependent profile
+workflows, care team invitations, care team category permissions,
+search-access mapping, document sharing, or mailers.
+
+The document ingestion pipeline remains encoded in the agentic harness as a
 feature-specific command:
 
 ```bash

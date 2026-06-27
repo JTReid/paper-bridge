@@ -10,7 +10,9 @@ small and link to deeper docs instead of turning it into a manual.
 - Agent operating loop: `docs/agent-harness.md`
 - Architecture map: `docs/architecture-map.md`
 - Validation commands: `docs/validation.md`
-- Agentic pipeline harness: `docs/agentic-pipeline-runbook.md`
+- Current product shape: `docs/runbooks/current-product-shape.md`
+- Agentic pipeline harness: `docs/runbooks/agentic-pipeline.md`
+- QA troubleshooting harness: `docs/runbooks/qa-troubleshooting.md`
 
 ## Repo Shape
 
@@ -56,10 +58,28 @@ For documentation or harness changes, run:
 ruby scripts/check_docs_index.rb
 ```
 
+For current product-shape work, start with:
+
+```bash
+ruby scripts/paper_bridge_harness.rb static
+```
+
+For browser QA or bug reproduction work, start with:
+
+```bash
+ruby scripts/paper_bridge_qa_harness.rb doctor
+```
+
 For agentic pipeline work, start with:
 
 ```bash
 ruby scripts/agentic_pipeline_harness.rb static
+```
+
+Before committing broader product-shape changes, run:
+
+```bash
+ruby scripts/paper_bridge_harness.rb review
 ```
 
 Before committing broader agentic changes, run:
