@@ -11,6 +11,9 @@ ROOT = Pathname.new(__dir__).join("..").realpath
 QA_PORT = ENV.fetch("QA_PORT", "3100")
 QA_HOST = ENV.fetch("QA_HOST", "127.0.0.1")
 QA_BASE_URL = ENV.fetch("QA_BASE_URL", "http://#{QA_HOST}:#{QA_PORT}")
+MAILPIT_SMTP_ADDRESS = ENV.fetch("MAILPIT_SMTP_ADDRESS", "127.0.0.1")
+MAILPIT_SMTP_PORT = ENV.fetch("MAILPIT_SMTP_PORT", "1025")
+MAILPIT_API_URL = ENV.fetch("QA_MAILPIT_API_URL", "http://127.0.0.1:8025")
 ARTIFACT_ROOT = ROOT.join("tmp/qa-artifacts")
 SERVER_LOG = ARTIFACT_ROOT.join("logs/rails-test-server.log")
 
@@ -36,11 +39,13 @@ STATIC_FILES = %w[
   tests/e2e/helpers/auth.js
   tests/e2e/helpers/diagnostics.js
   tests/e2e/helpers/accessibility.js
+  tests/e2e/helpers/mailpit.js
   tests/e2e/fixtures.js
   tests/e2e/smoke/public_home.spec.js
   tests/e2e/smoke/auth.spec.js
   tests/e2e/product/dependent_workspace.spec.js
   tests/e2e/product/document_sharing.spec.js
+  tests/e2e/product/document_sharing_mailpit.spec.js
   tests/e2e/product/document_management.spec.js
   tests/e2e/product/care_team.spec.js
   tests/e2e/product/ai_assistant.spec.js
@@ -59,6 +64,7 @@ def usage
       server   Prepare QA env and run a Rails test server in the foreground
       smoke    Run fast Chromium browser smoke checks
       browser  Run all Chromium browser QA checks
+      mailpit  Run email QA checks through local Mailpit SMTP and API
       bughunt  Run browser checks with named screenshots, videos, and traces always on
       rubocop  Run RuboCop on the QA harness Ruby script
       review   Run docs, static, doctor, development harness checks, and browser smoke
@@ -67,6 +73,8 @@ def usage
       ruby scripts/paper_bridge_qa_harness.rb bughunt share-modal
       ruby scripts/paper_bridge_qa_harness.rb bughunt share-modal tests/e2e/product/document_sharing.spec.js
       ruby scripts/paper_bridge_qa_harness.rb bughunt tests/e2e/product/document_sharing.spec.js
+      ruby scripts/paper_bridge_qa_harness.rb mailpit
+      ruby scripts/paper_bridge_qa_harness.rb mailpit tests/e2e/product/document_sharing_mailpit.spec.js
   USAGE
 end
 
@@ -105,6 +113,26 @@ rescue Errno::ECONNREFUSED, Errno::EADDRNOTAVAIL, SocketError, Net::OpenTimeout,
   false
 end
 
+def mailpit_responding?
+  response = Net::HTTP.get_response(URI("#{MAILPIT_API_URL}/api/v1/info"))
+  response.is_a?(Net::HTTPSuccess)
+rescue Errno::ECONNREFUSED, Errno::EADDRNOTAVAIL, SocketError, Net::OpenTimeout, Net::ReadTimeout
+  false
+end
+
+def ensure_mailpit_ready
+  return true if mailpit_responding?
+
+  warn(
+    [
+      "Mailpit is not responding at #{MAILPIT_API_URL}.",
+      "Start it with:",
+      "  mailpit --smtp #{MAILPIT_SMTP_ADDRESS}:#{MAILPIT_SMTP_PORT} --listen #{URI(MAILPIT_API_URL).host}:#{URI(MAILPIT_API_URL).port}"
+    ].join("\n")
+  )
+  false
+end
+
 def wait_for_server(timeout_seconds: 30)
   Timeout.timeout(timeout_seconds) do
     sleep 0.25 until app_responding?
@@ -115,7 +143,7 @@ rescue Timeout::Error
   false
 end
 
-def start_server
+def start_server(env: {})
   return nil if app_responding?
 
   ensure_artifact_dirs
@@ -124,7 +152,7 @@ def start_server
   log.flush
 
   spawn(
-    { "RAILS_ENV" => "test", "PORT" => QA_PORT },
+    { "RAILS_ENV" => "test", "PORT" => QA_PORT }.merge(env),
     "bin/rails", "server", "-p", QA_PORT, "-b", QA_HOST,
     chdir: ROOT.to_s,
     out: log,
@@ -150,10 +178,10 @@ rescue Timeout::Error
   Process.wait(pid)
 end
 
-def with_server
+def with_server(env: {})
   return false unless prepare_database && build_assets
 
-  pid = start_server
+  pid = start_server(env: env)
   return false if pid == false
 
   begin
@@ -163,16 +191,16 @@ def with_server
   end
 end
 
-def run_playwright(paths: [], always_record: false, artifact_dir: nil)
+def run_playwright(paths: [], always_record: false, artifact_dir: nil, env: {})
   ensure_artifact_dirs
   command = [ "npx", "playwright", "test", *paths, "--project=chromium" ]
-  env = {
+  playwright_env = {
     "QA_BASE_URL" => QA_BASE_URL
-  }
-  env["QA_ARTIFACT_MODE"] = "always" if always_record
-  env["QA_ARTIFACT_DIR"] = artifact_dir.relative_path_from(ROOT).to_s if artifact_dir
+  }.merge(env)
+  playwright_env["QA_ARTIFACT_MODE"] = "always" if always_record
+  playwright_env["QA_ARTIFACT_DIR"] = artifact_dir.relative_path_from(ROOT).to_s if artifact_dir
 
-  result = run_command(command, env: env)
+  result = run_command(command, env: playwright_env)
 
   if artifact_dir
     puts "\nQA artifacts written under #{artifact_dir.relative_path_from(ROOT)}"
@@ -188,6 +216,20 @@ def bughunt_artifact_dir(raw_bug_id)
   safe_bug_id = bug_id.downcase.gsub(/[^a-z0-9._-]+/, "-").gsub(/\A-+|-+\z/, "")
   safe_bug_id = Time.now.utc.strftime("bug-%Y%m%d-%H%M%S") if safe_bug_id.empty?
   ARTIFACT_ROOT.join("bugs", safe_bug_id)
+end
+
+def mailpit_server_env
+  {
+    "QA_MAILPIT" => "true",
+    "MAILPIT_SMTP_ADDRESS" => MAILPIT_SMTP_ADDRESS,
+    "MAILPIT_SMTP_PORT" => MAILPIT_SMTP_PORT
+  }
+end
+
+def mailpit_playwright_env
+  {
+    "QA_MAILPIT_API_URL" => MAILPIT_API_URL
+  }
 end
 
 def doctor_passed?
@@ -248,6 +290,12 @@ when "smoke"
   with_server { run_playwright(paths: [ "tests/e2e/smoke" ]) }
 when "browser"
   with_server { run_playwright }
+when "mailpit"
+  paths = args.any? ? args : [ "tests/e2e/product/document_sharing_mailpit.spec.js" ]
+  ensure_mailpit_ready &&
+    with_server(env: mailpit_server_env) do
+      run_playwright(paths: paths, env: mailpit_playwright_env)
+    end
 when "bughunt"
   bug_id = args.first
   if bug_id&.start_with?("tests/")

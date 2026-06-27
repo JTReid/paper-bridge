@@ -26,6 +26,8 @@ The QA harness sets:
 - `QA_BASE_URL=http://127.0.0.1:3100` by default
 - `QA_ARTIFACT_MODE=always` for `bughunt`
 - `QA_ARTIFACT_DIR=tmp/qa-artifacts/bugs/<bug-id>` for named bug hunts
+- `QA_MAILPIT=true` on the Rails test server only for Mailpit email QA runs
+- `QA_MAILPIT_API_URL=http://127.0.0.1:8025` for Playwright Mailpit API checks
 
 Specs should use `data-testid` anchors for controls that are likely to be
 reused in QA scenarios. Prefer accessible roles and labels for user-facing
@@ -36,6 +38,15 @@ Shared browser diagnostics fail tests on uncaught page errors, console errors,
 failed browser requests, and HTTP responses with status `>= 500`.
 
 Shared accessibility checks use `@axe-core/playwright`.
+
+Mailpit email checks use the same Rails test database and browser server, but
+temporarily route Action Mailer to local Mailpit SMTP. Start Mailpit before
+running the mode:
+
+```bash
+mailpit --smtp 127.0.0.1:1025 --listen 127.0.0.1:8025
+ruby scripts/paper_bridge_qa_harness.rb mailpit
+```
 
 Run Playwright through the QA harness unless you are iterating on a single spec.
 The harness prepares the DB, loads fixtures, builds Tailwind, starts Rails, and

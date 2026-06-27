@@ -20,6 +20,9 @@ artifacts, and prove the fix?"
 - Browser tests surface console errors, uncaught page errors, failed requests,
   and server responses with status `>= 500`.
 - Browser tests run automated axe accessibility checks on key pages and modals.
+- The `mailpit` command is an opt-in mode that routes the Rails test server's
+  Action Mailer delivery through local Mailpit SMTP and verifies captured email
+  through the Mailpit API.
 - QA artifacts are local-only and are not committed.
 
 ## Commands
@@ -30,8 +33,16 @@ ruby scripts/paper_bridge_qa_harness.rb db
 ruby scripts/paper_bridge_qa_harness.rb assets
 ruby scripts/paper_bridge_qa_harness.rb smoke
 ruby scripts/paper_bridge_qa_harness.rb browser
+ruby scripts/paper_bridge_qa_harness.rb mailpit
 ruby scripts/paper_bridge_qa_harness.rb bughunt share-modal
 ruby scripts/paper_bridge_qa_harness.rb review
+```
+
+The Mailpit command requires a local Mailpit process:
+
+```bash
+mailpit --smtp 127.0.0.1:1025 --listen 127.0.0.1:8025
+ruby scripts/paper_bridge_qa_harness.rb mailpit
 ```
 
 ## Artifact Policy
@@ -62,6 +73,8 @@ exercise the core workflow.
 - A dependent workspace opens.
 - The documents page opens and the share modal can be opened.
 - Document sharing can submit to a care team recipient.
+- Mailpit mode verifies document sharing sends an email with the expected
+  recipient, subject, body, and attachment count.
 - Browser-native upload form validation guards missing files.
 - Document metadata can be edited.
 - The care team page opens.

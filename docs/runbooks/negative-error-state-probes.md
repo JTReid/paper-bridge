@@ -4,6 +4,11 @@ This note captures recommended QA harness probes for intentionally exercising
 invalid, empty, failed, or edge-case product states. These are candidates for a
 future Playwright/QA pass, not current product commitments.
 
+## TODO
+
+- Revisit this runbook and decide the first negative error-state Playwright specs
+  to implement.
+
 ## Recommendation
 
 Start with targeted negative probes where browser-level behavior adds value
@@ -143,4 +148,3 @@ Defer:
 - Cross-browser expansion beyond Chromium.
 - Unsupported upload-type probes until file type restrictions are a product
   requirement.
-

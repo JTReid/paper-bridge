@@ -33,10 +33,21 @@ Rails.application.configure do
   # Store uploaded files on the local file system in a temporary directory.
   config.active_storage.service = :test
 
-  # Tell Action Mailer not to deliver emails to the real world.
-  # The :test delivery method accumulates sent emails in the
-  # ActionMailer::Base.deliveries array.
-  config.action_mailer.delivery_method = :test
+  if ENV["QA_MAILPIT"].present?
+    # Opt-in QA mode for exercising real SMTP delivery against local Mailpit.
+    config.action_mailer.delivery_method = :smtp
+    config.action_mailer.perform_deliveries = true
+    config.action_mailer.raise_delivery_errors = true
+    config.action_mailer.smtp_settings = {
+      address: ENV.fetch("MAILPIT_SMTP_ADDRESS", "127.0.0.1"),
+      port: ENV.fetch("MAILPIT_SMTP_PORT", 1025).to_i
+    }
+  else
+    # Tell Action Mailer not to deliver emails to the real world.
+    # The :test delivery method accumulates sent emails in the
+    # ActionMailer::Base.deliveries array.
+    config.action_mailer.delivery_method = :test
+  end
 
   # Set host to be used by links generated in mailer templates.
   config.action_mailer.default_url_options = { host: "example.com" }

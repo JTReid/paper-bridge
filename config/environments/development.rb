@@ -33,8 +33,14 @@ Rails.application.configure do
   # Store uploaded files in S3 using credentials under aws.*.
   config.active_storage.service = :amazon
 
-  # Don't care if the mailer can't send.
-  config.action_mailer.raise_delivery_errors = false
+  # Capture development email in Mailpit instead of sending real messages.
+  config.action_mailer.delivery_method = :smtp
+  config.action_mailer.perform_deliveries = true
+  config.action_mailer.raise_delivery_errors = true
+  config.action_mailer.smtp_settings = {
+    address: ENV.fetch("MAILPIT_SMTP_ADDRESS", "127.0.0.1"),
+    port: ENV.fetch("MAILPIT_SMTP_PORT", 1025).to_i
+  }
 
   # Make template changes take effect immediately.
   config.action_mailer.perform_caching = false

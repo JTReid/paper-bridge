@@ -44,6 +44,7 @@ ruby scripts/paper_bridge_qa_harness.rb db
 ruby scripts/paper_bridge_qa_harness.rb assets
 ruby scripts/paper_bridge_qa_harness.rb smoke
 ruby scripts/paper_bridge_qa_harness.rb browser
+ruby scripts/paper_bridge_qa_harness.rb mailpit
 ruby scripts/paper_bridge_qa_harness.rb bughunt
 ruby scripts/paper_bridge_qa_harness.rb rubocop
 ruby scripts/paper_bridge_qa_harness.rb review
@@ -58,6 +59,14 @@ or verifying browser-visible defects; it records screenshots, traces, and videos
 under `tmp/qa-artifacts/bugs/BUG_ID/`. Browser specs also surface console
 errors, uncaught page errors, failed requests, server responses with status
 `>= 500`, and axe accessibility violations.
+
+Use `mailpit` when an email workflow needs real SMTP capture. Start Mailpit
+first:
+
+```bash
+mailpit --smtp 127.0.0.1:1025 --listen 127.0.0.1:8025
+ruby scripts/paper_bridge_qa_harness.rb mailpit
+```
 
 ## Agentic Pipeline Harness
 
