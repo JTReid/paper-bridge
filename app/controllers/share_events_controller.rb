@@ -28,6 +28,7 @@ class ShareEventsController < ApplicationController
     redirect_back fallback_location: documents_path_fallback, alert: e.record.errors.full_messages.to_sentence
   rescue StandardError => e
     share_event&.mark_failed!(e) if share_event&.persisted?
+    log_share_delivery_failure(e, share_event)
     redirect_back fallback_location: documents_path_fallback, alert: "Documents could not be shared."
   end
 
@@ -60,5 +61,17 @@ class ShareEventsController < ApplicationController
     def documents_path_fallback
       dependent = current_account.dependents.find_by(id: params[:dependent_id])
       dependent ? dependent_documents_path(dependent) : dashboard_path
+    end
+
+    def log_share_delivery_failure(error, share_event)
+      logger.error(
+        [
+          "document_share_delivery_failed",
+          "share_event_id=#{share_event&.id || "none"}",
+          "account_id=#{current_account&.id || "none"}",
+          "error_class=#{error.class.name}",
+          "error_message=#{error.message.to_s.squish}"
+        ].join(" ")
+      )
     end
 end

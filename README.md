@@ -49,3 +49,21 @@ RAILS_MASTER_KEY=...
 `production.rb` derives the SES SMTP endpoint from `aws.ses_region` or
 `aws.region`. Production boot fails fast if `mailer_from`, the SES region, SMTP
 username, or SMTP password is missing from encrypted credentials.
+
+## Development Email
+
+Development uses Mailpit by default. To send a live SES sandbox email from
+development, start Rails with:
+
+```bash
+PAPER_BRIDGE_DEV_MAILER=ses bin/rails server
+```
+
+SES sandbox sends only work when both the configured `mailer_from` sender and
+the recipient are verified SES identities in the configured region.
+
+If SES returns `535 Authentication Credentials Invalid`, the app reached SES but
+SMTP authentication failed. Confirm `aws.ses_access_key` is the SES SMTP
+username and `aws.ses_secret_key` is the SES SMTP password from SES SMTP
+settings in the same region, not the normal AWS access key and secret key used
+for S3.

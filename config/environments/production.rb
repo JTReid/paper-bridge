@@ -58,7 +58,8 @@ Rails.application.configure do
   config.action_mailer.default_url_options = { host: mailer_host }
 
   mailer_from = Rails.application.credentials[:mailer_from].presence
-  ses_region = Rails.application.credentials.dig(:aws, :region).presence
+  ses_region = Rails.application.credentials.dig(:aws, :ses_region).presence ||
+    Rails.application.credentials.dig(:aws, :region).presence
   ses_smtp_user_name = Rails.application.credentials.dig(:aws, :ses_access_key).presence
   ses_smtp_password = Rails.application.credentials.dig(:aws, :ses_secret_key).presence
   missing_ses_settings = {

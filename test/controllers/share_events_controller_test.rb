@@ -95,4 +95,51 @@ class ShareEventsControllerTest < ActionDispatch::IntegrationTest
     assert_redirected_to dependent_documents_path(dependents(:emma))
     assert_equal "Choose at least one document to share.", flash[:alert]
   end
+
+  test "marks share event failed when email delivery fails" do
+    document = documents(:advance_directive)
+    document.file.attach(
+      io: file_fixture("sample.txt").open,
+      filename: document.original_filename,
+      content_type: document.content_type
+    )
+    sign_in users(:family_admin)
+
+    failing_delivery = Class.new do
+      def share
+        self
+      end
+
+      def deliver_now
+        raise StandardError, "SES delivery rejected"
+      end
+    end.new
+
+    mailer_class = DocumentShareMailer.singleton_class
+    mailer_class.alias_method :with_without_delivery_failure, :with
+    DocumentShareMailer.define_singleton_method(:with) { |*| failing_delivery }
+
+    begin
+      assert_difference -> { ShareEvent.count }, 1 do
+        post share_events_path(dependent_id: document.dependent_id), params: {
+          share_event: {
+            recipient_email: "recipient@example.test",
+            subject: "Please review",
+            message: "Attached for review.",
+            document_ids: [ document.id ]
+          }
+        }, headers: { "HTTP_REFERER" => dependent_documents_url(document.dependent) }
+      end
+    ensure
+      mailer_class.alias_method :with, :with_without_delivery_failure
+      mailer_class.remove_method :with_without_delivery_failure
+    end
+
+    share_event = ShareEvent.order(:created_at).last
+
+    assert_redirected_to dependent_documents_path(document.dependent)
+    assert_equal "failed", share_event.status
+    assert_equal "SES delivery rejected", share_event.error_message
+    assert_equal "Documents could not be shared.", flash[:alert]
+  end
 end

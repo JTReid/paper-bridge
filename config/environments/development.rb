@@ -33,14 +33,46 @@ Rails.application.configure do
   # Store uploaded files in S3 using credentials under aws.*.
   config.active_storage.service = :amazon
 
-  # Capture development email in Mailpit instead of sending real messages.
-  config.action_mailer.delivery_method = :smtp
   config.action_mailer.perform_deliveries = true
   config.action_mailer.raise_delivery_errors = true
-  config.action_mailer.smtp_settings = {
-    address: ENV.fetch("MAILPIT_SMTP_ADDRESS", "127.0.0.1"),
-    port: ENV.fetch("MAILPIT_SMTP_PORT", 1025).to_i
-  }
+
+  if ENV["PAPER_BRIDGE_DEV_MAILER"] == "ses"
+    mailer_from = Rails.application.credentials[:mailer_from].presence
+    ses_region = Rails.application.credentials.dig(:aws, :ses_region).presence ||
+      Rails.application.credentials.dig(:aws, :region).presence
+    ses_smtp_user_name = Rails.application.credentials.dig(:aws, :ses_access_key).presence
+    ses_smtp_password = Rails.application.credentials.dig(:aws, :ses_secret_key).presence
+    missing_ses_settings = {
+      "mailer_from" => mailer_from,
+      "aws.region or aws.ses_region" => ses_region,
+      "aws.ses_access_key" => ses_smtp_user_name,
+      "aws.ses_secret_key" => ses_smtp_password
+    }.filter_map { |name, value| name if value.blank? }
+
+    if missing_ses_settings.any?
+      raise "Missing development SES SMTP configuration: #{missing_ses_settings.join(", ")}"
+    end
+
+    # Avoid dumping full emails and attachments into development logs when a live SES probe fails.
+    config.action_mailer.logger = nil
+    config.action_mailer.delivery_method = :smtp
+    config.action_mailer.smtp_settings = {
+      address: "email-smtp.#{ses_region}.amazonaws.com",
+      port: 587,
+      domain: ENV.fetch("APP_HOST", "localhost"),
+      user_name: ses_smtp_user_name,
+      password: ses_smtp_password,
+      authentication: :plain,
+      enable_starttls_auto: true
+    }
+  else
+    # Capture development email in Mailpit instead of sending real messages.
+    config.action_mailer.delivery_method = :smtp
+    config.action_mailer.smtp_settings = {
+      address: ENV.fetch("MAILPIT_SMTP_ADDRESS", "127.0.0.1"),
+      port: ENV.fetch("MAILPIT_SMTP_PORT", 1025).to_i
+    }
+  end
 
   # Make template changes take effect immediately.
   config.action_mailer.perform_caching = false
