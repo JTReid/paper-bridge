@@ -57,19 +57,33 @@ Rails.application.configure do
   mailer_host = ENV.fetch("APP_HOST", "example.com")
   config.action_mailer.default_url_options = { host: mailer_host }
 
-  if ENV["SMTP_ADDRESS"].present?
-    config.action_mailer.delivery_method = :smtp
-    config.action_mailer.raise_delivery_errors = true
-    config.action_mailer.smtp_settings = {
-      address: ENV.fetch("SMTP_ADDRESS"),
-      port: ENV.fetch("SMTP_PORT", 587).to_i,
-      domain: ENV.fetch("SMTP_DOMAIN", mailer_host),
-      user_name: ENV["SMTP_USER_NAME"].presence,
-      password: ENV["SMTP_PASSWORD"].presence,
-      authentication: ENV.fetch("SMTP_AUTHENTICATION", "plain").presence&.to_sym,
-      enable_starttls_auto: ENV.fetch("SMTP_ENABLE_STARTTLS_AUTO", "true") != "false"
-    }.compact
+  mailer_from = Rails.application.credentials[:mailer_from].presence
+  ses_region = Rails.application.credentials.dig(:aws, :region).presence
+  ses_smtp_user_name = Rails.application.credentials.dig(:aws, :ses_access_key).presence
+  ses_smtp_password = Rails.application.credentials.dig(:aws, :ses_secret_key).presence
+  missing_ses_settings = {
+    "mailer_from" => mailer_from,
+    "aws.region or aws.ses_region" => ses_region,
+    "aws.ses_access_key" => ses_smtp_user_name,
+    "aws.ses_secret_key" => ses_smtp_password
+  }.filter_map { |name, value| name if value.blank? }
+
+  if missing_ses_settings.any?
+    raise "Missing production SES SMTP configuration: #{missing_ses_settings.join(", ")}"
   end
+
+  config.action_mailer.delivery_method = :smtp
+  config.action_mailer.perform_deliveries = true
+  config.action_mailer.raise_delivery_errors = true
+  config.action_mailer.smtp_settings = {
+    address: "email-smtp.#{ses_region}.amazonaws.com",
+    port: 587,
+    domain: mailer_host,
+    user_name: ses_smtp_user_name,
+    password: ses_smtp_password,
+    authentication: :plain,
+    enable_starttls_auto: true
+  }
 
   # Enable locale fallbacks for I18n (makes lookups for any locale fall back to
   # the I18n.default_locale when a translation cannot be found).

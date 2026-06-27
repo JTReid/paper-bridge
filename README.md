@@ -25,19 +25,27 @@ Things you may want to cover:
 
 ## Production Email
 
-Document sharing uses ActionMailer. Configure outbound SMTP with environment
-variables:
+Document sharing uses ActionMailer. Production is configured for Amazon SES
+through SMTP. Store the SES SMTP username and password in encrypted Rails
+credentials:
+
+```yaml
+mailer_from: PaperBridge <no-reply@paperbridge.example.com>
+aws:
+  region: us-east-1
+  ses_access_key: SES_SMTP_USERNAME
+  ses_secret_key: SES_SMTP_PASSWORD
+```
+
+If SES uses a different region than S3, add `aws.ses_region`.
+
+On Heroku, provide the Rails master key and app-facing mail settings:
 
 ```bash
 APP_HOST=paperbridge.example.com
-MAILER_FROM="PaperBridge <no-reply@paperbridge.example.com>"
-SMTP_ADDRESS=smtp.example.com
-SMTP_PORT=587
-SMTP_DOMAIN=paperbridge.example.com
-SMTP_USER_NAME=your-smtp-user
-SMTP_PASSWORD=your-smtp-password
-SMTP_AUTHENTICATION=plain
-SMTP_ENABLE_STARTTLS_AUTO=true
+RAILS_MASTER_KEY=...
 ```
 
-On Heroku, set the same values with `heroku config:set`.
+`production.rb` derives the SES SMTP endpoint from `aws.ses_region` or
+`aws.region`. Production boot fails fast if `mailer_from`, the SES region, SMTP
+username, or SMTP password is missing from encrypted credentials.
