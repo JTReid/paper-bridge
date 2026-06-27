@@ -31,10 +31,10 @@
     </section>
 
     <section class="space-y-4 rounded-2xl border border-border/50 bg-white p-6">
-      <%= form_with url: dependent_ai_assistant_path(@dependent), method: :get, class: "space-y-4" do |form| %>
-        <%= form.text_area :q, value: @query, placeholder: "Ask a question about documents, care progress, or next steps...", class: "min-h-[110px] w-full resize-none rounded-xl border border-border bg-white px-3 py-3 text-sm text-foreground outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/10" %>
+      <%= form_with url: dependent_ai_assistant_path(@dependent), method: :get, class: "space-y-4", data: { testid: "ai-assistant-form" } do |form| %>
+        <%= form.text_area :q, value: @query, placeholder: "Ask a question about documents, care progress, or next steps...", class: "min-h-[110px] w-full resize-none rounded-xl border border-border bg-white px-3 py-3 text-sm text-foreground outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/10", data: { testid: "ai-assistant-query" } %>
         <div class="flex justify-end">
-          <%= button_tag type: :submit, class: "inline-flex h-9 items-center justify-center rounded-full bg-primary px-4 text-xs font-medium text-white transition-colors hover:bg-primary/90" do %>
+          <%= button_tag type: :submit, class: "inline-flex h-9 items-center justify-center rounded-full bg-primary px-4 text-xs font-medium text-white transition-colors hover:bg-primary/90", data: { testid: "ai-assistant-submit" } do %>
             <%= pb_icon("send", class_name: "mr-2 h-3.5 w-3.5") %>
             Ask
           <% end %>

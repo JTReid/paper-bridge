@@ -20,11 +20,11 @@
   end
 %>
 
-<main class="min-h-screen bg-background text-foreground lg:flex">
-  <aside class="hidden min-h-screen w-[248px] shrink-0 border-r border-border/50 bg-white lg:flex lg:flex-col">
+<main class="min-h-screen bg-background text-foreground lg:flex" data-testid="app-shell">
+  <aside class="hidden min-h-screen w-[248px] shrink-0 border-r border-border/50 bg-white lg:flex lg:flex-col" data-testid="desktop-sidebar">
     <% if dependent_context %>
       <div class="border-b border-border/40 px-4 py-6">
-        <%= link_to dashboard_path, class: "inline-flex items-center gap-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground" do %>
+        <%= link_to dashboard_path, class: "inline-flex items-center gap-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground", data: { testid: "all-profiles-link" } do %>
           <%= pb_icon("arrow-left", class_name: "h-4 w-4") %>
           All Profiles
         <% end %>
@@ -52,7 +52,7 @@
     <nav class="flex-1 space-y-1 px-3 py-4">
       <% nav_items.each do |item| %>
         <% active_item = active == item[:key] %>
-        <%= link_to item[:path], class: "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-150 #{active_item ? "bg-primary text-white shadow-sm" : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"}" do %>
+        <%= link_to item[:path], class: "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-150 #{active_item ? "bg-primary text-white shadow-sm" : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"}", data: { testid: "nav-#{item[:key].to_s.dasherize}" } do %>
           <%= pb_icon(item[:icon], class_name: "h-4 w-4 shrink-0") %>
           <span><%= item[:label] %></span>
         <% end %>
@@ -65,7 +65,8 @@
       <p class="mt-1 truncate text-xs text-muted-foreground"><%= actor_label %></p>
       <%= button_to destroy_user_session_path,
           method: :delete,
-          class: "mt-4 flex w-full items-center justify-center rounded-xl border border-border bg-white px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground" do %>
+          class: "mt-4 flex w-full items-center justify-center rounded-xl border border-border bg-white px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground",
+          data: { testid: "logout-button" } do %>
         Log Out
       <% end %>
     </div>
@@ -115,7 +116,8 @@
             <div class="mt-4 border-t border-border/50 pt-4">
               <%= button_to destroy_user_session_path,
                   method: :delete,
-                  class: "flex w-full items-center justify-center rounded-xl border border-border bg-white px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground" do %>
+                  class: "flex w-full items-center justify-center rounded-xl border border-border bg-white px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground",
+                  data: { testid: "mobile-logout-button" } do %>
                 Log Out
               <% end %>
             </div>
@@ -124,7 +126,7 @@
       </div>
     </header>
 
-    <section class="mx-auto max-w-6xl px-5 py-8 sm:px-6 md:py-10 lg:px-8">
+    <section class="mx-auto max-w-6xl px-5 py-8 sm:px-6 md:py-10 lg:px-8" data-testid="app-content">
       <%= content %>
     </section>
   </div>

@@ -24,7 +24,7 @@
       </div>
 
       <div class="flex flex-wrap gap-3">
-        <%= link_to "Edit document", edit_document_path(@document), class: "inline-flex justify-center rounded-md border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 shadow-sm hover:bg-slate-50" %>
+        <%= link_to "Edit document", edit_document_path(@document), class: "inline-flex justify-center rounded-md border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 shadow-sm hover:bg-slate-50", data: { testid: "document-edit-link" } %>
         <%= button_to "Delete document", @document, method: :delete, form: { data: { turbo_confirm: "Delete this document?" } }, class: "inline-flex justify-center rounded-md border border-red-200 bg-white px-3 py-2 text-sm font-semibold text-red-700 shadow-sm hover:bg-red-50" %>
       </div>
     </div>

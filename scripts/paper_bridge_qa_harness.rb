@@ -14,6 +14,18 @@ QA_BASE_URL = ENV.fetch("QA_BASE_URL", "http://#{QA_HOST}:#{QA_PORT}")
 ARTIFACT_ROOT = ROOT.join("tmp/qa-artifacts")
 SERVER_LOG = ARTIFACT_ROOT.join("logs/rails-test-server.log")
 
+QA_DATA_RUNNER = <<~"RUBY"
+  document = Document.find_by!(title: "Advance Directive")
+  unless document.file.attached?
+    document.file.attach(
+      io: Rails.root.join("test/fixtures/files/sample.txt").open,
+      filename: document.original_filename.presence || "advance-directive.txt",
+      content_type: document.content_type.presence || "text/plain"
+    )
+    document.save!
+  end
+RUBY
+
 STATIC_FILES = %w[
   docs/runbooks/qa-troubleshooting.md
   docs/runbooks/browser-qa.md
@@ -22,10 +34,14 @@ STATIC_FILES = %w[
   package.json
   package-lock.json
   tests/e2e/helpers/auth.js
+  tests/e2e/helpers/diagnostics.js
+  tests/e2e/helpers/accessibility.js
+  tests/e2e/fixtures.js
   tests/e2e/smoke/public_home.spec.js
   tests/e2e/smoke/auth.spec.js
   tests/e2e/product/dependent_workspace.spec.js
   tests/e2e/product/document_sharing.spec.js
+  tests/e2e/product/document_management.spec.js
   tests/e2e/product/care_team.spec.js
   tests/e2e/product/ai_assistant.spec.js
   tests/e2e/regressions/README.md
@@ -38,14 +54,19 @@ def usage
     Commands:
       doctor   Check local QA prerequisites
       static   Check QA harness files exist
-      db       Prepare test DB and load deterministic fixtures
+      db       Prepare test DB, load fixtures, and apply QA data setup
       assets   Build generated Tailwind CSS
       server   Prepare QA env and run a Rails test server in the foreground
       smoke    Run fast Chromium browser smoke checks
       browser  Run all Chromium browser QA checks
-      bughunt  Run all Chromium browser checks with screenshots, videos, and traces always on
+      bughunt  Run browser checks with named screenshots, videos, and traces always on
       rubocop  Run RuboCop on the QA harness Ruby script
       review   Run docs, static, doctor, development harness checks, and browser smoke
+
+    Examples:
+      ruby scripts/paper_bridge_qa_harness.rb bughunt share-modal
+      ruby scripts/paper_bridge_qa_harness.rb bughunt share-modal tests/e2e/product/document_sharing.spec.js
+      ruby scripts/paper_bridge_qa_harness.rb bughunt tests/e2e/product/document_sharing.spec.js
   USAGE
 end
 
@@ -69,7 +90,8 @@ end
 
 def prepare_database
   run_command([ "bin/rails", "db:prepare" ], env: { "RAILS_ENV" => "test" }) &&
-    run_command([ "bin/rails", "db:fixtures:load" ], env: { "RAILS_ENV" => "test" })
+    run_command([ "bin/rails", "db:fixtures:load" ], env: { "RAILS_ENV" => "test" }) &&
+    run_command([ "bin/rails", "runner", QA_DATA_RUNNER ], env: { "RAILS_ENV" => "test" })
 end
 
 def build_assets
@@ -141,15 +163,31 @@ def with_server
   end
 end
 
-def run_playwright(paths: [], always_record: false)
+def run_playwright(paths: [], always_record: false, artifact_dir: nil)
   ensure_artifact_dirs
   command = [ "npx", "playwright", "test", *paths, "--project=chromium" ]
   env = {
     "QA_BASE_URL" => QA_BASE_URL
   }
   env["QA_ARTIFACT_MODE"] = "always" if always_record
+  env["QA_ARTIFACT_DIR"] = artifact_dir.relative_path_from(ROOT).to_s if artifact_dir
 
-  run_command(command, env: env)
+  result = run_command(command, env: env)
+
+  if artifact_dir
+    puts "\nQA artifacts written under #{artifact_dir.relative_path_from(ROOT)}"
+    puts "HTML report: #{artifact_dir.join("playwright-report/index.html").relative_path_from(ROOT)}"
+  end
+
+  result
+end
+
+def bughunt_artifact_dir(raw_bug_id)
+  bug_id = raw_bug_id.to_s.strip
+  bug_id = Time.now.utc.strftime("bug-%Y%m%d-%H%M%S") if bug_id.empty?
+  safe_bug_id = bug_id.downcase.gsub(/[^a-z0-9._-]+/, "-").gsub(/\A-+|-+\z/, "")
+  safe_bug_id = Time.now.utc.strftime("bug-%Y%m%d-%H%M%S") if safe_bug_id.empty?
+  ARTIFACT_ROOT.join("bugs", safe_bug_id)
 end
 
 def doctor_passed?
@@ -157,6 +195,7 @@ def doctor_passed?
     [ "node", "--version" ],
     [ "npm", "--version" ],
     [ "npx", "playwright", "--version" ],
+    [ "npm", "ls", "@axe-core/playwright", "--depth=0" ],
     [ "psql", "postgres", "-tAc", "SELECT default_version FROM pg_available_extensions WHERE name = 'vector'" ]
   ]
 
@@ -189,6 +228,7 @@ def run_server_foreground
 end
 
 command = ARGV.fetch(0, nil)
+args = ARGV.drop(1)
 
 ok = case command
 when nil, "-h", "--help", "help"
@@ -209,7 +249,17 @@ when "smoke"
 when "browser"
   with_server { run_playwright }
 when "bughunt"
-  with_server { run_playwright(always_record: true) }
+  bug_id = args.first
+  if bug_id&.start_with?("tests/")
+    paths = args
+    bug_id = nil
+  else
+    paths = args.drop(1)
+  end
+
+  artifact_dir = bughunt_artifact_dir(bug_id)
+  FileUtils.mkdir_p(artifact_dir)
+  with_server { run_playwright(paths: paths, always_record: true, artifact_dir: artifact_dir) }
 when "rubocop"
   run_command([ "bin/rubocop", "--cache", "false", "scripts/paper_bridge_qa_harness.rb" ])
 when "review"

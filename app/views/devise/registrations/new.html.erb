@@ -48,7 +48,7 @@
           <p class="mt-1 text-sm text-muted-foreground">Use this login to manage your family workspace.</p>
         </div>
 
-        <%= form_for(resource, as: resource_name, url: registration_path(resource_name), html: { class: "mt-6 space-y-4" }) do |f| %>
+        <%= form_for(resource, as: resource_name, url: registration_path(resource_name), html: { class: "mt-6 space-y-4", data: { testid: "registration-form" } }) do |f| %>
           <% if resource.errors.any? %>
             <div class="rounded-xl border border-red-200 bg-red-50 p-4 text-red-900" role="alert">
               <h3 class="text-sm font-semibold"><%= pluralize(resource.errors.count, "error") %> prevented this account from being created</h3>
@@ -62,17 +62,17 @@
 
           <div>
             <%= f.label :account_name, "Workspace name", class: "block text-sm font-medium text-foreground" %>
-            <%= f.text_field :account_name, value: params.dig(resource_name, :account_name), autocomplete: "organization", class: "mt-2 block h-11 w-full rounded-xl border border-border bg-white px-3 text-sm text-foreground shadow-sm outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/10" %>
+            <%= f.text_field :account_name, value: params.dig(resource_name, :account_name), autocomplete: "organization", class: "mt-2 block h-11 w-full rounded-xl border border-border bg-white px-3 text-sm text-foreground shadow-sm outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/10", data: { testid: "registration-account-name" } %>
           </div>
 
           <div>
             <%= f.label :name, class: "block text-sm font-medium text-foreground" %>
-            <%= f.text_field :name, autocomplete: "name", class: "mt-2 block h-11 w-full rounded-xl border border-border bg-white px-3 text-sm text-foreground shadow-sm outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/10" %>
+            <%= f.text_field :name, autocomplete: "name", class: "mt-2 block h-11 w-full rounded-xl border border-border bg-white px-3 text-sm text-foreground shadow-sm outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/10", data: { testid: "registration-name" } %>
           </div>
 
           <div>
             <%= f.label :email, class: "block text-sm font-medium text-foreground" %>
-            <%= f.email_field :email, autofocus: true, autocomplete: "email", class: "mt-2 block h-11 w-full rounded-xl border border-border bg-white px-3 text-sm text-foreground shadow-sm outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/10" %>
+            <%= f.email_field :email, autofocus: true, autocomplete: "email", class: "mt-2 block h-11 w-full rounded-xl border border-border bg-white px-3 text-sm text-foreground shadow-sm outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/10", data: { testid: "registration-email" } %>
           </div>
 
           <div>
@@ -82,15 +82,15 @@
                 <span class="text-xs text-muted-foreground"><%= @minimum_password_length %> characters minimum</span>
               <% end %>
             </div>
-            <%= f.password_field :password, autocomplete: "new-password", class: "mt-2 block h-11 w-full rounded-xl border border-border bg-white px-3 text-sm text-foreground shadow-sm outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/10" %>
+            <%= f.password_field :password, autocomplete: "new-password", class: "mt-2 block h-11 w-full rounded-xl border border-border bg-white px-3 text-sm text-foreground shadow-sm outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/10", data: { testid: "registration-password" } %>
           </div>
 
           <div>
             <%= f.label :password_confirmation, class: "block text-sm font-medium text-foreground" %>
-            <%= f.password_field :password_confirmation, autocomplete: "new-password", class: "mt-2 block h-11 w-full rounded-xl border border-border bg-white px-3 text-sm text-foreground shadow-sm outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/10" %>
+            <%= f.password_field :password_confirmation, autocomplete: "new-password", class: "mt-2 block h-11 w-full rounded-xl border border-border bg-white px-3 text-sm text-foreground shadow-sm outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/10", data: { testid: "registration-password-confirmation" } %>
           </div>
 
-          <%= f.submit "Create account", class: "h-11 w-full rounded-full bg-primary px-4 text-sm font-semibold text-primary-foreground shadow-lg shadow-primary/20 transition-colors hover:bg-primary/90" %>
+          <%= f.submit "Create account", class: "h-11 w-full rounded-full bg-primary px-4 text-sm font-semibold text-primary-foreground shadow-lg shadow-primary/20 transition-colors hover:bg-primary/90", data: { testid: "registration-submit" } %>
         <% end %>
 
         <div class="mt-5 rounded-xl border border-border bg-muted/40 px-4 py-3 text-sm text-muted-foreground">

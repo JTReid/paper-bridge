@@ -123,7 +123,7 @@
   roles = [
     ["graduation-cap", "Teacher", "bg-primary/10 text-primary"],
     ["heart", "Therapist", "bg-accent/40 text-accent-foreground"],
-    ["stethoscope", "Doctor", "bg-red-50 text-red-600"],
+    ["stethoscope", "Doctor", "bg-red-50 text-red-700"],
     ["users", "Parent", "bg-amber-50 text-amber-700"],
     ["user-circle", "Family Member", "bg-primary/10 text-primary"],
     ["help-circle", "Other", "bg-muted text-muted-foreground"]
@@ -203,8 +203,8 @@
       </div>
 
       <div class="hidden items-center gap-3 md:flex">
-        <%= link_to secondary_label, secondary_path, class: "inline-flex h-9 items-center justify-center rounded-md px-4 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground" %>
-        <%= link_to nav_primary_label, primary_path, class: "inline-flex h-9 items-center justify-center rounded-full bg-primary px-5 py-2 text-sm font-medium text-primary-foreground shadow transition-colors hover:bg-primary/90" %>
+        <%= link_to secondary_label, secondary_path, class: "inline-flex h-9 items-center justify-center rounded-md px-4 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground", data: { testid: "home-nav-secondary" } %>
+        <%= link_to nav_primary_label, primary_path, class: "inline-flex h-9 items-center justify-center rounded-full bg-primary px-5 py-2 text-sm font-medium text-primary-foreground shadow transition-colors hover:bg-primary/90", data: { testid: "home-nav-primary" } %>
       </div>
 
       <details class="group md:hidden">
@@ -218,8 +218,8 @@
             <a href="#care-team" class="block text-sm text-muted-foreground">Care Team</a>
             <a href="#privacy" class="block text-sm text-muted-foreground">Privacy</a>
             <div class="space-y-2 border-t border-border pt-3">
-              <%= link_to secondary_label, secondary_path, class: "block rounded-md px-3 py-2 text-sm font-medium text-foreground hover:bg-muted" %>
-              <%= link_to nav_primary_label, primary_path, class: "block rounded-full bg-primary px-4 py-2 text-center text-sm font-medium text-primary-foreground" %>
+              <%= link_to secondary_label, secondary_path, class: "block rounded-md px-3 py-2 text-sm font-medium text-foreground hover:bg-muted", data: { testid: "home-mobile-secondary" } %>
+              <%= link_to nav_primary_label, primary_path, class: "block rounded-full bg-primary px-4 py-2 text-center text-sm font-medium text-primary-foreground", data: { testid: "home-mobile-primary" } %>
             </div>
           </div>
         </div>
@@ -245,12 +245,12 @@
           PaperBridge is an AI-powered platform that helps families organize, understand, and share everything related to their child's care in one place.
         </p>
 
-        <p class="mb-8 text-sm text-muted-foreground/70">
+        <p class="mb-8 text-sm text-muted-foreground">
           Spend less time searching through documents and more time focusing on your child.
         </p>
 
         <div class="flex flex-col items-center justify-center gap-3 sm:flex-row">
-          <%= link_to primary_path, class: "inline-flex h-12 items-center justify-center rounded-full bg-primary px-8 text-sm font-medium text-primary-foreground shadow-lg shadow-primary/20 transition-colors hover:bg-primary/90" do %>
+          <%= link_to primary_path, class: "inline-flex h-12 items-center justify-center rounded-full bg-primary px-8 text-sm font-medium text-primary-foreground shadow-lg shadow-primary/20 transition-colors hover:bg-primary/90", data: { testid: "home-hero-primary" } do %>
             <%= primary_label %>
             <%= pb_icon("arrow-right", class_name: "ml-2 h-4 w-4") %>
           <% end %>
@@ -312,7 +312,7 @@
               </div>
 
               <div class="grid grid-cols-2 gap-3">
-                <% [["Educational", 8, "bg-primary/10 text-primary"], ["Medical", 5, "bg-red-50 text-red-600"], ["Therapy", 6, "bg-green-50 text-green-700"], ["Insurance", 3, "bg-amber-50 text-amber-700"]].each do |label, count, color| %>
+                <% [["Educational", 8, "bg-primary/10 text-primary"], ["Medical", 5, "bg-red-50 text-red-700"], ["Therapy", 6, "bg-green-50 text-green-700"], ["Insurance", 3, "bg-amber-50 text-amber-700"]].each do |label, count, color| %>
                   <div class="rounded-xl border border-border/60 bg-white p-3">
                     <p class="text-xs text-muted-foreground"><%= label %></p>
                     <p class="mt-1 text-lg font-semibold text-foreground"><%= count %></p>
@@ -390,7 +390,7 @@
               <div class="flex h-12 w-12 items-center justify-center rounded-xl <%= item[:color] %>">
                 <%= pb_icon(item[:icon], class_name: "h-6 w-6") %>
               </div>
-              <span class="text-sm font-bold text-muted-foreground/40">0<%= index + 1 %></span>
+              <span class="text-sm font-bold text-muted-foreground">0<%= index + 1 %></span>
             </div>
             <h3 class="mb-3 text-xl font-semibold text-foreground"><%= item[:title] %></h3>
             <p class="text-sm leading-relaxed text-muted-foreground"><%= item[:description] %></p>

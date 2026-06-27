@@ -18,7 +18,7 @@
         </div>
         <div class="flex gap-2">
           <%= link_to "Edit", edit_dependent_path(@dependent), class: "inline-flex h-9 items-center rounded-full border border-border px-4 text-xs font-medium text-foreground hover:bg-muted" %>
-          <%= link_to "Care Team", dependent_care_team_memberships_path(@dependent), class: "inline-flex h-9 items-center rounded-full bg-primary px-4 text-xs font-medium text-white hover:bg-primary/90" %>
+          <%= link_to "Care Team", dependent_care_team_memberships_path(@dependent), class: "inline-flex h-9 items-center rounded-full bg-primary px-4 text-xs font-medium text-white hover:bg-primary/90", data: { testid: "dependent-care-team-link" } %>
         </div>
       </div>
     </section>
@@ -37,7 +37,7 @@
       <div class="space-y-4">
         <div class="flex items-center justify-between">
           <h2 class="text-base font-bold text-primary">Recent Documents</h2>
-          <%= link_to "View all", dependent_documents_path(@dependent), class: "text-xs font-medium text-primary hover:opacity-70" %>
+          <%= link_to "View all", dependent_documents_path(@dependent), class: "text-xs font-medium text-primary hover:opacity-70", data: { testid: "dependent-documents-link" } %>
         </div>
 
         <% if @documents.any? %>
@@ -70,7 +70,7 @@
         <div class="rounded-2xl border border-border/60 bg-white p-5 shadow-sm">
           <h2 class="text-base font-bold text-primary">AI Assistant</h2>
           <p class="mt-2 text-sm leading-relaxed text-muted-foreground">Ask questions scoped to this user's uploaded evidence.</p>
-          <%= link_to "Open Assistant", dependent_ai_assistant_path(@dependent), class: "mt-5 inline-flex h-9 items-center rounded-full bg-primary px-4 text-xs font-medium text-white hover:bg-primary/90" %>
+          <%= link_to "Open Assistant", dependent_ai_assistant_path(@dependent), class: "mt-5 inline-flex h-9 items-center rounded-full bg-primary px-4 text-xs font-medium text-white hover:bg-primary/90", data: { testid: "dependent-ai-assistant-link" } %>
         </div>
 
         <div class="rounded-2xl border border-border/60 bg-white p-5 shadow-sm">

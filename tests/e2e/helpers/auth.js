@@ -8,9 +8,9 @@ export const QA_USER = {
 
 export async function signIn(page) {
   await page.goto('/users/sign_in');
-  await page.getByLabel('Email').fill(QA_USER.email);
-  await page.getByLabel('Password').fill(QA_USER.password);
-  await page.getByRole('button', { name: 'Sign in' }).click();
+  await page.getByTestId('sign-in-email').fill(QA_USER.email);
+  await page.getByTestId('sign-in-password').fill(QA_USER.password);
+  await page.getByTestId('sign-in-submit').click();
   await expect(page.getByText('Your Family Hub')).toBeVisible();
   await expect(page.getByText('Emma Greenfield').first()).toBeVisible();
 }

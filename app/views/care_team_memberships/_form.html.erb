@@ -1,4 +1,4 @@
-<%= form_with model: [@dependent, care_team_membership], class: "space-y-5 rounded-2xl border border-border/50 bg-white p-6 shadow-sm" do |form| %>
+<%= form_with model: [@dependent, care_team_membership], class: "space-y-5 rounded-2xl border border-border/50 bg-white p-6 shadow-sm", data: { testid: "care-team-form" } do |form| %>
   <% if care_team_membership.errors.any? %>
     <div class="rounded-xl border border-red-200 bg-red-50 p-4 text-red-900" role="alert">
       <h2 class="text-sm font-semibold"><%= pluralize(care_team_membership.errors.count, "error") %> prevented this care team member from saving</h2>
@@ -13,24 +13,24 @@
   <div class="grid gap-4 sm:grid-cols-2">
     <div>
       <%= form.label :name, "Full name", class: "block text-sm font-medium text-slate-700" %>
-      <%= form.text_field :name, class: "mt-2 block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-950 shadow-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/10" %>
+      <%= form.text_field :name, class: "mt-2 block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-950 shadow-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/10", data: { testid: "care-team-name-field" } %>
     </div>
 
     <div>
       <%= form.label :email, class: "block text-sm font-medium text-slate-700" %>
-      <%= form.email_field :email, class: "mt-2 block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-950 shadow-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/10" %>
+      <%= form.email_field :email, class: "mt-2 block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-950 shadow-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/10", data: { testid: "care-team-email-field" } %>
     </div>
   </div>
 
   <div class="grid gap-4 sm:grid-cols-2">
     <div>
       <%= form.label :role, class: "block text-sm font-medium text-slate-700" %>
-      <%= form.select :role, CareTeamMembership.roles.keys.map { |role| [role.humanize, role] }, {}, class: "mt-2 block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-950 shadow-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/10" %>
+      <%= form.select :role, CareTeamMembership.roles.keys.map { |role| [role.humanize, role] }, {}, class: "mt-2 block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-950 shadow-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/10", data: { testid: "care-team-role-field" } %>
     </div>
 
     <div>
       <%= form.label :status, class: "block text-sm font-medium text-slate-700" %>
-      <%= form.select :status, CareTeamMembership.statuses.keys.map { |status| [status.humanize, status] }, {}, class: "mt-2 block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-950 shadow-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/10" %>
+      <%= form.select :status, CareTeamMembership.statuses.keys.map { |status| [status.humanize, status] }, {}, class: "mt-2 block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-950 shadow-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/10", data: { testid: "care-team-status-field" } %>
     </div>
   </div>
 
@@ -41,7 +41,7 @@
       <% CareTeamMembership::DOCUMENT_CATEGORY_PERMISSIONS.each do |category| %>
         <label class="flex items-center justify-between rounded-xl border border-border/60 bg-white px-4 py-3 text-sm">
           <span class="font-medium text-foreground"><%= category.humanize %></span>
-          <%= check_box_tag "care_team_membership[permissions][#{category}]", "1", care_team_membership.permissions.fetch(category, false), class: "h-4 w-4 rounded border-border text-primary focus:ring-primary" %>
+          <%= check_box_tag "care_team_membership[permissions][#{category}]", "1", care_team_membership.permissions.fetch(category, false), class: "h-4 w-4 rounded border-border text-primary focus:ring-primary", data: { testid: "care-team-permission-#{category}" } %>
         </label>
       <% end %>
     </div>
@@ -49,6 +49,6 @@
 
   <div class="flex items-center justify-end gap-3 border-t border-border/50 pt-5">
     <%= link_to "Cancel", dependent_care_team_memberships_path(@dependent), class: "rounded-full px-4 py-2 text-sm font-medium text-muted-foreground hover:bg-muted" %>
-    <%= form.submit class: "rounded-full bg-primary px-5 py-2 text-sm font-medium text-white shadow-sm hover:bg-primary/90" %>
+    <%= form.submit class: "rounded-full bg-primary px-5 py-2 text-sm font-medium text-white shadow-sm hover:bg-primary/90", data: { testid: "care-team-submit" } %>
   </div>
 <% end %>

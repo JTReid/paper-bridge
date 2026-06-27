@@ -6,7 +6,7 @@
   error_action = editing ? "saving" : "uploading"
 %>
 
-<%= form_with model: document, url: form_url, class: "space-y-6 rounded-2xl border border-border/50 bg-white p-6 shadow-sm" do |form| %>
+<%= form_with model: document, url: form_url, class: "space-y-6 rounded-2xl border border-border/50 bg-white p-6 shadow-sm", data: { testid: editing ? "document-edit-form" : "document-upload-form" } do |form| %>
   <% if document.errors.any? %>
     <div class="rounded-lg border border-red-200 bg-red-50 p-4 text-red-900" role="alert">
       <h2 class="text-sm font-semibold"><%= pluralize(document.errors.count, "error") %> prevented this document from <%= error_action %></h2>
@@ -20,28 +20,28 @@
 
   <div>
     <%= form.label :title, class: "block text-sm font-medium text-slate-700" %>
-    <%= form.text_field :title, class: "mt-2 block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-950 shadow-sm outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100" %>
+    <%= form.text_field :title, class: "mt-2 block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-950 shadow-sm outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100", data: { testid: "document-title-field" } %>
   </div>
 
   <div>
     <%= form.label :description, class: "block text-sm font-medium text-slate-700" %>
-    <%= form.text_area :description, rows: 4, class: "mt-2 block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-950 shadow-sm outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100" %>
+    <%= form.text_area :description, rows: 4, class: "mt-2 block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-950 shadow-sm outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100", data: { testid: "document-description-field" } %>
   </div>
 
   <div>
     <%= form.label :category, class: "block text-sm font-medium text-slate-700" %>
-    <%= form.select :category, Document.categories.keys.map { |category| [category.humanize, category] }, {}, class: "mt-2 block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-950 shadow-sm outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100" %>
+    <%= form.select :category, Document.categories.keys.map { |category| [category.humanize, category] }, {}, class: "mt-2 block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-950 shadow-sm outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100", data: { testid: "document-category-field" } %>
   </div>
 
   <% unless editing %>
     <div>
       <%= form.label :file, class: "block text-sm font-medium text-slate-700" %>
-      <%= form.file_field :file, required: true, class: "mt-2 block w-full rounded-md border border-slate-300 bg-white text-sm text-slate-700 shadow-sm file:mr-4 file:border-0 file:bg-slate-100 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-slate-700 hover:file:bg-slate-200" %>
+      <%= form.file_field :file, required: true, class: "mt-2 block w-full rounded-md border border-slate-300 bg-white text-sm text-slate-700 shadow-sm file:mr-4 file:border-0 file:bg-slate-100 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-slate-700 hover:file:bg-slate-200", data: { testid: "document-file-field" } %>
     </div>
   <% end %>
 
   <div class="flex items-center justify-end gap-3 border-t border-slate-200 pt-6">
     <%= link_to "Cancel", cancel_path, class: "rounded-md px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100" %>
-    <%= form.submit submit_label, class: "rounded-md bg-emerald-700 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-emerald-800" %>
+    <%= form.submit submit_label, class: "rounded-md bg-emerald-700 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-emerald-800", data: { testid: editing ? "document-save-submit" : "document-upload-submit" } %>
   </div>
 <% end %>

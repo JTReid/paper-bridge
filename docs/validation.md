@@ -53,9 +53,11 @@ This harness runs against `RAILS_ENV=test`, prepares the test DB, loads
 fixtures, builds Tailwind, starts a local Rails test server, and runs
 Playwright browser checks against `http://127.0.0.1:3100` by default.
 
-Use `smoke` for fast browser confidence. Use `bughunt` when reproducing or
-verifying browser-visible defects; it records screenshots, traces, and videos
-under `tmp/qa-artifacts/`.
+Use `smoke` for fast browser confidence. Use `bughunt BUG_ID` when reproducing
+or verifying browser-visible defects; it records screenshots, traces, and videos
+under `tmp/qa-artifacts/bugs/BUG_ID/`. Browser specs also surface console
+errors, uncaught page errors, failed requests, server responses with status
+`>= 500`, and axe accessibility violations.
 
 ## Agentic Pipeline Harness
 
