@@ -247,6 +247,128 @@ Boundaries:
   live AI, background worker, OCR, external email, or cross-browser coverage
   without an explicit team decision.
 
+## Bughunt Evidence Mode
+
+`bughunt` is the evidence capture mode for one named browser-visible defect. It
+uses the same deterministic `RAILS_ENV=test` browser harness as `browser`,
+including database prep, fixtures, QA seed data, fixture attachment setup,
+generated Tailwind assets, the Rails test server, Chromium Playwright, shared
+browser diagnostics, and targeted axe checks already owned by the selected
+specs. Its difference is artifact policy: screenshots, traces, videos, and the
+HTML report are recorded even when the selected tests pass.
+
+The command shape is:
+
+```bash
+ruby scripts/paper_bridge_qa_harness.rb bughunt BUG_ID [path...]
+```
+
+`BUG_ID` should be a stable slug for the defect, ticket, or investigation. The
+harness normalizes it for the filesystem and writes Playwright evidence under:
+
+```text
+tmp/qa-artifacts/bugs/<bug-id>/runs/<run-id>/
+```
+
+If the first argument starts with `tests/`, the harness treats every argument as
+a Playwright path and generates a timestamped bug id. Prefer an explicit
+`BUG_ID` for work that may be handed to another person.
+
+Examples:
+
+```bash
+ruby scripts/paper_bridge_qa_harness.rb bughunt share-modal
+ruby scripts/paper_bridge_qa_harness.rb bughunt share-modal tests/e2e/product/document_sharing.spec.js
+ruby scripts/paper_bridge_qa_harness.rb bughunt mobile-negative tests/e2e/product/mobile_negative.spec.js
+```
+
+### Evidence Artifacts
+
+For named bug hunts, the primary evidence directory is
+`tmp/qa-artifacts/bugs/<bug-id>/`. The bug-level `index.html` lists every run
+newest-first. Each execution writes a new timestamped run directory under
+`tmp/qa-artifacts/bugs/<bug-id>/runs/<run-id>/`, so rerunning the same `BUG_ID`
+does not overwrite previous evidence.
+
+Important artifacts:
+
+- `index.html` at the bug root is the local evidence landing page. Open this
+  first when reviewing a bug case with multiple reproduce or verify runs.
+- `runs/<run-id>/manifest.json` is the machine-readable evidence manifest. It identifies
+  the schema, bug id, command, selected paths, base URL, artifact mode,
+  timestamps, exit status, and the relative paths for the rest of the evidence
+  bundle.
+- `runs/<run-id>/summary.md` is the human handoff note. It captures the bug id,
+  exact command, branch or commit under test, observed result, selected paths,
+  and the key artifact links.
+- `runs/<run-id>/command.log` captures the Playwright command output for that
+  evidence run.
+- `runs/<run-id>/playwright-report/index.html` is the Playwright report. It lists the
+  selected specs, status, retry state when relevant, and links to per-test
+  attachments.
+- `runs/<run-id>/test-results/` contains Playwright's per-test evidence, including
+  screenshots, videos, and `trace.zip` files when the run reaches the browser
+  stage.
+- `runs/<run-id>/rails-test-server.log` is a copy of the Rails test-server log
+  at the end of the run, when available. The canonical rolling log remains
+  `tmp/qa-artifacts/logs/rails-test-server.log`.
+
+Artifacts under `tmp/qa-artifacts/` are generated diagnostics and should remain
+local unless they are intentionally attached to a bug tracker or PR discussion.
+
+### Reproduce-Fix-Verify Loop
+
+Use this loop for browser-visible defects:
+
+1. Choose a bug id that can survive handoff, such as `share-modal-recipient`.
+2. Reproduce with the narrowest useful path:
+
+   ```bash
+   ruby scripts/paper_bridge_qa_harness.rb bughunt share-modal-recipient-repro tests/e2e/product/document_sharing.spec.js
+   ```
+
+3. Open `tmp/qa-artifacts/bugs/<bug-id>/index.html`, then read the run summary,
+   Playwright report, trace, video, screenshot, command log, and Rails
+   test-server log before editing code.
+4. Fix the defect and run the smallest meaningful non-bughunt check while
+   iterating, usually the relevant `workflow MODE`, `negative MODE`, targeted
+   Rails test, or direct Playwright spec.
+5. Verify with a second named evidence run:
+
+   ```bash
+   ruby scripts/paper_bridge_qa_harness.rb bughunt share-modal-recipient-verify tests/e2e/product/document_sharing.spec.js
+   ```
+
+6. Move durable assertions into the stable suite that owns the behavior:
+   `workflow` for successful product paths, `negative` for invalid or failed
+   states, `mailpit` for SMTP and inbox assertions, or a focused regression spec
+   when the defect does not fit an existing mode.
+
+Use distinct `-repro` and `-verify` bug ids when they are separate bug-tracker
+artifacts. Reusing the same `BUG_ID` is also safe because each execution writes
+to a new `runs/<run-id>/` directory under the same case index.
+
+### Boundaries
+
+- `bughunt` is for evidence, not coverage design. It records richer artifacts
+  for the selected Chromium specs, but it does not decide where a stable
+  assertion belongs after the fix.
+- `workflow` owns named successful product scenarios. After a bug fix, prefer a
+  workflow mode when the durable assertion is a successful user path.
+- `negative` owns deterministic invalid, empty, failed, seeded lifecycle, and
+  mobile error-state probes. Use it for durable error-state coverage after a
+  bughunt proves the failure and fix.
+- `browser` owns the full Chromium Playwright suite. Running `bughunt` without
+  a path is useful only when the investigation needs full-suite evidence with
+  artifacts always on.
+- `mailpit` owns real SMTP capture and Mailpit API assertions. `bughunt` does
+  not start Mailpit or set the Mailpit-specific Rails and Playwright
+  environment, so email delivery and no-email inbox assertions belong in
+  `mailpit`.
+- Browser, workflow, negative, Mailpit, and bughunt modes all remain local,
+  deterministic test-environment checks unless a future live-provider mode is
+  added explicitly.
+
 ## Commands
 
 ```bash
@@ -287,9 +409,11 @@ Playwright writes screenshots, videos, traces, reports, and logs under
 `tmp/qa-artifacts/`. These files are generated diagnostics and should remain
 local.
 
-Use `bughunt` when reproducing or verifying a specific defect. It records
-screenshots, traces, and videos even when the test passes. Named bug hunts write
-to `tmp/qa-artifacts/bugs/<bug-id>/`.
+Use Bughunt Evidence Mode when reproducing or verifying a specific defect. It
+records screenshots, traces, videos, a command log, a manifest, a summary, and
+an HTML report even when the selected tests pass. Named bug hunts write to
+`tmp/qa-artifacts/bugs/<bug-id>/`, with `index.html` as the bug-level evidence
+index and each execution under `runs/<run-id>/`.
 
 Examples:
 

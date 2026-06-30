@@ -2,9 +2,12 @@
 # frozen_string_literal: true
 
 require "fileutils"
+require "cgi"
+require "json"
 require "net/http"
 require "open3"
 require "pathname"
+require "shellwords"
 require "time"
 require "timeout"
 require "uri"
@@ -18,6 +21,12 @@ MAILPIT_SMTP_PORT = ENV.fetch("MAILPIT_SMTP_PORT", "1025")
 MAILPIT_API_URL = ENV.fetch("QA_MAILPIT_API_URL", "http://127.0.0.1:8025")
 ARTIFACT_ROOT = ROOT.join("tmp/qa-artifacts")
 SERVER_LOG = ARTIFACT_ROOT.join("logs/rails-test-server.log")
+BUGHUNT_EVIDENCE_SCHEMA = "paper_bridge.bughunt_evidence.v1"
+BUGHUNT_EVIDENCE_FILES = {
+  manifest: "manifest.json",
+  summary: "summary.md",
+  index: "index.html"
+}.freeze
 
 DoctorCheck = Struct.new(:label, :command, :env, :required, :hint, keyword_init: true)
 
@@ -166,11 +175,37 @@ def run_command(command, env: {})
   system(env, *command, chdir: ROOT.to_s)
 end
 
+def run_command_logged(command, env: {}, log_path:)
+  header = "--- #{[ env_summary(env), command.join(" ") ].compact.join(" ")} ---"
+  puts("\n#{header}")
+
+  FileUtils.mkdir_p(log_path.dirname)
+  File.open(log_path, "a") do |log|
+    log.puts("\n#{header}")
+    Open3.popen2e(env, *command, chdir: ROOT.to_s) do |_stdin, output, wait_thread|
+      output.each do |line|
+        print(line)
+        log.write(line)
+      end
+
+      wait_thread.value.success?
+    end
+  end
+rescue Errno::ENOENT => error
+  warn("Command failed: #{error.message}")
+  false
+end
+
 def capture_command(command, env: {})
   output, status = Open3.capture2e(env, *command, chdir: ROOT.to_s)
   [ status.success?, output.to_s.strip ]
 rescue Errno::ENOENT
   [ false, "command not found: #{command.first}" ]
+end
+
+def capture_optional(command, env: {})
+  passed, output = capture_command(command, env: env)
+  passed ? output : nil
 end
 
 def qa_environment_valid?
@@ -312,7 +347,7 @@ def with_server(env: {})
   end
 end
 
-def run_playwright(paths: [], always_record: false, artifact_dir: nil, env: {})
+def run_playwright(paths: [], always_record: false, artifact_dir: nil, env: {}, command_log: nil)
   ensure_artifact_dirs
   command = [ "npx", "playwright", "test", *paths, "--project=chromium" ]
   playwright_env = {
@@ -321,7 +356,11 @@ def run_playwright(paths: [], always_record: false, artifact_dir: nil, env: {})
   playwright_env["QA_ARTIFACT_MODE"] = "always" if always_record
   playwright_env["QA_ARTIFACT_DIR"] = artifact_dir.relative_path_from(ROOT).to_s if artifact_dir
 
-  result = run_command(command, env: playwright_env)
+  result = if command_log
+    run_command_logged(command, env: playwright_env, log_path: command_log)
+  else
+    run_command(command, env: playwright_env)
+  end
 
   if artifact_dir
     puts "\nQA artifacts written under #{artifact_dir.relative_path_from(ROOT)}"
@@ -377,12 +416,253 @@ def run_negative(negative_name)
   with_server { run_playwright(paths: paths) }
 end
 
-def bughunt_artifact_dir(raw_bug_id)
+def bughunt_case_dir(raw_bug_id)
   bug_id = raw_bug_id.to_s.strip
   bug_id = Time.now.utc.strftime("bug-%Y%m%d-%H%M%S") if bug_id.empty?
   safe_bug_id = bug_id.downcase.gsub(/[^a-z0-9._-]+/, "-").gsub(/\A-+|-+\z/, "")
   safe_bug_id = Time.now.utc.strftime("bug-%Y%m%d-%H%M%S") if safe_bug_id.empty?
   ARTIFACT_ROOT.join("bugs", safe_bug_id)
+end
+
+def bughunt_run_dir(case_dir, started_at)
+  base_name = started_at.strftime("run-%Y%m%dT%H%M%SZ")
+  candidate = case_dir.join("runs", base_name)
+  suffix = 2
+
+  while candidate.exist?
+    candidate = case_dir.join("runs", "#{base_name}-#{suffix}")
+    suffix += 1
+  end
+
+  candidate
+end
+
+def bughunt_relative(path)
+  path.relative_path_from(ROOT).to_s
+end
+
+def bughunt_command_args(requested_bug_id, paths)
+  args = [ "ruby", "scripts/paper_bridge_qa_harness.rb", "bughunt" ]
+  args << requested_bug_id if requested_bug_id.to_s.strip != ""
+  args.concat(paths)
+end
+
+def bughunt_git_metadata
+  {
+    "branch" => capture_optional([ "git", "rev-parse", "--abbrev-ref", "HEAD" ]),
+    "commit" => capture_optional([ "git", "rev-parse", "HEAD" ]),
+    "dirty" => !capture_optional([ "git", "status", "--short" ]).to_s.empty?
+  }
+end
+
+def bughunt_versions
+  {
+    "ruby" => capture_optional([ "ruby", "--version" ]),
+    "node" => capture_optional([ "node", "--version" ]),
+    "playwright" => capture_optional([ "npx", "playwright", "--version" ])
+  }
+end
+
+def bughunt_artifact_counts(run_dir)
+  results_dir = run_dir.join("test-results")
+
+  {
+    "screenshots" => Dir.glob(results_dir.join("**/*.png").to_s).count,
+    "videos" => Dir.glob(results_dir.join("**/*.webm").to_s).count,
+    "traces" => Dir.glob(results_dir.join("**/*trace*.zip").to_s).count
+  }
+end
+
+def copy_bughunt_server_log(run_dir)
+  return nil unless SERVER_LOG.file?
+
+  destination = run_dir.join("rails-test-server.log")
+  FileUtils.cp(SERVER_LOG, destination)
+  destination
+rescue Errno::ENOENT
+  nil
+end
+
+def bughunt_manifest(case_dir:, run_dir:, requested_bug_id:, paths:, started_at:, finished_at:, passed:, server_log_path:)
+  effective_paths = paths.empty? ? [ "<all Playwright specs>" ] : paths
+  command_args = bughunt_command_args(requested_bug_id, paths)
+
+  {
+    "schema" => BUGHUNT_EVIDENCE_SCHEMA,
+    "bug_id" => case_dir.basename.to_s,
+    "requested_bug_id" => requested_bug_id.to_s.empty? ? nil : requested_bug_id,
+    "run_id" => run_dir.basename.to_s,
+    "status" => passed ? "passed" : "failed",
+    "started_at" => started_at.iso8601,
+    "finished_at" => finished_at.iso8601,
+    "duration_seconds" => (finished_at - started_at).round(2),
+    "command" => Shellwords.join(command_args),
+    "paths" => effective_paths,
+    "qa" => {
+      "base_url" => QA_BASE_URL,
+      "workers" => ENV.fetch("QA_WORKERS", "1"),
+      "project" => "chromium",
+      "artifact_mode" => "always"
+    },
+    "artifacts" => {
+      "case_directory" => bughunt_relative(case_dir),
+      "run_directory" => bughunt_relative(run_dir),
+      "case_index" => bughunt_relative(case_dir.join(BUGHUNT_EVIDENCE_FILES.fetch(:index))),
+      "manifest" => bughunt_relative(run_dir.join(BUGHUNT_EVIDENCE_FILES.fetch(:manifest))),
+      "summary" => bughunt_relative(run_dir.join(BUGHUNT_EVIDENCE_FILES.fetch(:summary))),
+      "command_log" => bughunt_relative(run_dir.join("command.log")),
+      "playwright_report" => bughunt_relative(run_dir.join("playwright-report/index.html")),
+      "test_results" => bughunt_relative(run_dir.join("test-results")),
+      "rails_server_log" => server_log_path ? bughunt_relative(server_log_path) : nil
+    },
+    "artifact_counts" => bughunt_artifact_counts(run_dir),
+    "git" => bughunt_git_metadata,
+    "versions" => bughunt_versions
+  }
+end
+
+def bughunt_summary_markdown(manifest)
+  paths = manifest.fetch("paths").map { |path| "- `#{path}`" }.join("\n")
+  artifacts = manifest.fetch("artifacts")
+
+  <<~MARKDOWN
+    # Bughunt Evidence: #{manifest.fetch("bug_id")} / #{manifest.fetch("run_id")}
+
+    Status: **#{manifest.fetch("status")}**
+
+    ## Run
+
+    - Command: `#{manifest.fetch("command")}`
+    - QA base URL: `#{manifest.dig("qa", "base_url")}`
+    - QA workers: `#{manifest.dig("qa", "workers")}`
+    - Started: `#{manifest.fetch("started_at")}`
+    - Finished: `#{manifest.fetch("finished_at")}`
+    - Duration: `#{manifest.fetch("duration_seconds")}s`
+    - Git branch: `#{manifest.dig("git", "branch") || "unknown"}`
+    - Git commit: `#{manifest.dig("git", "commit") || "unknown"}`
+    - Git dirty: `#{manifest.dig("git", "dirty")}`
+
+    ## Specs
+
+    #{paths}
+
+    ## Artifacts
+
+    - Case index: `#{artifacts.fetch("case_index")}`
+    - Playwright report: `#{artifacts.fetch("playwright_report")}`
+    - Test results: `#{artifacts.fetch("test_results")}`
+    - Command log: `#{artifacts.fetch("command_log")}`
+    - Rails server log: `#{artifacts.fetch("rails_server_log") || "not copied"}`
+    - Machine manifest: `#{artifacts.fetch("manifest")}`
+
+    ## Artifact Counts
+
+    - Screenshots: `#{manifest.dig("artifact_counts", "screenshots")}`
+    - Videos: `#{manifest.dig("artifact_counts", "videos")}`
+    - Traces: `#{manifest.dig("artifact_counts", "traces")}`
+
+    ## Loop
+
+    Use this run directory as the evidence packet for the named bug. Re-run the
+    same bughunt command before and after a fix when the issue needs visual proof.
+    Move durable assertions into `workflow`, `negative`, `mailpit`, or a
+    regression spec after the behavior is understood.
+  MARKDOWN
+end
+
+def bughunt_case_index_html(case_dir)
+  manifests = Dir.glob(case_dir.join("runs/*/#{BUGHUNT_EVIDENCE_FILES.fetch(:manifest)}").to_s)
+    .filter_map do |path|
+      JSON.parse(File.read(path))
+    rescue JSON::ParserError
+      nil
+    end
+    .sort_by { |manifest| manifest.fetch("started_at", "") }
+    .reverse
+
+  rows = manifests.map do |manifest|
+    artifacts = manifest.fetch("artifacts")
+    <<~HTML
+      <tr>
+        <td>#{CGI.escapeHTML(manifest.fetch("started_at", ""))}</td>
+        <td>#{CGI.escapeHTML(manifest.fetch("status", ""))}</td>
+        <td><a href="#{CGI.escapeHTML(ROOT.join(artifacts.fetch("summary")).relative_path_from(case_dir).to_s)}">#{CGI.escapeHTML(manifest.fetch("run_id", ""))}</a></td>
+        <td><a href="#{CGI.escapeHTML(ROOT.join(artifacts.fetch("playwright_report")).relative_path_from(case_dir).to_s)}">report</a></td>
+        <td><code>#{CGI.escapeHTML(manifest.fetch("command", ""))}</code></td>
+      </tr>
+    HTML
+  end.join("\n")
+
+  <<~HTML
+    <!doctype html>
+    <html lang="en">
+      <head>
+        <meta charset="utf-8">
+        <title>PaperBridge Bughunt #{CGI.escapeHTML(case_dir.basename.to_s)}</title>
+        <style>
+          body { font-family: sans-serif; margin: 2rem; line-height: 1.45; }
+          table { border-collapse: collapse; width: 100%; }
+          th, td { border-bottom: 1px solid #ddd; padding: 0.5rem; text-align: left; vertical-align: top; }
+          code { white-space: pre-wrap; }
+        </style>
+      </head>
+      <body>
+        <h1>PaperBridge Bughunt: #{CGI.escapeHTML(case_dir.basename.to_s)}</h1>
+        <p>Newest runs are listed first.</p>
+        <table>
+          <thead>
+            <tr>
+              <th>Started</th>
+              <th>Status</th>
+              <th>Summary</th>
+              <th>Report</th>
+              <th>Command</th>
+            </tr>
+          </thead>
+          <tbody>
+            #{rows}
+          </tbody>
+        </table>
+      </body>
+    </html>
+  HTML
+end
+
+def write_bughunt_evidence(case_dir, run_dir, manifest)
+  File.write(run_dir.join(BUGHUNT_EVIDENCE_FILES.fetch(:manifest)), "#{JSON.pretty_generate(manifest)}\n")
+  File.write(run_dir.join(BUGHUNT_EVIDENCE_FILES.fetch(:summary)), bughunt_summary_markdown(manifest))
+  File.write(case_dir.join(BUGHUNT_EVIDENCE_FILES.fetch(:index)), bughunt_case_index_html(case_dir))
+end
+
+def run_bughunt(requested_bug_id, paths)
+  case_dir = bughunt_case_dir(requested_bug_id)
+  started_at = Time.now.utc
+  run_dir = bughunt_run_dir(case_dir, started_at)
+  FileUtils.mkdir_p(run_dir)
+
+  command_log = run_dir.join("command.log")
+  passed = with_server do
+    run_playwright(paths: paths, always_record: true, artifact_dir: run_dir, command_log: command_log)
+  end
+  finished_at = Time.now.utc
+  copied_server_log = copy_bughunt_server_log(run_dir)
+  manifest = bughunt_manifest(
+    case_dir: case_dir,
+    run_dir: run_dir,
+    requested_bug_id: requested_bug_id,
+    paths: paths,
+    started_at: started_at,
+    finished_at: finished_at,
+    passed: passed,
+    server_log_path: copied_server_log
+  )
+  write_bughunt_evidence(case_dir, run_dir, manifest)
+
+  puts "\nBughunt case index: #{bughunt_relative(case_dir.join(BUGHUNT_EVIDENCE_FILES.fetch(:index)))}"
+  puts "Bughunt run summary: #{manifest.dig("artifacts", "summary")}"
+  puts "Bughunt manifest: #{manifest.dig("artifacts", "manifest")}"
+
+  passed
 end
 
 def mailpit_server_env
@@ -612,9 +892,7 @@ when "bughunt"
     paths = args.drop(1)
   end
 
-  artifact_dir = bughunt_artifact_dir(bug_id)
-  FileUtils.mkdir_p(artifact_dir)
-  with_server { run_playwright(paths: paths, always_record: true, artifact_dir: artifact_dir) }
+  run_bughunt(bug_id, paths)
 when "rubocop"
   run_command([ "bin/rubocop", "--cache", "false", "scripts/paper_bridge_qa_harness.rb" ])
 when "review"

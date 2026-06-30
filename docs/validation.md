@@ -48,7 +48,7 @@ ruby scripts/paper_bridge_qa_harness.rb assets
 ruby scripts/paper_bridge_qa_harness.rb smoke
 ruby scripts/paper_bridge_qa_harness.rb browser
 ruby scripts/paper_bridge_qa_harness.rb mailpit
-ruby scripts/paper_bridge_qa_harness.rb bughunt
+ruby scripts/paper_bridge_qa_harness.rb bughunt BUG_ID [path...]
 ruby scripts/paper_bridge_qa_harness.rb rubocop
 ruby scripts/paper_bridge_qa_harness.rb review
 ```
@@ -92,11 +92,32 @@ spec.
 Use `browser` when a change needs the full Chromium Playwright suite, including
 smoke, product workflow, seeded edge-state, regression, and negative probes. Use
 `mailpit` for SMTP capture and no-email assertions, because `negative` should
-not require a local Mailpit process. Use `bughunt BUG_ID` when reproducing or
-verifying browser-visible defects; it records screenshots, traces, and videos
-under `tmp/qa-artifacts/bugs/BUG_ID/`. Browser specs also surface console errors,
-uncaught page errors, failed requests, server responses with status `>= 500`,
-and axe accessibility violations.
+not require a local Mailpit process.
+
+Use Bughunt Evidence Mode when reproducing or verifying one browser-visible
+defect:
+
+```bash
+ruby scripts/paper_bridge_qa_harness.rb bughunt share-modal-repro tests/e2e/product/document_sharing.spec.js
+ruby scripts/paper_bridge_qa_harness.rb bughunt share-modal-verify tests/e2e/product/document_sharing.spec.js
+```
+
+Bughunt records screenshots, traces, videos, reports, command output, and a
+manifest even when the selected tests pass. Named bug cases write to
+`tmp/qa-artifacts/bugs/<bug-id>/`. The case is indexed by `index.html`, and
+each execution writes a timestamped `runs/<run-id>/` directory containing
+`manifest.json`, `summary.md`, `command.log`, `playwright-report/index.html`,
+`test-results/`, and a copied Rails test-server log when available.
+
+Recommended loop: reproduce with the narrowest useful Playwright path, inspect
+the evidence index plus trace/video/screenshot/server log, fix the issue,
+iterate with the smallest stable check that owns the behavior, then run a second
+bughunt verification if before/after evidence needs to be kept. Move durable
+assertions into `workflow`, `negative`, `mailpit`, or a regression spec after
+the defect is understood. Bughunt does not start Mailpit and is not a
+replacement for `browser` when full-suite coverage is needed. Browser specs also
+surface console errors, uncaught page errors, failed requests, server responses
+with status `>= 500`, and axe accessibility violations.
 
 Use `mailpit` when an email workflow needs real SMTP capture. Start Mailpit
 first:
