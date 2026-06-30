@@ -60,6 +60,7 @@ STATIC_FILES = %w[
   tests/e2e/fixtures.js
   tests/e2e/smoke/public_home.spec.js
   tests/e2e/smoke/auth.spec.js
+  tests/e2e/smoke/product_shape.spec.js
   tests/e2e/product/dependent_workspace.spec.js
   tests/e2e/product/document_sharing.spec.js
   tests/e2e/product/document_sharing_mailpit.spec.js

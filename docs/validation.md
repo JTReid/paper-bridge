@@ -63,11 +63,21 @@ corpus. This loads 11 documents, 25 pages, 71 chunks, 67 embeddings, 54 timeline
 events, care-team recipients, share history, and representative pipeline records
 under the `PaperBridge QA Harness` account.
 
-Use `smoke` for fast browser confidence. Use `bughunt BUG_ID` when reproducing
-or verifying browser-visible defects; it records screenshots, traces, and videos
-under `tmp/qa-artifacts/bugs/BUG_ID/`. Browser specs also surface console
-errors, uncaught page errors, failed requests, server responses with status
-`>= 500`, and axe accessibility violations.
+Use `smoke` for Product Shape Smoke: a fast Chromium check that prepares the
+test app, runs only `tests/e2e/smoke`, and verifies the public entry surface,
+fixture-admin sign-in, dashboard, main signed-in product surface reachability,
+invalid sign-in feedback, shared browser diagnostics, and targeted axe checks.
+It is not proof of form side effects, document sharing delivery, persisted
+care-team invitations, Stripe Checkout/webhooks, AI answer generation, email,
+mobile, or broader negative workflows.
+
+Use `browser` when a change needs the full Chromium Playwright suite, including
+the product workflow and negative probes under `tests/e2e/product`. Use
+`bughunt BUG_ID` when reproducing or verifying browser-visible defects; it
+records screenshots, traces, and videos under
+`tmp/qa-artifacts/bugs/BUG_ID/`. Browser specs also surface console errors,
+uncaught page errors, failed requests, server responses with status `>= 500`,
+and axe accessibility violations.
 
 Use `mailpit` when an email workflow needs real SMTP capture. Start Mailpit
 first:

@@ -67,10 +67,64 @@ data, build assets, start a server, run Playwright specs, or write artifacts.
 Those actions belong to the browser execution modes:
 
 - `smoke` prepares the test app and runs only `tests/e2e/smoke` for fast
-  boot/navigation confidence.
+  product-shape boot, auth, navigation, and surface-reachability confidence.
 - `browser` prepares the test app and runs the full Chromium Playwright suite.
 - `mailpit` and `bughunt` extend browser execution with email capture or
   always-on diagnostic artifacts.
+
+## Product Shape Smoke Contract
+
+`smoke` is Phase 2 of the QA harness, after `doctor`. It prepares the same
+test app used by browser QA: database prep, fixtures, synthetic QA seed data,
+the small QA fixture attachment setup, generated Tailwind assets, and a Rails
+test server at `QA_BASE_URL`. It then runs only the Chromium specs under
+`tests/e2e/smoke`.
+
+Smoke is a fast product-shape sentinel, not a workflow suite. It covers the
+minimum browser-visible surface that should fail quickly if the app cannot boot,
+route, authenticate, or render the implemented signed-in workspace:
+
+- The public home page renders the PaperBridge entry surface, including primary
+  and secondary entry actions, the hero action, key copy, and an axe check.
+- A fixture admin can sign in and reach the dashboard, including the current
+  calendar empty state and an axe check.
+- An invalid sign-in stays on the sign-in page and shows the Devise alert.
+- An active account can reach the dashboard, dependent workspace, documents
+  index, document detail, document upload form, document share modal, care-team
+  index, care-team invite form, AI assistant page, and billing page.
+- Smoke only checks that these surfaces render and expose their primary
+  affordances; it does not submit product forms or verify side effects.
+- Shared browser diagnostics still apply: uncaught page errors, console errors,
+  failed requests, and HTTP responses with status `>= 500` fail the run.
+
+Hard boundaries:
+
+- Deeper workflow coverage belongs to the product-shape harness
+  (`ruby scripts/paper_bridge_harness.rb foundation`, `access`, `sharing`,
+  `billing`, or `product`) and to the richer Playwright product specs run by
+  `browser`. Smoke should not prove dependent CRUD, document create/update/delete,
+  document sharing delivery, care-team invitation persistence, billing status
+  transitions, AI answer generation, or seeded edge-state workflows.
+- Negative and error-state probes belong in focused product, Mailpit, or
+  regression specs. Smoke may keep the shallow invalid sign-in sentinel, but it
+  should not become the matrix for blank forms, malformed recipients, duplicate
+  invites, mobile validation, failed processing states, or no-email assertions.
+- `browser` is the full Chromium Playwright suite. Use it when a change needs
+  confidence across browser-visible product workflows, negative probes, billing
+  forms, seeded QA states, and smoke together.
+- `bughunt BUG_ID [path...]` is for reproducing or verifying a named
+  browser-visible defect with screenshots, traces, and videos always on. Use it
+  for targeted debugging or regression evidence, not as the default fast smoke
+  gate.
+- `mailpit` owns real SMTP capture and Mailpit API assertions. Smoke must not
+  require a Mailpit process.
+
+Use `smoke` after `doctor` passes when the browser harness, app boot path,
+authentication surface, home page, app shell, current signed-in navigation, or
+asset pipeline changes. It is also a quick gate before `browser`, `bughunt`, or
+`review`. Passing smoke does not prove broader product workflows, negative
+states, email delivery, Stripe Checkout/webhooks, AI answer generation, mobile,
+or live-provider behavior.
 
 ## Commands
 
@@ -109,24 +163,28 @@ ruby scripts/paper_bridge_qa_harness.rb bughunt share-modal
 ruby scripts/paper_bridge_qa_harness.rb bughunt share-modal tests/e2e/product/document_sharing.spec.js
 ```
 
-Use `smoke` for fast confidence that the browser harness can boot the app and
-exercise the core workflow.
+Use `smoke` for fast confidence that the browser harness can boot the app,
+render the public entry surface, authenticate into the dashboard, and reach the
+main signed-in product surfaces.
 
 ## Initial Browser Surface
 
-- Public home page loads with entry actions.
-- Sign-in page loads.
-- A fixture admin can sign in and reach the dashboard.
-- A dependent workspace opens.
-- The documents page opens and the share modal can be opened.
+- Smoke verifies the public home page entry actions.
+- Smoke verifies a fixture admin can sign in and reach the dashboard.
+- Smoke verifies invalid sign-in feedback.
+- Smoke verifies a dependent workspace opens.
+- Smoke verifies the documents page, document detail, upload form, and share
+  modal can be opened without submitting document workflows.
+- Smoke verifies the care-team index and invite form can be opened without
+  submitting an invitation.
+- Smoke verifies the AI assistant page opens without submitting a query.
+- Smoke verifies the billing page renders the active subscription state.
 - Document sharing can submit to a care team recipient.
 - Mailpit mode verifies document sharing sends an email with the expected
   recipient, subject, body, and attachment count.
 - Browser-native upload form validation guards missing files.
 - Document metadata can be edited.
-- The care team page opens.
 - A care team member can be invited with category permissions.
-- The AI assistant page opens without submitting a query.
 - Billing gates inactive accounts to `/billing`, hides product navigation,
   verifies active accounts keep product access, and checks Stripe Checkout and
   Customer Portal forms use full-page navigation instead of Turbo fetches.
