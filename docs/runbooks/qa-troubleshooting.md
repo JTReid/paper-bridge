@@ -150,10 +150,10 @@ Named workflow modes:
 
 | Mode | Coverage |
 | --- | --- |
-| `all` | Runs every deterministic workflow mode in this table. It does not run `mailpit`, future negative/error-state modes, seeded edge-state modes, or live-service probes. |
+| `all` | Runs every deterministic workflow mode in this table. It does not run `negative`, `mailpit`, seeded edge-state modes, or live-service probes. |
 | `billing` | Verifies inactive-account billing gating, hidden product navigation, Checkout form full-page navigation, active-account product access, and Customer Portal form full-page navigation with synthetic Stripe records. |
 | `sharing` | Opens the share modal, selects a care team recipient, submits a document share, and verifies the browser success path without SMTP capture. |
-| `documents` | Exercises document upload browser-required-file validation, document metadata editing, and blank-title validation. These small validation checks live here until the negative/error-state phase splits them out. |
+| `documents` | Exercises successful document metadata editing. Required-file and blank-title validation live in `negative documents`. |
 | `care-team` | Verifies the care-team list, active member permissions, invite form, and successful invite creation with category permissions. |
 | `ai` | Opens the dependent-scoped AI assistant and verifies the current static page state without submitting a query. |
 
@@ -192,6 +192,61 @@ Live-service caveats:
   default `workflow all`, `browser`, and `review` unless the team intentionally
   changes the CI contract.
 
+## Negative/Error-State Contract
+
+`negative` is the intended Phase 4 command for deterministic browser probes
+that intentionally exercise invalid, empty, failed, or mobile error states. It
+uses the same deterministic `RAILS_ENV=test` browser harness as `workflow`, but
+keeps failure-state coverage separate from successful product paths.
+
+The command shape is:
+
+```bash
+ruby scripts/paper_bridge_qa_harness.rb negative MODE
+```
+
+`MODE` is required. Unknown modes should fail before database or server prep and
+print the supported mode names. Like `workflow`, `negative` should prepare the
+same deterministic `RAILS_ENV=test` app as `browser`: database prep, fixtures,
+QA seed data, fixture attachment setup, generated Tailwind assets, a Rails test
+server at `QA_BASE_URL`, Chromium Playwright, shared browser diagnostics, and
+targeted axe checks where the mode owns them.
+
+Named negative modes:
+
+| Mode | Coverage |
+| --- | --- |
+| `all` | Runs every deterministic negative mode in this table. It does not run `workflow`, `mailpit`, `bughunt`, live-service probes, or full responsive sweeps. |
+| `care-team` | Verifies blank email, malformed email, and duplicate invite behavior, including clear user-visible errors and no successful invalid invite. Successful invite creation remains `workflow care-team`. |
+| `documents` | Verifies browser required-file upload validation and blank-title edit validation. Successful metadata edits remain `workflow documents`; ingestion, OCR, embeddings, and processing states remain agentic or seeded-state coverage. |
+| `mobile` | Runs a narrow viewport pass over deterministic negative probes, currently blank-recipient sharing and blank-email care-team invite behavior. It is not a full mobile product or responsive-layout suite. |
+| `edge-states` | Verifies synthetic uploaded, failed, missing-embedding, partial-embedding, and no-summary document lifecycle states render safely. It does not run live ingestion, OCR, embeddings, or background workers. |
+
+Boundaries:
+
+- `negative` owns user-visible failure behavior: clear validation feedback,
+  staying on the correct page or modal, no unexpected successful side effects,
+  and no console errors, uncaught page errors, failed requests, or server
+  responses with status `>= 500`.
+- `workflow` owns primary successful browser workflows. A workflow mode may keep
+  a small validation check that is intrinsic to the scenario, but it should not
+  grow into the negative matrix.
+- `browser` owns the full Chromium Playwright suite. Use it when a change needs
+  confidence across smoke, workflows, negative probes, seeded edge states,
+  regression specs, and skipped-when-unconfigured optional specs together.
+- `mailpit` owns real SMTP capture and Mailpit API assertions. `negative` should
+  not require a Mailpit process, and no-email assertions that inspect the inbox
+  belong in `mailpit`.
+- `bughunt` owns named defect reproduction and verification with screenshots,
+  traces, and videos always on. Use it for targeted evidence, then move stable
+  deterministic assertions into the relevant `negative` mode.
+- Invalid sign-in remains in `smoke` for now because the existing auth spec also
+  includes a successful sign-in sentinel. Add a dedicated `negative auth` mode
+  later only if the invalid-auth browser assertion is split into its own spec.
+- `negative all` should stay deterministic and local. Do not add live Stripe,
+  live AI, background worker, OCR, external email, or cross-browser coverage
+  without an explicit team decision.
+
 ## Commands
 
 ```bash
@@ -202,9 +257,21 @@ ruby scripts/paper_bridge_qa_harness.rb smoke
 ruby scripts/paper_bridge_qa_harness.rb browser
 ruby scripts/paper_bridge_qa_harness.rb workflow billing
 ruby scripts/paper_bridge_qa_harness.rb workflow all
+ruby scripts/paper_bridge_qa_harness.rb negative documents
+ruby scripts/paper_bridge_qa_harness.rb negative all
 ruby scripts/paper_bridge_qa_harness.rb mailpit
 ruby scripts/paper_bridge_qa_harness.rb bughunt share-modal
 ruby scripts/paper_bridge_qa_harness.rb review
+```
+
+Phase 4 negative selector examples:
+
+```bash
+ruby scripts/paper_bridge_qa_harness.rb negative all
+ruby scripts/paper_bridge_qa_harness.rb negative care-team
+ruby scripts/paper_bridge_qa_harness.rb negative documents
+ruby scripts/paper_bridge_qa_harness.rb negative edge-states
+ruby scripts/paper_bridge_qa_harness.rb negative mobile
 ```
 
 The Mailpit command requires a local Mailpit process:
@@ -252,7 +319,12 @@ main signed-in product surfaces.
   recipient, subject, body, and attachment count.
 - Browser-native upload form validation guards missing files.
 - Document metadata can be edited.
+- Document negative coverage verifies blank-title validation.
 - A care team member can be invited with category permissions.
+- Care-team negative coverage verifies blank, malformed, and duplicate invite
+  errors.
+- Mobile negative coverage verifies blank-recipient sharing and blank-email care
+  team invite behavior on a narrow viewport.
 - Billing gates inactive accounts to `/billing`, hides product navigation,
   verifies active accounts keep product access, and checks Stripe Checkout and
   Customer Portal forms use full-page navigation instead of Turbo fetches.

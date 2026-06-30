@@ -1,8 +1,12 @@
 # Negative Error-State Probes
 
 This note captures recommended QA harness probes for intentionally exercising
-invalid, empty, failed, or edge-case product states. These are candidates for a
-future Playwright/QA pass, not current product commitments.
+invalid, empty, failed, or edge-case product states. The deterministic first
+pass is wired through:
+
+```bash
+ruby scripts/paper_bridge_qa_harness.rb negative all
+```
 
 ## TODO
 
@@ -134,8 +138,8 @@ Implementation note:
 
 ## Mobile Sweeps
 
-Add mobile viewport coverage after the first negative probes exist. Start with
-the same workflows rather than a separate mobile-only suite:
+Mobile viewport coverage should stay narrow and tied to specific workflows
+rather than becoming a separate mobile-only suite:
 
 - Auth sign in and invalid sign in.
 - Document list and share modal.
@@ -143,14 +147,14 @@ the same workflows rather than a separate mobile-only suite:
 - AI assistant empty and error states.
 - Public home navigation and primary CTAs.
 
-Recommended command shape:
+Current command shape:
 
 ```bash
-ruby scripts/paper_bridge_qa_harness.rb bughunt mobile-negative tests/e2e/regressions
+ruby scripts/paper_bridge_qa_harness.rb negative mobile
 ```
 
-The exact folder can change, but the run should write named artifacts under
-`tmp/qa-artifacts/bugs/<bug-id>/`.
+Use `bughunt mobile-negative tests/e2e/product/mobile_negative.spec.js` only
+when a specific defect needs screenshots, videos, and traces.
 
 ## Prioritization
 

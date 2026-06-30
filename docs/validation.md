@@ -81,13 +81,20 @@ live AI, document ingestion, seeded edge-state scenarios, or the complete
 negative/error-state matrix. The detailed contract is in
 `docs/runbooks/qa-troubleshooting.md`.
 
+The Phase 4 negative/error-state selector contract is
+`ruby scripts/paper_bridge_qa_harness.rb negative MODE`. The deterministic
+modes are `all`, `care-team`, `documents`, `mobile`, and `edge-states`. Use
+these modes for invalid, empty, failed, seeded lifecycle, and mobile
+error-state coverage; keep successful product workflows in `workflow`. Invalid
+sign-in stays in `smoke` until the auth negative assertion is split into its own
+spec.
+
 Use `browser` when a change needs the full Chromium Playwright suite, including
-smoke, product workflow, seeded edge-state, regression, and negative probes.
-Use `negative` for focused invalid, empty, failed, and mobile error-state
-coverage when that command is wired; keep SMTP capture and no-email assertions
-in `mailpit`. Use `bughunt BUG_ID` when reproducing or verifying
-browser-visible defects; it records screenshots, traces, and videos under
-`tmp/qa-artifacts/bugs/BUG_ID/`. Browser specs also surface console errors,
+smoke, product workflow, seeded edge-state, regression, and negative probes. Use
+`mailpit` for SMTP capture and no-email assertions, because `negative` should
+not require a local Mailpit process. Use `bughunt BUG_ID` when reproducing or
+verifying browser-visible defects; it records screenshots, traces, and videos
+under `tmp/qa-artifacts/bugs/BUG_ID/`. Browser specs also surface console errors,
 uncaught page errors, failed requests, server responses with status `>= 500`,
 and axe accessibility violations.
 

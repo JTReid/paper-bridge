@@ -31,6 +31,15 @@ WORKFLOW_SPECS = {
 WORKFLOW_ALL_PATHS = WORKFLOW_SPECS.values.flatten.freeze
 WORKFLOW_MODES = [ *WORKFLOW_SPECS.keys, "all" ].freeze
 
+NEGATIVE_SPECS = {
+  "documents" => [ "tests/e2e/product/document_negative.spec.js" ].freeze,
+  "care-team" => [ "tests/e2e/product/care_team_negative.spec.js" ].freeze,
+  "mobile" => [ "tests/e2e/product/mobile_negative.spec.js" ].freeze,
+  "edge-states" => [ "tests/e2e/product/qa_seed_edge_states.spec.js" ].freeze
+}.freeze
+NEGATIVE_ALL_PATHS = NEGATIVE_SPECS.values.flatten.freeze
+NEGATIVE_MODES = [ *NEGATIVE_SPECS.keys, "all" ].freeze
+
 QA_DATA_RUNNER = <<~"RUBY"
   document = Document.find_by!(title: "Advance Directive")
   unless document.file.attached?
@@ -76,6 +85,7 @@ STATIC_FILES = %w[
   tests/e2e/product/document_sharing_mailpit.spec.js
   tests/e2e/product/billing.spec.js
   tests/e2e/product/document_management.spec.js
+  tests/e2e/product/document_negative.spec.js
   tests/e2e/product/care_team.spec.js
   tests/e2e/product/care_team_negative.spec.js
   tests/e2e/product/mobile_negative.spec.js
@@ -98,6 +108,7 @@ def usage
       smoke    Run fast Chromium browser smoke checks
       browser  Run all Chromium browser QA checks
       workflow Run named Chromium workflow scenarios
+      negative Run named Chromium negative/error-state probes
       mailpit  Run email QA checks through local Mailpit SMTP and API
       bughunt  Run browser checks with named screenshots, videos, and traces always on
       rubocop  Run RuboCop on the QA harness Ruby script
@@ -106,6 +117,10 @@ def usage
     Examples:
       ruby scripts/paper_bridge_qa_harness.rb workflow documents
       ruby scripts/paper_bridge_qa_harness.rb workflow all
+      ruby scripts/paper_bridge_qa_harness.rb negative documents
+      ruby scripts/paper_bridge_qa_harness.rb negative care-team
+      ruby scripts/paper_bridge_qa_harness.rb negative edge-states
+      ruby scripts/paper_bridge_qa_harness.rb negative all
       ruby scripts/paper_bridge_qa_harness.rb bughunt share-modal
       ruby scripts/paper_bridge_qa_harness.rb bughunt share-modal tests/e2e/product/document_sharing.spec.js
       ruby scripts/paper_bridge_qa_harness.rb bughunt tests/e2e/product/document_sharing.spec.js
@@ -126,6 +141,23 @@ def workflow_usage
       care-team  Run care team invitation and permissions workflow checks
       ai         Run AI assistant page workflow checks without live model calls
       all        Run all workflow modes above
+  USAGE
+end
+
+def negative_usage
+  puts(<<~USAGE)
+    Usage: ruby scripts/paper_bridge_qa_harness.rb negative MODE
+    Available modes: #{NEGATIVE_MODES.join(", ")}
+
+    Modes:
+      documents   Run document form validation probes
+      care-team   Run invalid care team invite probes
+      mobile      Run narrow viewport negative workflow probes
+      edge-states Run seeded empty, failed, and partial document state probes
+      all         Run all negative/error-state modes above
+
+    These modes use deterministic Chromium Playwright specs through the QA test
+    server. They do not start Mailpit, require SMTP capture, or call live services.
   USAGE
 end
 
@@ -305,6 +337,12 @@ def workflow_paths(workflow_name)
   WORKFLOW_SPECS[workflow_name]
 end
 
+def negative_paths(negative_name)
+  return NEGATIVE_ALL_PATHS if negative_name == "all"
+
+  NEGATIVE_SPECS[negative_name]
+end
+
 def run_workflow(workflow_name)
   if workflow_name.to_s.empty?
     warn("Missing workflow mode.")
@@ -316,6 +354,23 @@ def run_workflow(workflow_name)
   unless paths
     warn("Unknown workflow mode: #{workflow_name}")
     workflow_usage
+    return false
+  end
+
+  with_server { run_playwright(paths: paths) }
+end
+
+def run_negative(negative_name)
+  if negative_name.to_s.empty?
+    warn("Missing negative mode.")
+    negative_usage
+    return false
+  end
+
+  paths = negative_paths(negative_name)
+  unless paths
+    warn("Unknown negative mode: #{negative_name}")
+    negative_usage
     return false
   end
 
@@ -540,6 +595,8 @@ when "browser"
   with_server { run_playwright }
 when "workflow"
   run_workflow(args.first)
+when "negative"
+  run_negative(args.first)
 when "mailpit"
   paths = args.any? ? args : [ "tests/e2e/product/document_sharing_mailpit.spec.js" ]
   ensure_mailpit_ready &&
