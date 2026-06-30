@@ -71,10 +71,22 @@ It is not proof of form side effects, document sharing delivery, persisted
 care-team invitations, Stripe Checkout/webhooks, AI answer generation, email,
 mobile, or broader negative workflows.
 
+The intended Phase 3 workflow selector is
+`ruby scripts/paper_bridge_qa_harness.rb workflow MODE`. Use it for named,
+deterministic product scenarios such as `billing`, `sharing`, `documents`,
+`care-team`, `ai`, or `all`. Workflow modes sit between `smoke` and `browser`:
+they submit real browser workflows in `RAILS_ENV=test`, but they do not imply
+the full Chromium suite, Mailpit SMTP capture, bughunt artifacts, live Stripe,
+live AI, document ingestion, seeded edge-state scenarios, or the complete
+negative/error-state matrix. The detailed contract is in
+`docs/runbooks/qa-troubleshooting.md`.
+
 Use `browser` when a change needs the full Chromium Playwright suite, including
-the product workflow and negative probes under `tests/e2e/product`. Use
-`bughunt BUG_ID` when reproducing or verifying browser-visible defects; it
-records screenshots, traces, and videos under
+smoke, product workflow, seeded edge-state, regression, and negative probes.
+Use `negative` for focused invalid, empty, failed, and mobile error-state
+coverage when that command is wired; keep SMTP capture and no-email assertions
+in `mailpit`. Use `bughunt BUG_ID` when reproducing or verifying
+browser-visible defects; it records screenshots, traces, and videos under
 `tmp/qa-artifacts/bugs/BUG_ID/`. Browser specs also surface console errors,
 uncaught page errors, failed requests, server responses with status `>= 500`,
 and axe accessibility violations.

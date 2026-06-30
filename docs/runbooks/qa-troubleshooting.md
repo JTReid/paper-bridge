@@ -126,6 +126,72 @@ asset pipeline changes. It is also a quick gate before `browser`, `bughunt`, or
 states, email delivery, Stripe Checkout/webhooks, AI answer generation, mobile,
 or live-provider behavior.
 
+## Workflow Scenarios Contract
+
+`workflow` is the intended Phase 3 command for named browser product scenarios.
+It should prepare the same deterministic `RAILS_ENV=test` app as `browser`:
+database prep, fixtures, QA seed data, fixture attachment setup, generated
+Tailwind assets, a Rails test server at `QA_BASE_URL`, Chromium Playwright, the
+shared browser diagnostics, and targeted axe checks where the scenario owns
+them.
+
+The command shape is:
+
+```bash
+ruby scripts/paper_bridge_qa_harness.rb workflow MODE
+```
+
+`MODE` is required. Unknown modes should fail before database or server prep and
+print the supported mode names. `workflow` is not a free-form Playwright path
+runner; use `bughunt BUG_ID [path...]` or direct Playwright iteration for
+one-off paths.
+
+Named workflow modes:
+
+| Mode | Coverage |
+| --- | --- |
+| `all` | Runs every deterministic workflow mode in this table. It does not run `mailpit`, future negative/error-state modes, seeded edge-state modes, or live-service probes. |
+| `billing` | Verifies inactive-account billing gating, hidden product navigation, Checkout form full-page navigation, active-account product access, and Customer Portal form full-page navigation with synthetic Stripe records. |
+| `sharing` | Opens the share modal, selects a care team recipient, submits a document share, and verifies the browser success path without SMTP capture. |
+| `documents` | Exercises document upload browser-required-file validation, document metadata editing, and blank-title validation. These small validation checks live here until the negative/error-state phase splits them out. |
+| `care-team` | Verifies the care-team list, active member permissions, invite form, and successful invite creation with category permissions. |
+| `ai` | Opens the dependent-scoped AI assistant and verifies the current static page state without submitting a query. |
+
+Boundaries:
+
+- `smoke` remains the fast boot, auth, navigation, and surface-reachability
+  sentinel. It should not submit product forms or prove side effects.
+- `workflow` is narrower than `browser`: it runs named product scenarios but
+  does not imply every smoke, product, regression, negative, or Mailpit spec.
+- `browser` remains the full Chromium Playwright suite. Use it when a change
+  needs broad browser-visible confidence across smoke, product workflows,
+  negative probes, seeded states, and regression specs together.
+- `negative` should own focused invalid, empty, failed, and mobile error-state
+  probes. Workflow modes may include small validation checks that are part of a
+  scenario, but they should not grow into the complete negative matrix.
+- `mailpit` owns local SMTP capture and Mailpit API assertions, including email
+  delivery and no-email checks. `workflow sharing` must not require Mailpit.
+- `bughunt` owns named reproduction or verification runs with screenshots,
+  traces, and videos always on. Use it for defect evidence, then use the
+  relevant workflow mode when the fix should become a stable scenario.
+
+Live-service caveats:
+
+- Billing workflow coverage uses synthetic subscription records and form
+  attributes. It does not call live Stripe Checkout, the Customer Portal,
+  Stripe webhooks, or the Stripe CLI.
+- AI assistant workflow coverage only verifies the browser surface loads. It
+  does not submit prompts, call a live LLM, generate embeddings, or prove vector
+  retrieval.
+- Seeded edge-state workflow coverage is not part of Phase 3 yet. When added,
+  it should use synthetic records and avoid live document ingestion, background
+  workers, OCR, PDF tooling, embeddings, or summary generation.
+- Email workflow coverage outside `mailpit` must not require an SMTP process or
+  assert captured email contents.
+- Any future live-provider workflow must stay explicit opt-in and outside
+  default `workflow all`, `browser`, and `review` unless the team intentionally
+  changes the CI contract.
+
 ## Commands
 
 ```bash
@@ -134,6 +200,8 @@ ruby scripts/paper_bridge_qa_harness.rb db
 ruby scripts/paper_bridge_qa_harness.rb assets
 ruby scripts/paper_bridge_qa_harness.rb smoke
 ruby scripts/paper_bridge_qa_harness.rb browser
+ruby scripts/paper_bridge_qa_harness.rb workflow billing
+ruby scripts/paper_bridge_qa_harness.rb workflow all
 ruby scripts/paper_bridge_qa_harness.rb mailpit
 ruby scripts/paper_bridge_qa_harness.rb bughunt share-modal
 ruby scripts/paper_bridge_qa_harness.rb review

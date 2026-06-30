@@ -21,6 +21,16 @@ SERVER_LOG = ARTIFACT_ROOT.join("logs/rails-test-server.log")
 
 DoctorCheck = Struct.new(:label, :command, :env, :required, :hint, keyword_init: true)
 
+WORKFLOW_SPECS = {
+  "billing" => [ "tests/e2e/product/billing.spec.js" ].freeze,
+  "sharing" => [ "tests/e2e/product/document_sharing.spec.js" ].freeze,
+  "documents" => [ "tests/e2e/product/document_management.spec.js" ].freeze,
+  "care-team" => [ "tests/e2e/product/care_team.spec.js" ].freeze,
+  "ai" => [ "tests/e2e/product/ai_assistant.spec.js" ].freeze
+}.freeze
+WORKFLOW_ALL_PATHS = WORKFLOW_SPECS.values.flatten.freeze
+WORKFLOW_MODES = [ *WORKFLOW_SPECS.keys, "all" ].freeze
+
 QA_DATA_RUNNER = <<~"RUBY"
   document = Document.find_by!(title: "Advance Directive")
   unless document.file.attached?
@@ -87,17 +97,35 @@ def usage
       server   Prepare QA env and run a Rails test server in the foreground
       smoke    Run fast Chromium browser smoke checks
       browser  Run all Chromium browser QA checks
+      workflow Run named Chromium workflow scenarios
       mailpit  Run email QA checks through local Mailpit SMTP and API
       bughunt  Run browser checks with named screenshots, videos, and traces always on
       rubocop  Run RuboCop on the QA harness Ruby script
       review   Run docs, static, doctor, development harness checks, and browser smoke
 
     Examples:
+      ruby scripts/paper_bridge_qa_harness.rb workflow documents
+      ruby scripts/paper_bridge_qa_harness.rb workflow all
       ruby scripts/paper_bridge_qa_harness.rb bughunt share-modal
       ruby scripts/paper_bridge_qa_harness.rb bughunt share-modal tests/e2e/product/document_sharing.spec.js
       ruby scripts/paper_bridge_qa_harness.rb bughunt tests/e2e/product/document_sharing.spec.js
       ruby scripts/paper_bridge_qa_harness.rb mailpit
       ruby scripts/paper_bridge_qa_harness.rb mailpit tests/e2e/product/document_sharing_mailpit.spec.js
+  USAGE
+end
+
+def workflow_usage
+  puts(<<~USAGE)
+    Usage: ruby scripts/paper_bridge_qa_harness.rb workflow MODE
+    Available modes: #{WORKFLOW_MODES.join(", ")}
+
+    Modes:
+      billing    Run billing access and subscription state workflow checks
+      sharing    Run document sharing workflow checks without Mailpit
+      documents  Run document upload and metadata workflow checks
+      care-team  Run care team invitation and permissions workflow checks
+      ai         Run AI assistant page workflow checks without live model calls
+      all        Run all workflow modes above
   USAGE
 end
 
@@ -269,6 +297,29 @@ def run_playwright(paths: [], always_record: false, artifact_dir: nil, env: {})
   end
 
   result
+end
+
+def workflow_paths(workflow_name)
+  return WORKFLOW_ALL_PATHS if workflow_name == "all"
+
+  WORKFLOW_SPECS[workflow_name]
+end
+
+def run_workflow(workflow_name)
+  if workflow_name.to_s.empty?
+    warn("Missing workflow mode.")
+    workflow_usage
+    return false
+  end
+
+  paths = workflow_paths(workflow_name)
+  unless paths
+    warn("Unknown workflow mode: #{workflow_name}")
+    workflow_usage
+    return false
+  end
+
+  with_server { run_playwright(paths: paths) }
 end
 
 def bughunt_artifact_dir(raw_bug_id)
@@ -487,6 +538,8 @@ when "smoke"
   with_server { run_playwright(paths: [ "tests/e2e/smoke" ]) }
 when "browser"
   with_server { run_playwright }
+when "workflow"
+  run_workflow(args.first)
 when "mailpit"
   paths = args.any? ? args : [ "tests/e2e/product/document_sharing_mailpit.spec.js" ]
   ensure_mailpit_ready &&
