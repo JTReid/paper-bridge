@@ -11,6 +11,15 @@ Rails.application.routes.draw do
   end
   resources :share_events, only: :create
   resources :documents, only: %i[show edit update destroy]
+  resource :billing, only: :show, controller: :billing
+  namespace :billing do
+    resource :checkout_session, only: :create
+    resource :portal_session, only: :create
+  end
+  namespace :admin do
+    resources :accounts, only: :index
+  end
+  mount StripeEvent::Engine, at: "/stripe/webhooks"
 
   # Define your application routes per the DSL in https://guides.rubyonrails.org/routing.html
 

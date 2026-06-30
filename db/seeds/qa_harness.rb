@@ -170,6 +170,7 @@ module QaHarnessSeed
       without_document_processing_callback do
         account = Account.find_or_create_by!(name: ACCOUNT_NAME)
         reset_account!(account)
+        ensure_active_subscription!(account)
 
         admin = upsert_user!(ADMIN_EMAIL, "QA Family Admin")
         upsert_membership!(account, admin, :admin)
@@ -214,6 +215,16 @@ module QaHarnessSeed
     account.documents.find_each(&:destroy)
     account.care_team_memberships.destroy_all
     account.dependents.destroy_all
+  end
+
+  def ensure_active_subscription!(account)
+    subscription = account.billing_subscription || account.build_billing_subscription
+    subscription.update!(
+      status: :active,
+      stripe_customer_id: "cus_qa_harness",
+      stripe_subscription_id: "sub_qa_harness",
+      stripe_price_id: "price_qa_harness"
+    )
   end
 
   def upsert_user!(email, name)

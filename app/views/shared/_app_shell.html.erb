@@ -2,6 +2,14 @@
   dependent_context = dependent.present?
   account_name = current_account&.name || "PaperBridge"
   actor_label = current_user.name.presence || current_user.email
+  product_access = current_user&.super_admin? || current_account&.subscription_active?
+  shell_home_path = if dependent_context || (product_access && current_account.present?)
+    dashboard_path
+  elsif current_user&.super_admin?
+    admin_accounts_path
+  else
+    billing_path
+  end
 
   if dependent_context
     dependent_initials = dependent.name.to_s.split.map { |word| word.first }.join.first(2).presence || "U"
@@ -13,10 +21,23 @@
       { key: :care_team, label: "Care Team", path: dependent_care_team_memberships_path(dependent), icon: "users" }
     ]
   else
-    nav_items = [
-      { key: :dashboard, label: "Dashboard", path: dashboard_path, icon: "sparkles" },
-      { key: :dependents, label: "Users", path: dependents_path, icon: "users" }
-    ]
+    nav_items = if current_account.present? && product_access
+      [
+        { key: :dashboard, label: "Dashboard", path: dashboard_path, icon: "sparkles" },
+        { key: :dependents, label: "Users", path: dependents_path, icon: "users" },
+        { key: :billing, label: "Billing", path: billing_path, icon: "shield" }
+      ]
+    elsif current_account.present?
+      [
+        { key: :billing, label: "Billing", path: billing_path, icon: "shield" }
+      ]
+    else
+      []
+    end
+
+    if current_user&.super_admin?
+      nav_items << { key: :admin_accounts, label: "Admin", path: admin_accounts_path, icon: "lock" }
+    end
   end
 %>
 
@@ -75,7 +96,7 @@
   <div class="min-w-0 flex-1">
     <header class="sticky top-0 z-40 border-b border-border/50 bg-white/85 backdrop-blur-xl lg:hidden">
       <div class="flex h-16 items-center justify-between px-5">
-        <%= link_to(dependent_context ? dashboard_path : root_path, class: "flex items-center", aria: { label: "PaperBridge home" }) do %>
+        <%= link_to(shell_home_path, class: "flex items-center", aria: { label: "PaperBridge home" }) do %>
           <%= paperbridge_logo(width: 140, height: 50, class_name: "h-[50px] w-[140px]") %>
         <% end %>
         <details class="group">

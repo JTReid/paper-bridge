@@ -18,6 +18,8 @@ gem "stimulus-rails"
 gem "jbuilder"
 gem "devise"
 gem "rest-client"
+gem "stripe"
+gem "stripe_event"
 gem "aws-sdk-s3", require: false
 gem "neighbor"
 gem "tailwindcss-rails"

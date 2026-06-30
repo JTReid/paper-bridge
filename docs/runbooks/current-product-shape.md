@@ -23,13 +23,19 @@ operational harness checks until matching implementation exists.
 - Account-scoped and category-scoped vector search authorization.
 - Email-based document sharing through `ShareEvent`, `SharedDocument`, and
   `DocumentShareMailer`.
+- Account-level Stripe billing foundation with `BillingSubscription`, hosted
+  Stripe Checkout and Customer Portal session endpoints, StripeEvent webhook
+  subscription sync, signed-in account subscription enforcement, a reusable
+  `require_subscription!` controller gate, and a super-admin account billing
+  overview.
 
 ## Not Current Harness Scope
 
 These areas are product requirements or future shape, but they are not current
 operational harness contracts because the app does not implement them yet:
 
-- Billing, subscription plans, payment methods, invoices, and Stripe webhooks.
+- Product/package pricing strategy, multi-plan entitlements, invoice history
+  screens, taxes, coupons, and dunning workflows beyond Stripe's hosted pages.
 - Calendar event persistence and reminder workflows.
 - In-app notification persistence and notification preferences.
 - Audit-log persistence, querying, and exports.

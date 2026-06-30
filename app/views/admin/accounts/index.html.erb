@@ -1,0 +1,47 @@
+<% content_for :title, "Admin Accounts | PaperBridge" %>
+
+<%= app_shell(active: :admin_accounts) do %>
+  <div class="space-y-8 pb-10" data-testid="admin-accounts-page">
+    <header class="pt-2">
+      <p class="mb-1 text-xs font-medium uppercase tracking-widest text-accent">Super Admin</p>
+      <h1 class="text-3xl font-bold tracking-tight text-primary">Accounts</h1>
+      <p class="mt-1.5 text-sm text-muted-foreground">Review Stripe subscription state across PaperBridge accounts.</p>
+    </header>
+
+    <section class="overflow-hidden rounded-2xl border border-border/50 bg-white shadow-sm">
+      <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-border/50 text-sm">
+          <thead class="bg-muted/40 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            <tr>
+              <th class="px-5 py-3">Account</th>
+              <th class="px-5 py-3">Users</th>
+              <th class="px-5 py-3">Status</th>
+              <th class="px-5 py-3">Customer</th>
+              <th class="px-5 py-3">Subscription</th>
+              <th class="px-5 py-3">Period End</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-border/40">
+            <% @accounts.each do |account| %>
+              <% subscription = account.billing_subscription %>
+              <tr data-testid="admin-account-row">
+                <td class="px-5 py-4 font-medium text-foreground"><%= account.name %></td>
+                <td class="px-5 py-4 text-muted-foreground"><%= account.users.size %></td>
+                <td class="px-5 py-4">
+                  <span class="inline-flex rounded-full px-2.5 py-1 text-xs font-medium <%= account.subscription_active? ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-700" %>">
+                    <%= subscription&.status&.humanize || "Not started" %>
+                  </span>
+                </td>
+                <td class="max-w-[180px] truncate px-5 py-4 text-muted-foreground"><%= subscription&.stripe_customer_id || "-" %></td>
+                <td class="max-w-[180px] truncate px-5 py-4 text-muted-foreground"><%= subscription&.stripe_subscription_id || "-" %></td>
+                <td class="px-5 py-4 text-muted-foreground">
+                  <%= subscription&.current_period_end ? l(subscription.current_period_end, format: :short) : "-" %>
+                </td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+<% end %>

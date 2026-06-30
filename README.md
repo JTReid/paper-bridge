@@ -67,3 +67,22 @@ SMTP authentication failed. Confirm `aws.ses_access_key` is the SES SMTP
 username and `aws.ses_secret_key` is the SES SMTP password from SES SMTP
 settings in the same region, not the normal AWS access key and secret key used
 for S3.
+
+## Stripe Billing
+
+PaperBridge uses the official `stripe` Ruby SDK and `stripe_event` for webhook
+dispatch. Store Stripe settings in encrypted Rails credentials:
+
+```yaml
+stripe:
+  secret_key: sk_test_...
+  publishable_key: pk_test_...
+  webhook_secret: whsec_...
+  standard_price: price_...
+```
+
+`webhook_secret` and `standard_price` can be added after the initial billing
+foundation is deployed. Checkout remains disabled until a price is present, and
+Stripe webhooks require `webhook_secret` before StripeEvent can verify incoming
+events. `stripe.price_id` and `STRIPE_PRICE_ID` are also supported aliases for
+the subscription price.

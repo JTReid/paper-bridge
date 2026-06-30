@@ -26,4 +26,15 @@ class DeviseSessionsControllerTest < ActionDispatch::IntegrationTest
 
     assert_redirected_to dashboard_path
   end
+
+  test "signs inactive accounts in to billing" do
+    post user_session_path, params: {
+      user: {
+        email: users(:other_user).email,
+        password: "password"
+      }
+    }
+
+    assert_redirected_to billing_path
+  end
 end

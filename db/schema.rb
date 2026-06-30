@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_06_24_010107) do
+ActiveRecord::Schema[8.1].define(version: 2026_06_28_000200) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "vector"
@@ -68,6 +68,26 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_24_010107) do
     t.datetime "updated_at", null: false
     t.index ["llm_id"], name: "index_agent_types_on_llm_id"
     t.index ["name"], name: "index_agent_types_on_name", unique: true
+  end
+
+  create_table "billing_subscriptions", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.boolean "cancel_at_period_end", default: false, null: false
+    t.datetime "canceled_at"
+    t.datetime "created_at", null: false
+    t.datetime "current_period_end"
+    t.string "latest_event_id"
+    t.jsonb "metadata", default: {}, null: false
+    t.string "status", default: "incomplete", null: false
+    t.string "stripe_customer_id"
+    t.string "stripe_price_id"
+    t.string "stripe_subscription_id"
+    t.datetime "trial_end"
+    t.datetime "updated_at", null: false
+    t.index ["account_id"], name: "index_billing_subscriptions_on_account_id", unique: true
+    t.index ["status", "current_period_end"], name: "index_billing_subscriptions_on_status_and_current_period_end"
+    t.index ["stripe_customer_id"], name: "index_billing_subscriptions_on_stripe_customer_id", unique: true
+    t.index ["stripe_subscription_id"], name: "index_billing_subscriptions_on_stripe_subscription_id", unique: true
   end
 
   create_table "care_team_memberships", force: :cascade do |t|
@@ -304,9 +324,11 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_24_010107) do
     t.datetime "remember_created_at"
     t.datetime "reset_password_sent_at"
     t.string "reset_password_token"
+    t.string "site_role", default: "user", null: false
     t.datetime "updated_at", null: false
     t.index ["email"], name: "index_users_on_email", unique: true
     t.index ["reset_password_token"], name: "index_users_on_reset_password_token", unique: true
+    t.index ["site_role"], name: "index_users_on_site_role"
   end
 
   add_foreign_key "account_memberships", "accounts"
@@ -314,6 +336,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_24_010107) do
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
   add_foreign_key "agent_types", "llms"
+  add_foreign_key "billing_subscriptions", "accounts"
   add_foreign_key "care_team_memberships", "accounts"
   add_foreign_key "care_team_memberships", "dependents"
   add_foreign_key "care_team_memberships", "users"

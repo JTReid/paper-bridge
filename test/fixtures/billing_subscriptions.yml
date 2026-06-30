@@ -1,0 +1,4 @@
+greenfield_active:
+  account: greenfield
+  status: active
+  stripe_price_id: price_fixture_standard
