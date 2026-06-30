@@ -3,9 +3,11 @@
 
 require "fileutils"
 require "net/http"
+require "open3"
 require "pathname"
 require "time"
 require "timeout"
+require "uri"
 
 ROOT = Pathname.new(__dir__).join("..").realpath
 QA_PORT = ENV.fetch("QA_PORT", "3100")
@@ -16,6 +18,8 @@ MAILPIT_SMTP_PORT = ENV.fetch("MAILPIT_SMTP_PORT", "1025")
 MAILPIT_API_URL = ENV.fetch("QA_MAILPIT_API_URL", "http://127.0.0.1:8025")
 ARTIFACT_ROOT = ROOT.join("tmp/qa-artifacts")
 SERVER_LOG = ARTIFACT_ROOT.join("logs/rails-test-server.log")
+
+DoctorCheck = Struct.new(:label, :command, :env, :required, :hint, keyword_init: true)
 
 QA_DATA_RUNNER = <<~"RUBY"
   document = Document.find_by!(title: "Advance Directive")
@@ -99,6 +103,36 @@ end
 def run_command(command, env: {})
   puts("\n--- #{[ env_summary(env), command.join(" ") ].compact.join(" ")} ---")
   system(env, *command, chdir: ROOT.to_s)
+end
+
+def capture_command(command, env: {})
+  output, status = Open3.capture2e(env, *command, chdir: ROOT.to_s)
+  [ status.success?, output.to_s.strip ]
+rescue Errno::ENOENT
+  [ false, "command not found: #{command.first}" ]
+end
+
+def qa_environment_valid?
+  errors = []
+  begin
+    uri = URI(QA_BASE_URL)
+    errors << "QA_BASE_URL must be http or https" unless %w[http https].include?(uri.scheme)
+    errors << "QA_BASE_URL must include a host" if uri.host.to_s.empty?
+  rescue URI::InvalidURIError => error
+    errors << "QA_BASE_URL is invalid: #{error.message}"
+  end
+
+  errors << "QA_HOST is blank" if QA_HOST.to_s.strip.empty?
+  errors << "QA_PORT must be numeric" unless QA_PORT.match?(/\A\d+\z/)
+  errors << "QA_WORKERS must be numeric" if ENV["QA_WORKERS"] && !ENV["QA_WORKERS"].match?(/\A\d+\z/)
+
+  if errors.empty?
+    puts "PASS QA environment variables"
+    true
+  else
+    warn("FAIL QA environment variables\n#{errors.map { |error| "     #{error}" }.join("\n")}")
+    false
+  end
 end
 
 def env_summary(env)
@@ -260,14 +294,148 @@ end
 
 def doctor_passed?
   checks = [
-    [ "node", "--version" ],
-    [ "npm", "--version" ],
-    [ "npx", "playwright", "--version" ],
-    [ "npm", "ls", "@axe-core/playwright", "--depth=0" ],
-    [ "psql", "postgres", "-tAc", "SELECT default_version FROM pg_available_extensions WHERE name = 'vector'" ]
+    DoctorCheck.new(
+      label: "Ruby runtime",
+      command: [ "ruby", "--version" ],
+      required: true
+    ),
+    DoctorCheck.new(
+      label: "Bundler",
+      command: [ "bundle", "--version" ],
+      required: true
+    ),
+    DoctorCheck.new(
+      label: "Rails boots in test",
+      command: [ "bin/rails", "runner", "puts 'rails-test-ok'" ],
+      env: { "RAILS_ENV" => "test" },
+      required: true
+    ),
+    DoctorCheck.new(
+      label: "Test database connection",
+      command: [ "bin/rails", "runner", "ActiveRecord::Base.connection.execute('SELECT 1'); puts 'test-db-ok'" ],
+      env: { "RAILS_ENV" => "test" },
+      required: true,
+      hint: "Run RAILS_ENV=test bin/rails db:prepare."
+    ),
+    DoctorCheck.new(
+      label: "pgvector extension enabled in test database",
+      command: [
+        "bin/rails",
+        "runner",
+        "enabled = ActiveRecord::Base.connection.select_value(\"SELECT EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'vector')\"); abort('vector extension is not enabled') unless enabled; puts 'pgvector-ok'"
+      ],
+      env: { "RAILS_ENV" => "test" },
+      required: true,
+      hint: "Install pgvector for this PostgreSQL version and run RAILS_ENV=test bin/rails db:prepare."
+    ),
+    DoctorCheck.new(
+      label: "Node runtime",
+      command: [ "node", "--version" ],
+      required: true
+    ),
+    DoctorCheck.new(
+      label: "npm",
+      command: [ "npm", "--version" ],
+      required: true
+    ),
+    DoctorCheck.new(
+      label: "Playwright package",
+      command: [ "npx", "playwright", "--version" ],
+      required: true,
+      hint: "Run npm install."
+    ),
+    DoctorCheck.new(
+      label: "axe-core Playwright package",
+      command: [ "npm", "ls", "@axe-core/playwright", "--depth=0" ],
+      required: true,
+      hint: "Run npm install."
+    ),
+    DoctorCheck.new(
+      label: "Chromium browser launches",
+      command: [
+        "node",
+        "-e",
+        "const { chromium } = require('@playwright/test'); (async () => { const browser = await chromium.launch(); await browser.close(); console.log('chromium-ok'); })().catch((error) => { console.error(error.message); process.exit(1); });"
+      ],
+      required: true,
+      hint: "Run npx playwright install chromium."
+    ),
+    DoctorCheck.new(
+      label: "QA harness file inventory",
+      command: [ "ruby", "scripts/paper_bridge_qa_harness.rb", "static" ],
+      required: true
+    ),
+    DoctorCheck.new(
+      label: "Mailpit API reachable",
+      command: [
+        "ruby",
+        "-rnet/http",
+        "-ruri",
+        "-e",
+        "begin; response = Net::HTTP.get_response(URI(ENV.fetch('QA_MAILPIT_API_URL'))); abort('Mailpit returned HTTP ' + response.code) unless response.is_a?(Net::HTTPSuccess); puts 'mailpit-ok'; rescue => error; abort(error.message); end"
+      ],
+      env: { "QA_MAILPIT_API_URL" => MAILPIT_API_URL },
+      required: false,
+      hint: "Only required for mailpit mode. Start with: mailpit --smtp #{MAILPIT_SMTP_ADDRESS}:#{MAILPIT_SMTP_PORT} --listen #{URI(MAILPIT_API_URL).host}:#{URI(MAILPIT_API_URL).port}"
+    ),
+    DoctorCheck.new(
+      label: "Stripe CLI available",
+      command: [ "stripe", "--version" ],
+      required: false,
+      hint: "Only required for future live Stripe webhook/Checkout QA."
+    ),
+    DoctorCheck.new(
+      label: "Stripe Checkout config present",
+      command: [ "bin/rails", "runner", "abort('stripe checkout is not configured') unless Billing::StripeConfig.checkout_ready?; puts 'stripe-checkout-config-ok'" ],
+      env: { "RAILS_ENV" => "test" },
+      required: false,
+      hint: "Only required for live Stripe Checkout QA. Configure stripe.secret_key and stripe.standard_price, or STRIPE_SECRET_KEY and STRIPE_PRICE_ID."
+    )
   ]
 
-  checks.all? { |command| run_command(command) }
+  passes = 0
+  failures = 0
+  warnings = 0
+
+  puts "PaperBridge QA Environment Doctor"
+  puts "QA base URL: #{QA_BASE_URL}"
+  puts "QA artifacts: #{ARTIFACT_ROOT.relative_path_from(ROOT)}"
+
+  if qa_environment_valid?
+    passes += 1
+  else
+    failures += 1
+  end
+
+  checks.each do |check|
+    passed, output = capture_command(check.command, env: check.env || {})
+    status = if passed
+      passes += 1
+      "PASS"
+    elsif check.required
+      failures += 1
+      "FAIL"
+    else
+      warnings += 1
+      "WARN"
+    end
+
+    puts "#{status} #{check.label}"
+    puts "     #{output.lines.first}" unless output.empty?
+    puts "     #{check.hint}" if !passed && check.hint && !check.hint.empty?
+  end
+
+  if app_responding?
+    warnings += 1
+    puts "WARN Rails QA server already responding at #{QA_BASE_URL}"
+    puts "     Existing server will be reused by browser commands; stop it if that is not intentional."
+  else
+    passes += 1
+    puts "PASS Rails QA server is not already running at #{QA_BASE_URL}"
+  end
+
+  puts "\nDoctor summary: #{passes} passed, #{warnings} warnings, #{failures} failures."
+  failures.zero?
 end
 
 def static_check_passed?
