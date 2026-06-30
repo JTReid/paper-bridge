@@ -70,7 +70,7 @@
       </div>
     <% end %>
 
-    <nav class="flex-1 space-y-1 px-3 py-4">
+    <nav class="flex-1 space-y-1 px-3 py-4" aria-label="Primary navigation">
       <% nav_items.each do |item| %>
         <% active_item = active == item[:key] %>
         <%= link_to item[:path], class: "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-150 #{active_item ? "bg-primary text-white shadow-sm" : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"}", data: { testid: "nav-#{item[:key].to_s.dasherize}" } do %>

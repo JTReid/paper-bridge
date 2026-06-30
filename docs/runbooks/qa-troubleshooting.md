@@ -369,6 +369,107 @@ to a new `runs/<run-id>/` directory under the same case index.
   deterministic test-environment checks unless a future live-provider mode is
   added explicitly.
 
+## Accessibility And Mobile Suite Contract
+
+Phase 6 groups automated accessibility checks and narrow mobile viewport
+coverage. These suites use the same deterministic `RAILS_ENV=test` browser
+harness as `browser`: database prep, fixtures, QA seed data, fixture attachment
+setup, generated Tailwind assets, a Rails test server at `QA_BASE_URL`,
+Chromium Playwright, and shared browser diagnostics.
+
+Accessibility commands:
+
+```bash
+ruby scripts/paper_bridge_qa_harness.rb accessibility MODE
+```
+
+Accessibility modes:
+
+| Mode | Coverage |
+| --- | --- |
+| `surfaces` | Runs axe checks over public home, sign-in, dashboard, billing gate, workspace, documents, share modal, upload, care team, invite, AI assistant, and seeded document edge states. |
+| `all` | Runs every accessibility mode above. Today this is the same path as `accessibility surfaces`. It does not run mobile viewport checks, Mailpit, or live-service probes. |
+
+Mobile commands:
+
+```bash
+ruby scripts/paper_bridge_qa_harness.rb mobile MODE
+```
+
+Mobile modes:
+
+| Mode | Coverage |
+| --- | --- |
+| `surfaces` | Runs successful `390x844` viewport navigation through public home, dashboard, billing, workspace, documents, share modal, care team, invite, and AI assistant surfaces. |
+| `negative` | Runs narrow viewport negative workflow probes. |
+| `all` | Runs every mobile mode above. |
+
+Accessibility coverage uses `@axe-core/playwright` through the shared
+`expectAccessible` helper. The helper runs axe against the current Chromium page
+or modal at the point where the selected spec calls it, and any violation fails
+the Playwright run with the affected selectors and axe help URL.
+
+Mobile coverage currently has two specs at a `390x844` viewport.
+`mobile surfaces` runs `tests/e2e/product/mobile_suite.spec.js` and verifies
+successful narrow navigation through the public entry points, app shell,
+billing page, workspace, documents, share modal, care-team invite, and AI
+assistant. `mobile negative` runs `tests/e2e/product/mobile_negative.spec.js`
+and verifies two user-visible failure states: blank-recipient document sharing
+stays in the share modal with browser-native required-field validation, and a
+blank-email care-team invite returns to the invite form with visible validation
+errors.
+
+What Phase 6 proves:
+
+- `accessibility all` has zero automated axe violations on the accessibility
+  suite's instrumented pages and modals at the exact tested states in Chromium.
+- The same shared browser diagnostics still apply: uncaught page errors,
+  console errors, failed requests, and server responses with status `>= 500`
+  fail the run.
+- `mobile surfaces` keeps successful mobile app-shell navigation reachable and
+  user-visible at the `390x844` viewport.
+- `mobile negative` keeps the current critical mobile validation states
+  reachable and user-visible at the `390x844` viewport.
+- `browser` proves the accessibility and mobile specs run together with the
+  rest of the Chromium QA suite.
+
+What Phase 6 does not prove:
+
+- It is not a full WCAG audit, manual keyboard audit, screen-reader audit,
+  usability review, or guarantee that every page has an accessible name, focus
+  order, announcement, or contrast state beyond the automated axe rules that run
+  on instrumented surfaces.
+- It does not cover pages or interaction states that do not call
+  `expectAccessible`, including every modal state, error variant, loading state,
+  or submitted workflow result.
+- It is not a full mobile product suite, responsive-layout matrix, touch-device
+  certification, or cross-browser mobile pass. Current mobile coverage is one
+  Chromium viewport tied to selected successful navigation and negative
+  validation probes.
+- It does not prove successful mobile document sharing submission, care-team
+  invite submission, file upload, AI answer generation, or document processing.
+- It does not call live Stripe, live AI providers, external SMTP, background
+  workers, OCR, embeddings, or native device services.
+
+Boundaries:
+
+- `smoke` remains the fast boot, auth, navigation, surface-reachability, and
+  selected smoke-owned axe sentinel. Use `accessibility` when the intent is the
+  named accessibility suite; use `smoke` when the intent is fast product-shape
+  reachability.
+- `workflow` owns successful product paths. Accessibility assertions inside a
+  workflow mode check the page state used by that scenario, but `accessibility`
+  is the selector that groups axe-bearing product surfaces by quality concern.
+- `negative` owns deterministic invalid, empty, failed, seeded lifecycle, and
+  error-state probes. `negative mobile` and `mobile negative` currently run the
+  same narrow validation spec; prefer `mobile negative` when the intent is
+  Phase 6 mobile suite coverage.
+- `bughunt` owns named defect evidence. Use it for mobile or accessibility
+  reproduce/verify artifacts, then move durable assertions into the stable mode
+  that owns the behavior.
+- `mailpit` owns SMTP capture and inbox assertions. Phase 6 mobile and
+  accessibility checks must not require a Mailpit process.
+
 ## Commands
 
 ```bash
@@ -394,6 +495,18 @@ ruby scripts/paper_bridge_qa_harness.rb negative care-team
 ruby scripts/paper_bridge_qa_harness.rb negative documents
 ruby scripts/paper_bridge_qa_harness.rb negative edge-states
 ruby scripts/paper_bridge_qa_harness.rb negative mobile
+```
+
+Phase 6 accessibility and mobile examples:
+
+```bash
+ruby scripts/paper_bridge_qa_harness.rb accessibility surfaces
+ruby scripts/paper_bridge_qa_harness.rb accessibility all
+ruby scripts/paper_bridge_qa_harness.rb mobile surfaces
+ruby scripts/paper_bridge_qa_harness.rb mobile negative
+ruby scripts/paper_bridge_qa_harness.rb mobile all
+ruby scripts/paper_bridge_qa_harness.rb browser
+ruby scripts/paper_bridge_qa_harness.rb bughunt mobile-negative tests/e2e/product/mobile_negative.spec.js
 ```
 
 The Mailpit command requires a local Mailpit process:

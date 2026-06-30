@@ -2,7 +2,7 @@
 
 <%= app_shell(active: :documents, dependent: @dependent) do %>
   <div class="mx-auto max-w-3xl space-y-8">
-    <nav>
+    <nav aria-label="Document navigation">
       <%= link_to dependent_documents_path(@dependent), class: "inline-flex items-center text-sm font-medium text-slate-600 hover:text-slate-950" do %>
         <span aria-hidden="true" class="mr-2">&larr;</span>
         Back to documents

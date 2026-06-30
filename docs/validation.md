@@ -46,6 +46,10 @@ ruby scripts/paper_bridge_qa_harness.rb seed
 ruby scripts/paper_bridge_qa_harness.rb db
 ruby scripts/paper_bridge_qa_harness.rb assets
 ruby scripts/paper_bridge_qa_harness.rb smoke
+ruby scripts/paper_bridge_qa_harness.rb workflow all
+ruby scripts/paper_bridge_qa_harness.rb negative all
+ruby scripts/paper_bridge_qa_harness.rb accessibility all
+ruby scripts/paper_bridge_qa_harness.rb mobile all
 ruby scripts/paper_bridge_qa_harness.rb browser
 ruby scripts/paper_bridge_qa_harness.rb mailpit
 ruby scripts/paper_bridge_qa_harness.rb bughunt BUG_ID [path...]
@@ -93,6 +97,23 @@ Use `browser` when a change needs the full Chromium Playwright suite, including
 smoke, product workflow, seeded edge-state, regression, and negative probes. Use
 `mailpit` for SMTP capture and no-email assertions, because `negative` should
 not require a local Mailpit process.
+
+Phase 6 accessibility and mobile suite coverage is selected with
+`ruby scripts/paper_bridge_qa_harness.rb accessibility MODE` and
+`ruby scripts/paper_bridge_qa_harness.rb mobile MODE`. Accessibility modes are
+`surfaces` and `all`; today `accessibility all` is the same path as
+`accessibility surfaces`. Mobile modes are `surfaces`, `negative`, and `all`.
+Use `bughunt mobile-negative
+tests/e2e/product/mobile_negative.spec.js` when a mobile defect needs
+screenshots, traces, and videos.
+
+These checks prove zero axe violations only on the accessibility suite surfaces
+that call the shared helper, plus selected successful and negative mobile
+behavior at one `390x844` Chromium viewport. They do not prove full WCAG
+compliance, screen-reader behavior, manual keyboard order, every interaction
+state, responsive behavior across breakpoints, cross-browser mobile behavior,
+live Stripe, live AI, external SMTP, OCR, embeddings, or background worker
+behavior.
 
 Use Bughunt Evidence Mode when reproducing or verifying one browser-visible
 defect:

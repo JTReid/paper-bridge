@@ -49,6 +49,19 @@ NEGATIVE_SPECS = {
 NEGATIVE_ALL_PATHS = NEGATIVE_SPECS.values.flatten.freeze
 NEGATIVE_MODES = [ *NEGATIVE_SPECS.keys, "all" ].freeze
 
+ACCESSIBILITY_SPECS = {
+  "surfaces" => [ "tests/e2e/product/accessibility_suite.spec.js" ].freeze
+}.freeze
+ACCESSIBILITY_ALL_PATHS = ACCESSIBILITY_SPECS.values.flatten.freeze
+ACCESSIBILITY_MODES = [ *ACCESSIBILITY_SPECS.keys, "all" ].freeze
+
+MOBILE_SPECS = {
+  "surfaces" => [ "tests/e2e/product/mobile_suite.spec.js" ].freeze,
+  "negative" => [ "tests/e2e/product/mobile_negative.spec.js" ].freeze
+}.freeze
+MOBILE_ALL_PATHS = MOBILE_SPECS.values.flatten.freeze
+MOBILE_MODES = [ *MOBILE_SPECS.keys, "all" ].freeze
+
 QA_DATA_RUNNER = <<~"RUBY"
   document = Document.find_by!(title: "Advance Directive")
   unless document.file.attached?
@@ -97,6 +110,8 @@ STATIC_FILES = %w[
   tests/e2e/product/document_negative.spec.js
   tests/e2e/product/care_team.spec.js
   tests/e2e/product/care_team_negative.spec.js
+  tests/e2e/product/accessibility_suite.spec.js
+  tests/e2e/product/mobile_suite.spec.js
   tests/e2e/product/mobile_negative.spec.js
   tests/e2e/product/qa_seed_edge_states.spec.js
   tests/e2e/product/ai_assistant.spec.js
@@ -118,6 +133,8 @@ def usage
       browser  Run all Chromium browser QA checks
       workflow Run named Chromium workflow scenarios
       negative Run named Chromium negative/error-state probes
+      accessibility Run named Chromium accessibility suites
+      mobile   Run named Chromium mobile viewport suites
       mailpit  Run email QA checks through local Mailpit SMTP and API
       bughunt  Run browser checks with named screenshots, videos, and traces always on
       rubocop  Run RuboCop on the QA harness Ruby script
@@ -130,6 +147,11 @@ def usage
       ruby scripts/paper_bridge_qa_harness.rb negative care-team
       ruby scripts/paper_bridge_qa_harness.rb negative edge-states
       ruby scripts/paper_bridge_qa_harness.rb negative all
+      ruby scripts/paper_bridge_qa_harness.rb accessibility surfaces
+      ruby scripts/paper_bridge_qa_harness.rb accessibility all
+      ruby scripts/paper_bridge_qa_harness.rb mobile surfaces
+      ruby scripts/paper_bridge_qa_harness.rb mobile negative
+      ruby scripts/paper_bridge_qa_harness.rb mobile all
       ruby scripts/paper_bridge_qa_harness.rb bughunt share-modal
       ruby scripts/paper_bridge_qa_harness.rb bughunt share-modal tests/e2e/product/document_sharing.spec.js
       ruby scripts/paper_bridge_qa_harness.rb bughunt tests/e2e/product/document_sharing.spec.js
@@ -150,6 +172,37 @@ def workflow_usage
       care-team  Run care team invitation and permissions workflow checks
       ai         Run AI assistant page workflow checks without live model calls
       all        Run all workflow modes above
+  USAGE
+end
+
+def accessibility_usage
+  puts(<<~USAGE)
+    Usage: ruby scripts/paper_bridge_qa_harness.rb accessibility MODE
+    Available modes: #{ACCESSIBILITY_MODES.join(", ")}
+
+    Modes:
+      surfaces Run axe checks over public, auth, billing, workspace, documents,
+               sharing, care team, AI, and seeded edge-state surfaces
+      all      Run all accessibility modes above
+
+    These modes use deterministic Chromium Playwright specs through the QA test
+    server. They do not start Mailpit, require SMTP capture, or call live services.
+  USAGE
+end
+
+def mobile_usage
+  puts(<<~USAGE)
+    Usage: ruby scripts/paper_bridge_qa_harness.rb mobile MODE
+    Available modes: #{MOBILE_MODES.join(", ")}
+
+    Modes:
+      surfaces Run successful mobile navigation through public, billing,
+               workspace, documents, sharing, care team, and AI surfaces
+      negative Run narrow viewport negative workflow probes
+      all      Run all mobile modes above
+
+    These modes use deterministic Chromium Playwright specs through the QA test
+    server. They do not start Mailpit, require SMTP capture, or call live services.
   USAGE
 end
 
@@ -382,6 +435,18 @@ def negative_paths(negative_name)
   NEGATIVE_SPECS[negative_name]
 end
 
+def accessibility_paths(accessibility_name)
+  return ACCESSIBILITY_ALL_PATHS if accessibility_name == "all"
+
+  ACCESSIBILITY_SPECS[accessibility_name]
+end
+
+def mobile_paths(mobile_name)
+  return MOBILE_ALL_PATHS if mobile_name == "all"
+
+  MOBILE_SPECS[mobile_name]
+end
+
 def run_workflow(workflow_name)
   if workflow_name.to_s.empty?
     warn("Missing workflow mode.")
@@ -414,6 +479,60 @@ def run_negative(negative_name)
   end
 
   with_server { run_playwright(paths: paths) }
+end
+
+def run_accessibility(accessibility_name)
+  if accessibility_name.to_s.empty?
+    warn("Missing accessibility mode.")
+    accessibility_usage
+    return false
+  end
+
+  paths = accessibility_paths(accessibility_name)
+  unless paths
+    warn("Unknown accessibility mode: #{accessibility_name}")
+    accessibility_usage
+    return false
+  end
+
+  with_server { run_playwright(paths: paths) }
+end
+
+def run_mobile(mobile_name)
+  if mobile_name.to_s.empty?
+    warn("Missing mobile mode.")
+    mobile_usage
+    return false
+  end
+
+  paths = mobile_paths(mobile_name)
+  unless paths
+    warn("Unknown mobile mode: #{mobile_name}")
+    mobile_usage
+    return false
+  end
+
+  with_server { run_playwright(paths: paths) }
+end
+
+def accessibility_command(args)
+  if args.length > 1
+    warn("Unexpected accessibility arguments: #{args.drop(1).join(", ")}")
+    accessibility_usage
+    return false
+  end
+
+  run_accessibility(args.first)
+end
+
+def mobile_command(args)
+  if args.length > 1
+    warn("Unexpected mobile arguments: #{args.drop(1).join(", ")}")
+    mobile_usage
+    return false
+  end
+
+  run_mobile(args.first)
 end
 
 def bughunt_case_dir(raw_bug_id)
@@ -877,6 +996,10 @@ when "workflow"
   run_workflow(args.first)
 when "negative"
   run_negative(args.first)
+when "accessibility"
+  accessibility_command(args)
+when "mobile"
+  mobile_command(args)
 when "mailpit"
   paths = args.any? ? args : [ "tests/e2e/product/document_sharing_mailpit.spec.js" ]
   ensure_mailpit_ready &&
