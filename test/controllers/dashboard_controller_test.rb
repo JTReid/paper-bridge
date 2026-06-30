@@ -25,4 +25,14 @@ class DashboardControllerTest < ActionDispatch::IntegrationTest
     assert_not_includes response.body, "Evidence chunks"
     assert_not_includes response.body, documents(:advance_directive).title
   end
+
+  test "redirects signed in inactive accounts to billing" do
+    accounts(:greenfield).billing_subscription.update!(status: :canceled)
+    sign_in users(:family_admin)
+
+    get dashboard_path
+
+    assert_redirected_to billing_path
+    assert_equal "A subscription is required to continue.", flash[:alert]
+  end
 end

@@ -36,9 +36,10 @@ class DeviseRegistrationsControllerTest < ActionDispatch::IntegrationTest
     end
 
     user = User.find_by!(email: "taylor-harbor@example.test")
-    assert_redirected_to dashboard_path
+    assert_redirected_to billing_path
     assert_equal "Taylor Harbor", user.name
     assert_equal "Harbor Family", user.account.name
     assert user.can_manage_account?(user.account)
+    assert_not user.account.subscription_active?
   end
 end

@@ -7,6 +7,16 @@ class AiAssistantControllerTest < ActionDispatch::IntegrationTest
     assert_redirected_to new_user_session_path
   end
 
+  test "requires an active subscription" do
+    accounts(:greenfield).billing_subscription.update!(status: :canceled)
+    sign_in users(:family_admin)
+
+    get dependent_ai_assistant_path(dependents(:emma))
+
+    assert_redirected_to billing_path
+    assert_equal "A subscription is required to continue.", flash[:alert]
+  end
+
   test "renders empty assistant without creating a pipeline run" do
     dependent = dependents(:emma)
     sign_in users(:family_admin)

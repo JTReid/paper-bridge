@@ -27,6 +27,8 @@ qa-family-admin@example.test / password
 ## Seeded Shape
 
 - Account: `PaperBridge QA Harness`
+- Billing: active synthetic `BillingSubscription` so global subscription gates
+  do not block seeded product workflows
 - Dependent: `Avery Morgan`
 - Care team: one active teacher and one invited therapist
 - Documents: 11 synthetic PDF records

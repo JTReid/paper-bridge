@@ -20,6 +20,7 @@ ruby scripts/paper_bridge_harness.rb assets
 ruby scripts/paper_bridge_harness.rb foundation
 ruby scripts/paper_bridge_harness.rb access
 ruby scripts/paper_bridge_harness.rb sharing
+ruby scripts/paper_bridge_harness.rb billing
 ruby scripts/paper_bridge_harness.rb product
 ruby scripts/paper_bridge_harness.rb review
 ```
@@ -27,13 +28,14 @@ ruby scripts/paper_bridge_harness.rb review
 This product-level harness covers behavior implemented in the Rails app today:
 public/auth entry points, registration-created accounts, dashboard and
 dependent workspace navigation, dependent profile access, care team invitations,
-category permissions, search-access mapping, and email-attachment document
-sharing.
+category permissions, search-access mapping, email-attachment document sharing,
+and the Stripe billing foundation.
 
-Future product requirements that are not implemented yet, such as billing,
-calendar persistence, in-app notifications, audit-log exports, tokenized sharing
-links, document version history, and mobile behavior, are intentionally not
-product harness contracts yet.
+Future product requirements that are not implemented yet, such as calendar
+persistence, in-app notifications, audit-log exports, tokenized sharing links,
+document version history, multi-plan billing entitlements beyond
+`stripe.standard_price`, invoice history screens, and mobile behavior, are
+intentionally not product harness contracts yet.
 
 ## QA Troubleshooting Harness
 

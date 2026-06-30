@@ -1,4 +1,9 @@
 class User < ApplicationRecord
+  SITE_ROLES = {
+    user: "user",
+    super_admin: "super_admin"
+  }.freeze
+
   has_many :account_memberships, dependent: :destroy
   has_many :accounts, through: :account_memberships
   has_many :care_team_memberships, dependent: :destroy
@@ -9,6 +14,8 @@ class User < ApplicationRecord
   # :confirmable, :lockable, :timeoutable, :trackable and :omniauthable
   devise :database_authenticatable, :registerable,
          :recoverable, :rememberable, :validatable
+
+  enum :site_role, SITE_ROLES
 
   after_create :create_registration_account_membership, if: :registration_account_requested?
 

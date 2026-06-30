@@ -24,6 +24,12 @@ from Scoutspace.
   ownership consistency.
 - `DocumentShareMailer` sends the currently selected documents as email
   attachments. Tokenized external sharing links are not implemented yet.
+- `BillingSubscription` stores account-level Stripe customer, subscription,
+  price, status, period, cancellation, and latest webhook event state. Account
+  access checks flow through `Account#subscription_active?`.
+- `SubscriptionGate` exposes `require_subscription!` for controller-level paid
+  access gates. It bypasses users with the platform-level `super_admin`
+  `site_role`.
 - `DocumentPage` is the first-class PDF page record. It stores embedded text,
   OCR text, preparation metadata, page status, and one rendered page image
   attachment.
@@ -82,5 +88,9 @@ from Scoutspace.
 - Development and production Active Job processing uses Solid Queue. In
   development, queue tables live in `paper_bridge_development_queue`, and
   workers are started with `bin/jobs`.
+- Billing uses Stripe-hosted Checkout and Customer Portal sessions. Webhook
+  verification and dispatch are mounted through `stripe_event` at
+  `/stripe/webhooks`, with subscription state synchronized by
+  `Billing::StripeWebhookHandler`.
 - Live model checks are opt-in and should use fake or in-house test data for
   this spike.

@@ -12,6 +12,7 @@ class DocumentShareMailerTest < ActionMailer::TestCase
 
     email = DocumentShareMailer.with(share_event: share_event).share
 
+    assert_equal [ ApplicationMailer::DEFAULT_FROM_ADDRESS ], email.from
     assert_equal [ "teacher@example.test" ], email.to
     assert_equal "Shared documents", email.subject
     assert_includes email.text_part.body.to_s, "Original files are attached"

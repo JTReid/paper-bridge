@@ -13,6 +13,11 @@ async function openSeededDocuments(page) {
   await expect(page.getByRole('heading', { name: "Avery Morgan's Documents" })).toBeVisible();
 }
 
+async function backToSeededDocuments(page) {
+  await page.getByRole('link', { name: /Back to documents/ }).click();
+  await expect(page.getByRole('heading', { name: "Avery Morgan's Documents" })).toBeVisible();
+}
+
 test('QA seeded document list exposes lifecycle edge states', async ({ page }) => {
   await openSeededDocuments(page);
 
@@ -38,7 +43,7 @@ test('QA seeded empty and failed document details render safely', async ({ page 
   await expect(page.getByText('No summary has been generated yet.')).toBeVisible();
   await expectAccessible(page);
 
-  await page.getByRole('link', { name: /Back to documents/ }).click();
+  await backToSeededDocuments(page);
   await page.getByRole('link', { name: /QA Edge Preparation Failed/ }).click();
 
   await expect(page.getByRole('heading', { name: 'QA Edge Preparation Failed' })).toBeVisible();
@@ -56,7 +61,7 @@ test('QA seeded partial processing stats expose missing embedding states', async
   await expect(page.getByTestId('document-processing-stat-embeddings')).toContainText('0');
   await expect(page.getByTestId('document-processing-stat-pages')).toContainText('2');
 
-  await page.getByRole('link', { name: /Back to documents/ }).click();
+  await backToSeededDocuments(page);
   await page.getByRole('link', { name: /QA Edge Partial Embeddings/ }).click();
 
   await expect(page.getByRole('heading', { name: 'QA Edge Partial Embeddings' })).toBeVisible();
@@ -64,7 +69,7 @@ test('QA seeded partial processing stats expose missing embedding states', async
   await expect(page.getByTestId('document-processing-stat-embeddings')).toContainText('1');
   await expect(page.getByTestId('document-processing-stat-pages')).toContainText('2');
 
-  await page.getByRole('link', { name: /Back to documents/ }).click();
+  await backToSeededDocuments(page);
   await page.getByRole('link', { name: /QA Edge No Summary/ }).click();
 
   await expect(page.getByRole('heading', { name: 'QA Edge No Summary' })).toBeVisible();

@@ -80,3 +80,6 @@ exercise the core workflow.
 - The care team page opens.
 - A care team member can be invited with category permissions.
 - The AI assistant page opens without submitting a query.
+- Billing gates inactive accounts to `/billing`, hides product navigation,
+  verifies active accounts keep product access, and checks Stripe Checkout and
+  Customer Portal forms use full-page navigation instead of Turbo fetches.

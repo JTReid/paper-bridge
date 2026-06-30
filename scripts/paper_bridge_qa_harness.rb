@@ -49,6 +49,7 @@ STATIC_FILES = %w[
   package.json
   package-lock.json
   tests/e2e/helpers/auth.js
+  tests/e2e/helpers/backend.js
   tests/e2e/helpers/diagnostics.js
   tests/e2e/helpers/accessibility.js
   tests/e2e/helpers/mailpit.js
@@ -58,6 +59,7 @@ STATIC_FILES = %w[
   tests/e2e/product/dependent_workspace.spec.js
   tests/e2e/product/document_sharing.spec.js
   tests/e2e/product/document_sharing_mailpit.spec.js
+  tests/e2e/product/billing.spec.js
   tests/e2e/product/document_management.spec.js
   tests/e2e/product/care_team.spec.js
   tests/e2e/product/care_team_negative.spec.js
@@ -211,6 +213,7 @@ def with_server(env: {})
     yield
   ensure
     stop_server(pid)
+    run_command([ "bin/rails", "runner", QA_DB_CLEANUP_RUNNER ], env: { "RAILS_ENV" => "test" })
   end
 end
 

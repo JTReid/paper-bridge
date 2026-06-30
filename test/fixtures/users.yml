@@ -17,3 +17,9 @@ therapist:
   name: Therapist User
   email: therapist@example.test
   encrypted_password: <%= Devise::Encryptor.digest(User, "password") %>
+
+super_admin:
+  name: Super Admin
+  email: super-admin@example.test
+  encrypted_password: <%= Devise::Encryptor.digest(User, "password") %>
+  site_role: super_admin
