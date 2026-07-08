@@ -39,6 +39,10 @@ class DocumentsControllerTest < ActionDispatch::IntegrationTest
     assert_includes response.body, "All Profiles"
     assert_includes response.body, dependent.name
     assert_includes response.body, dependent_documents_path(dependent)
+    assert_includes response.body, "data-controller=\"file-dropzone\""
+    assert_includes response.body, "data-file-dropzone-category-options-value"
+    assert_includes response.body, "name=\"document[files][]\""
+    assert_includes response.body, "multiple=\"multiple\""
   end
 
   test "uploads a document into the signed in account" do
@@ -52,7 +56,7 @@ class DocumentsControllerTest < ActionDispatch::IntegrationTest
             title: "Durable Power of Attorney",
             description: "Signed copy",
             category: "general",
-            file: Rack::Test::UploadedFile.new(file_fixture("sample.txt"), "text/plain")
+            files: [ Rack::Test::UploadedFile.new(file_fixture("sample.txt"), "text/plain") ]
           }
         }
       end
@@ -67,6 +71,69 @@ class DocumentsControllerTest < ActionDispatch::IntegrationTest
     assert document.file.attached?
     assert_equal "sample.txt", document.original_filename
     assert_equal "queued", document.status
+  end
+
+  test "uploads multiple documents into the signed in account" do
+    user = users(:family_admin)
+    dependent = dependents(:emma)
+    sign_in user
+
+    assert_enqueued_jobs 2, only: ProcessDocumentJob do
+      assert_difference -> { Document.count }, 2 do
+        post dependent_documents_path(dependent), params: {
+          document: {
+            description: "Shared context",
+            category: "medical",
+            file_categories: [ "educational", "therapy" ],
+            files: [
+              Rack::Test::UploadedFile.new(file_fixture("sample.txt"), "text/plain", original_filename: "first-document.txt"),
+              Rack::Test::UploadedFile.new(file_fixture("sample.txt"), "text/plain", original_filename: "second-document.txt")
+            ]
+          }
+        }
+      end
+    end
+
+    assert_redirected_to dependent_documents_path(dependent)
+    assert_equal "2 documents uploaded and queued for evaluation.", flash[:notice]
+
+    documents = Document.order(:created_at).last(2)
+    assert_equal [ "first-document", "second-document" ], documents.map(&:title)
+    assert_equal [ "first-document.txt", "second-document.txt" ], documents.map(&:original_filename)
+    assert_equal [ "educational", "therapy" ], documents.map(&:category)
+    assert_equal [ "Shared context", "Shared context" ], documents.map(&:description)
+    assert_equal [ user.account, user.account ], documents.map(&:account)
+    assert_equal [ dependent, dependent ], documents.map(&:dependent)
+    assert_equal [ user, user ], documents.map(&:user)
+    assert documents.all? { |document| document.file.attached? }
+    assert_equal [ "queued", "queued" ], documents.map(&:status)
+  end
+
+  test "multi document upload reports partial failures without blocking valid files" do
+    dependent = dependents(:emma)
+    sign_in users(:family_admin)
+
+    assert_enqueued_jobs 1, only: ProcessDocumentJob do
+      assert_difference -> { Document.count }, 1 do
+        post dependent_documents_path(dependent), params: {
+          document: {
+            category: "general",
+            files: [
+              Rack::Test::UploadedFile.new(file_fixture("sample.txt"), "text/plain", original_filename: "partial-valid.txt"),
+              "not-a-file"
+            ]
+          }
+        }
+      end
+    end
+
+    assert_redirected_to dependent_documents_path(dependent)
+    assert_equal "1 document uploaded and queued for evaluation.", flash[:notice]
+    assert_equal "1 file could not be uploaded: Unnamed file.", flash[:alert]
+
+    document = Document.order(:created_at).last
+    assert_equal "partial-valid", document.title
+    assert_equal "partial-valid.txt", document.original_filename
   end
 
   test "failed scoped upload preserves dependent workspace" do

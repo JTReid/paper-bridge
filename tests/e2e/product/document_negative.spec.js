@@ -8,7 +8,6 @@ test('upload form keeps required file validation in the browser', async ({ page 
   await page.getByTestId('documents-add-link').click();
 
   await expect(page.getByRole('heading', { name: 'Upload Document' })).toBeVisible();
-  await page.getByTestId('document-title-field').fill('QA Missing File');
   await page.getByTestId('document-upload-submit').click();
 
   await expect(page.getByRole('heading', { name: 'Upload Document' })).toBeVisible();

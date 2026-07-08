@@ -8,6 +8,7 @@ documents.
 - `Document` is the first-class domain record for uploads and processing state.
 - Each `Document` belongs to an `Account`, a `Dependent`, and a `User`.
 - Each `Document` has one Active Storage attachment named `file`.
+- Multi-file upload requests create one `Document` record per uploaded file.
 - Active Storage upload completion is followed by `Document.after_create_commit`.
 - The callback marks the document `queued` and enqueues `ProcessDocumentJob`.
 - Development and production use Solid Queue for Active Job-backed document

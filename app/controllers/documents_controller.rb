@@ -25,14 +25,27 @@ class DocumentsController < ApplicationController
 
   def create
     set_form_options
-    @document = current_account.documents.new(document_params)
-    @document.user = current_user
-    @document.dependent = @dependent
+    upload_params = document_upload_params
+    files = uploaded_files(upload_params)
 
-    if @document.save
-      redirect_to @document, notice: "Document uploaded."
-    else
+    if files.empty?
+      @document = build_document(upload_params)
+      @document.validate
       render :new, status: :unprocessable_entity
+      return
+    end
+
+    uploaded_documents, failed_uploads = create_uploaded_documents(files, upload_params)
+
+    if uploaded_documents.empty?
+      @document = failed_uploads.first.fetch(:document)
+      render :new, status: :unprocessable_entity
+    elsif uploaded_documents.one? && failed_uploads.empty?
+      redirect_to uploaded_documents.first, notice: "Document uploaded."
+    else
+      flash[:notice] = upload_success_message(uploaded_documents.count) if uploaded_documents.any?
+      flash[:alert] = upload_failure_message(failed_uploads) if failed_uploads.any?
+      redirect_to dependent_documents_path(@dependent)
     end
   end
 
@@ -68,12 +81,89 @@ class DocumentsController < ApplicationController
       @dependent ||= @document.dependent
     end
 
-    def document_params
-      params.require(:document).permit(:title, :description, :category, :file)
+    def document_upload_params
+      params.require(:document).permit(:title, :description, :category, :file, files: [], file_categories: [])
     end
 
     def document_update_params
       params.require(:document).permit(:title, :description, :category)
+    end
+
+    def uploaded_files(upload_params)
+      files = upload_params[:files].presence || upload_params[:file]
+
+      Array.wrap(files).reject(&:blank?)
+    end
+
+    def create_uploaded_documents(files, upload_params)
+      file_count = files.size
+      uploaded_documents = []
+      failed_uploads = []
+
+      files.each_with_index do |file, index|
+        document = build_document(upload_params, file_count: file_count, file_index: index)
+
+        begin
+          document.file.attach(file)
+
+          if document.save
+            uploaded_documents << document
+          else
+            failed_uploads << failed_upload_for(file, document)
+          end
+        rescue ActiveSupport::MessageVerifier::InvalidSignature, ArgumentError => error
+          document.errors.add(:file, error.message)
+          failed_uploads << failed_upload_for(file, document)
+        end
+      end
+
+      [ uploaded_documents, failed_uploads ]
+    end
+
+    def build_document(upload_params, file_count: 1, file_index: nil)
+      document = current_account.documents.new(
+        description: upload_params[:description],
+        category: document_category(upload_params, file_index)
+      )
+      document.title = upload_params[:title] if file_count == 1 && upload_params[:title].present?
+      document.user = current_user
+      document.dependent = @dependent
+      document
+    end
+
+    def document_category(upload_params, file_index)
+      file_category = Array.wrap(upload_params[:file_categories])[file_index] if file_index
+
+      file_category.presence || upload_params[:category]
+    end
+
+    def failed_upload_for(file, document)
+      {
+        document: document,
+        filename: upload_filename(file),
+        errors: document.errors.full_messages
+      }
+    end
+
+    def upload_filename(file)
+      return file.original_filename.to_s if file.respond_to?(:original_filename) && file.original_filename.present?
+
+      "Unnamed file"
+    end
+
+    def upload_success_message(count)
+      "#{count} #{'document'.pluralize(count)} uploaded and queued for evaluation."
+    end
+
+    def upload_failure_message(failed_uploads)
+      count = failed_uploads.count
+      filenames = failed_uploads.map { |failure| failure.fetch(:filename) }
+      visible_filenames = filenames.first(4)
+      hidden_count = count - visible_filenames.count
+      filename_summary = visible_filenames.to_sentence
+      filename_summary = "#{filename_summary}, and #{hidden_count} more" if hidden_count.positive?
+
+      "#{count} #{'file'.pluralize(count)} could not be uploaded: #{filename_summary}."
     end
 
     def share_recipient_options

@@ -218,7 +218,7 @@ Named negative modes:
 | --- | --- |
 | `all` | Runs every deterministic negative mode in this table. It does not run `workflow`, `mailpit`, `bughunt`, live-service probes, or full responsive sweeps. |
 | `care-team` | Verifies blank email, malformed email, and duplicate invite behavior, including clear user-visible errors and no successful invalid invite. Successful invite creation remains `workflow care-team`. |
-| `documents` | Verifies browser required-file upload validation and blank-title edit validation. Successful metadata edits remain `workflow documents`; ingestion, OCR, embeddings, and processing states remain agentic or seeded-state coverage. |
+| `documents` | Verifies browser required-file upload validation and blank-title edit validation. Successful multi-document upload and metadata edits remain `workflow documents`; ingestion, OCR, embeddings, and processing states remain agentic or seeded-state coverage. |
 | `mobile` | Runs a narrow viewport pass over deterministic negative probes, currently blank-recipient sharing and blank-email care-team invite behavior. It is not a full mobile product or responsive-layout suite. |
 | `edge-states` | Verifies synthetic uploaded, failed, missing-embedding, partial-embedding, and no-summary document lifecycle states render safely. It does not run live ingestion, OCR, embeddings, or background workers. |
 
