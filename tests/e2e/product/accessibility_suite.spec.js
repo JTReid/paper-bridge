@@ -81,7 +81,7 @@ test('care team and AI surfaces pass axe checks', async ({ page }) => {
   await page.getByRole('link', { name: /Emma Greenfield/ }).first().click();
   await expect(page.getByRole('heading', { name: 'Emma Greenfield' })).toBeVisible();
   await page.getByTestId('dependent-ai-assistant-link').click();
-  await expect(page.getByRole('heading', { name: 'AI Assistant' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Ask PaperBridge' })).toBeVisible();
   await expectAccessible(page);
 });
 

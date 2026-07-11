@@ -8,7 +8,7 @@ class DependentsController < ApplicationController
   end
 
   def show
-    @documents = @dependent.documents.includes(:document_chunks).order(created_at: :desc).to_a
+    @documents = @dependent.documents.order(created_at: :desc).to_a
     @care_team_memberships = @dependent.care_team_memberships.includes(:user).order(:created_at)
   end
 
@@ -20,7 +20,7 @@ class DependentsController < ApplicationController
     @dependent = current_account.dependents.new(dependent_params)
 
     if @dependent.save
-      redirect_to @dependent, notice: "Dependent created."
+      redirect_to @dependent, notice: "Profile created."
     else
       render :new, status: :unprocessable_entity
     end
@@ -31,7 +31,7 @@ class DependentsController < ApplicationController
 
   def update
     if @dependent.update(dependent_params)
-      redirect_to @dependent, notice: "Dependent updated."
+      redirect_to @dependent, notice: "Profile updated."
     else
       render :edit, status: :unprocessable_entity
     end
@@ -39,7 +39,7 @@ class DependentsController < ApplicationController
 
   def destroy
     if @dependent.destroy
-      redirect_to dependents_path, notice: "Dependent deleted.", status: :see_other
+      redirect_to dependents_path, notice: "Profile deleted.", status: :see_other
     else
       redirect_to @dependent, alert: @dependent.errors.full_messages.to_sentence, status: :see_other
     end

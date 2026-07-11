@@ -153,7 +153,7 @@ Named workflow modes:
 | `all` | Runs every deterministic workflow mode in this table. It does not run `negative`, `mailpit`, seeded edge-state modes, or live-service probes. |
 | `billing` | Verifies inactive-account billing gating, hidden product navigation, Checkout form full-page navigation, active-account product access, and Customer Portal form full-page navigation with synthetic Stripe records. |
 | `sharing` | Opens the share modal, selects a care team recipient, submits a document share, and verifies the browser success path without SMTP capture. |
-| `documents` | Exercises successful document metadata editing. Required-file and blank-title validation live in `negative documents`. |
+| `documents` | Exercises original-filename search, category-card and chip filtering, filter-aware upload defaults, successful multi-document upload, and document metadata editing. Required-file and blank-title validation live in `negative documents`. |
 | `care-team` | Verifies the care-team list, active member permissions, invite form, and successful invite creation with category permissions. |
 | `ai` | Opens the dependent-scoped AI assistant and verifies the current static page state without submitting a query. |
 

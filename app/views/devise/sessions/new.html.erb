@@ -14,21 +14,21 @@
       <div class="max-w-2xl">
         <div class="mb-6 inline-flex items-center gap-2 rounded-full bg-primary/5 px-3 py-1.5">
           <span class="h-1.5 w-1.5 rounded-full bg-accent"></span>
-          <span class="text-xs font-medium text-primary">Secure Family Workspace</span>
+          <span class="text-xs font-medium text-primary">Your Family’s Secure Account</span>
         </div>
 
         <h1 class="text-4xl font-bold leading-tight tracking-tight text-foreground md:text-5xl">
           Sign in
         </h1>
         <p class="mt-5 max-w-xl text-lg leading-8 text-muted-foreground">
-          Open your PaperBridge workspace to review user profiles, manage care records, and ask AI-assisted questions grounded in your documents.
+          Open PaperBridge to review profiles, manage care records, and ask questions based on your documents.
         </p>
 
         <div class="mt-8 grid gap-4 sm:grid-cols-3">
           <% [
             ["user-circle", "Profiles", "Pick up where you left off."],
             ["file-text", "Records", "Search organized documents."],
-            ["brain", "AI Assistant", "Get cited answers from evidence."]
+            ["brain", "Ask PaperBridge", "Get answers linked to the source documents."]
           ].each do |icon, title, copy| %>
             <article class="rounded-2xl border border-border/50 bg-white p-5 shadow-sm">
               <div class="mb-4 flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
@@ -45,7 +45,7 @@
         <div>
           <p class="text-xs font-semibold uppercase tracking-widest text-primary">Welcome Back</p>
           <h2 class="mt-2 text-2xl font-bold tracking-tight text-foreground">Sign in to PaperBridge</h2>
-          <p class="mt-1 text-sm text-muted-foreground">Use your account credentials to continue.</p>
+          <p class="mt-1 text-sm text-muted-foreground">Use your email and password to continue.</p>
         </div>
 
         <%= form_for(resource, as: resource_name, url: session_path(resource_name), html: { class: "mt-6 space-y-4", data: { testid: "sign-in-form" } }) do |f| %>

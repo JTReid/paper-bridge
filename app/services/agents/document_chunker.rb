@@ -241,7 +241,6 @@ module Agents
 
       def broadcast_chunk_progress
         document.broadcast_processing_stats_update
-        document.broadcast_chunks_update
       end
   end
 end

@@ -17,14 +17,14 @@
     nav_items = [
       { key: :overview, label: "Overview", path: dependent_path(dependent), icon: "user-circle" },
       { key: :documents, label: "Documents", path: dependent_documents_path(dependent), icon: "file-text" },
-      { key: :ai_assistant, label: "AI Assistant", path: dependent_ai_assistant_path(dependent), icon: "brain" },
+      { key: :ai_assistant, label: "Ask PaperBridge", path: dependent_ai_assistant_path(dependent), icon: "brain" },
       { key: :care_team, label: "Care Team", path: dependent_care_team_memberships_path(dependent), icon: "users" }
     ]
   else
     nav_items = if current_account.present? && product_access
       [
         { key: :dashboard, label: "Dashboard", path: dashboard_path, icon: "sparkles" },
-        { key: :dependents, label: "Users", path: dependents_path, icon: "users" },
+        { key: :dependents, label: "Profiles", path: dependents_path, icon: "users" },
         { key: :billing, label: "Billing", path: billing_path, icon: "shield" }
       ]
     elsif current_account.present?
@@ -81,7 +81,7 @@
     </nav>
 
     <div class="border-t border-border/40 p-4">
-      <p class="text-[10px] uppercase tracking-wider text-muted-foreground">Workspace</p>
+      <p class="text-[10px] uppercase tracking-wider text-muted-foreground">Family account</p>
       <p class="mt-1 truncate text-sm font-semibold text-foreground"><%= account_name %></p>
       <p class="mt-1 truncate text-xs text-muted-foreground"><%= actor_label %></p>
       <%= button_to destroy_user_session_path,

@@ -20,9 +20,9 @@
   <div class="space-y-8 pb-10" data-testid="billing-page">
     <header class="flex flex-col gap-4 pt-2 sm:flex-row sm:items-end sm:justify-between">
       <div>
-        <p class="mb-1 text-xs font-medium uppercase tracking-widest text-accent">Account Billing</p>
+        <p class="mb-1 text-xs font-medium uppercase tracking-widest text-accent">Family Billing</p>
         <h1 class="text-3xl font-bold tracking-tight text-primary">Subscription</h1>
-        <p class="mt-1.5 text-sm text-muted-foreground">Manage paid access for <%= current_account.name %>.</p>
+        <p class="mt-1.5 text-sm text-muted-foreground">Manage the PaperBridge subscription for <%= current_account.name %>.</p>
       </div>
       <% if @can_manage_billing && @portal_ready %>
         <%= button_to billing_portal_session_path,
@@ -56,13 +56,13 @@
 
           <% if @billing_subscription&.current_period_end.present? %>
             <p class="mt-4 text-sm text-muted-foreground">
-              Current period ends <%= l(@billing_subscription.current_period_end, format: :long) %>.
+              <%= @billing_subscription.cancel_at_period_end? ? "Access ends" : "Renews" %> <%= l(@billing_subscription.current_period_end, format: :long) %>.
             </p>
           <% end %>
 
           <% if @billing_subscription&.cancel_at_period_end? %>
             <p class="mt-3 inline-flex rounded-full bg-amber-50 px-3 py-1 text-xs font-medium text-amber-800">
-              Cancels at period end
+              Will not renew
             </p>
           <% end %>
         </div>
@@ -85,7 +85,7 @@
             <% end %>
           <% elsif !@can_manage_billing %>
             <div class="rounded-xl border border-border bg-muted/40 p-4 text-sm text-muted-foreground">
-              Ask an account admin to manage this subscription.
+              Ask the person who manages billing for your family account.
             </div>
           <% end %>
         </div>

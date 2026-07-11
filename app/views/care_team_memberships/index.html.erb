@@ -32,13 +32,13 @@
                   <p class="truncate text-xs text-muted-foreground"><%= membership.email %></p>
                 </div>
               </div>
-              <span class="rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium capitalize text-muted-foreground"><%= membership.status.humanize %></span>
+              <span class="rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground"><%= care_team_access_label(membership.status) %></span>
             </div>
 
             <div class="mb-4 flex flex-wrap gap-2">
               <span class="rounded-full bg-primary/10 px-2.5 py-1 text-[10px] font-medium capitalize text-primary"><%= membership.role.humanize %></span>
               <% membership.allowed_document_categories.each do |category| %>
-                <span class="rounded-full bg-muted px-2.5 py-1 text-[10px] font-medium text-muted-foreground"><%= category.humanize %></span>
+                <span class="rounded-full px-2.5 py-1 text-[10px] font-medium <%= document_category_classes(category) %>"><%= category.humanize %></span>
               <% end %>
             </div>
 
@@ -55,7 +55,7 @@
           <%= pb_icon("users", class_name: "h-5 w-5 text-primary/60") %>
         </div>
         <h2 class="text-base font-semibold text-foreground">Build the care team</h2>
-        <p class="mx-auto mt-2 max-w-lg text-sm leading-relaxed text-muted-foreground">Invite teachers, therapists, doctors, advocates, or family members and choose which document categories they can access.</p>
+        <p class="mx-auto mt-2 max-w-lg text-sm leading-relaxed text-muted-foreground">Invite teachers, therapists, doctors, advocates, or family members and choose which records they can view.</p>
         <%= link_to "Invite First Member", new_dependent_care_team_membership_path(@dependent), class: "mt-5 inline-flex rounded-full bg-primary px-5 py-2 text-xs font-medium text-white hover:bg-primary/90" %>
       </section>
     <% end %>

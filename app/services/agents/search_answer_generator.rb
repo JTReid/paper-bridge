@@ -65,9 +65,9 @@ module Agents
 
       def set_empty_response
         @response = {
-          answer: "I could not find relevant evidence in the indexed documents for this question.",
+          answer: "I couldn’t find an answer to that question in these documents.",
           citations: [],
-          limitations: [ "No matching evidence chunks were retrieved." ]
+          limitations: [ "The documents available to you may not include the information needed to answer this question." ]
         }
         data[:context][:search_answer] = response
 
@@ -89,6 +89,9 @@ module Agents
           Answer the user question using only the evidence chunks above.
           Cite every material claim with one or more provided chunk IDs.
           If the evidence is incomplete, state the limitation instead of guessing.
+          Write for a parent or caregiver in plain language.
+          Explain necessary medical or educational terms briefly.
+          Never mention chunks, embeddings, retrieval, IDs, pipelines, models, or other system internals.
         PROMPT
       end
 

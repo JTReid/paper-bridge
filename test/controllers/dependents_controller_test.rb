@@ -13,7 +13,7 @@ class DependentsControllerTest < ActionDispatch::IntegrationTest
     get dependents_path
 
     assert_response :success
-    assert_includes response.body, "Users"
+    assert_includes response.body, "Profiles"
     assert_includes response.body, dependents(:emma).name
     assert_not_includes response.body, dependents(:other_dependent).name
   end
@@ -29,7 +29,10 @@ class DependentsControllerTest < ActionDispatch::IntegrationTest
     assert_includes response.body, dependent.name
     assert_includes response.body, "Overview"
     assert_includes response.body, "Documents"
-    assert_includes response.body, "AI Assistant"
+    assert_includes response.body, "Ask PaperBridge"
     assert_includes response.body, "Care Team"
+    Document.categories.each_key do |category|
+      assert_select "a[data-testid='dependent-category-#{category}'][href='#{dependent_documents_path(dependent, category: category)}']"
+    end
   end
 end

@@ -1,17 +1,13 @@
-<% status_styles = {
-  "uploaded" => "border-slate-200 bg-slate-100 text-slate-700",
-  "queued" => "border-amber-200 bg-amber-50 text-amber-800",
-  "processing" => "border-sky-200 bg-sky-50 text-sky-800",
-  "processed" => "border-emerald-200 bg-emerald-50 text-emerald-800",
-  "failed" => "border-red-200 bg-red-50 text-red-800"
-} %>
-
 <div id="<%= dom_id(document, :processing_status) %>" class="mb-3 flex flex-wrap items-center gap-3" data-testid="document-processing-status">
-  <span class="inline-flex rounded-md border px-2.5 py-1 text-xs font-semibold uppercase <%= status_styles.fetch(document.status, status_styles["uploaded"]) %>">
-    <%= document.status.humanize %>
+  <span class="inline-flex rounded-md border px-2.5 py-1 text-xs font-semibold <%= document_status_classes(document) %>">
+    <%= document_status_label(document) %>
   </span>
 
   <% if document.file.attached? %>
-    <%= link_to "Download file", rails_blob_path(document.file, disposition: "attachment"), class: "text-sm font-medium text-emerald-700 hover:text-emerald-900" %>
+    <% if document.content_type == "application/pdf" %>
+      <%= link_to "Open original", rails_blob_path(document.file, disposition: "inline"), target: "_blank", rel: "noopener", class: "text-sm font-medium text-emerald-700 hover:text-emerald-900", data: { testid: "document-open-original" } %>
+    <% else %>
+      <%= link_to "Download original", rails_blob_path(document.file, disposition: "attachment"), download: document.original_filename, class: "text-sm font-medium text-emerald-700 hover:text-emerald-900", data: { testid: "document-download-original" } %>
+    <% end %>
   <% end %>
 </div>

@@ -21,14 +21,14 @@ async function backToSeededDocuments(page) {
 test('QA seeded document list exposes lifecycle edge states', async ({ page }) => {
   await openSeededDocuments(page);
 
-  await expect(documentRow(page, 'QA Medical Intake Summary')).toContainText('Processed');
+  await expect(documentRow(page, 'QA Medical Intake Summary')).toContainText('Ready');
   await expect(documentRow(page, 'QA Edge Uploaded Only')).toContainText('Uploaded');
-  await expect(documentRow(page, 'QA Edge Queued Document')).toContainText('Queued');
-  await expect(documentRow(page, 'QA Edge Processing Document')).toContainText('Processing');
-  await expect(documentRow(page, 'QA Edge Preparation Failed')).toContainText('Failed');
-  await expect(documentRow(page, 'QA Edge Missing Embeddings')).toContainText('Processed');
-  await expect(documentRow(page, 'QA Edge Partial Embeddings')).toContainText('Processed');
-  await expect(documentRow(page, 'QA Edge No Summary')).toContainText('Processed');
+  await expect(documentRow(page, 'QA Edge Queued Document')).toContainText('Getting ready');
+  await expect(documentRow(page, 'QA Edge Processing Document')).toContainText('Preparing');
+  await expect(documentRow(page, 'QA Edge Preparation Failed')).toContainText('Needs attention');
+  await expect(documentRow(page, 'QA Edge Missing Embeddings')).toContainText('Ready');
+  await expect(documentRow(page, 'QA Edge Partial Embeddings')).toContainText('Ready');
+  await expect(documentRow(page, 'QA Edge No Summary')).toContainText('Ready');
 
   await expectAccessible(page);
 });
@@ -39,40 +39,42 @@ test('QA seeded empty and failed document details render safely', async ({ page 
 
   await expect(page.getByRole('heading', { name: 'QA Edge Uploaded Only' })).toBeVisible();
   await expect(page.getByTestId('document-processing-status')).toContainText('Uploaded');
-  await expect(page.getByText('No chunks have been created yet.')).toBeVisible();
-  await expect(page.getByText('No summary has been generated yet.')).toBeVisible();
+  await expect(page.getByText('A summary isn’t available yet.')).toBeVisible();
+  await expect(page.getByText('View document text')).toHaveCount(0);
   await expectAccessible(page);
 
   await backToSeededDocuments(page);
   await page.getByRole('link', { name: /QA Edge Preparation Failed/ }).click();
 
   await expect(page.getByRole('heading', { name: 'QA Edge Preparation Failed' })).toBeVisible();
-  await expect(page.getByTestId('document-processing-status')).toContainText('Failed');
-  await expect(page.getByText('Synthetic QA preparation failure.')).toBeVisible();
-  await expect(page.getByText('No chunks have been created yet.')).toBeVisible();
+  await expect(page.getByTestId('document-processing-status')).toContainText('Needs attention');
+  await expect(page.getByText('We couldn’t prepare a summary for this file.')).toBeVisible();
+  await expect(page.getByText('Synthetic QA preparation failure.')).toHaveCount(0);
+  await expect(page.getByText('View document text')).toHaveCount(0);
 });
 
-test('QA seeded partial processing stats expose missing embedding states', async ({ page }) => {
+test('QA seeded processing stats describe customer-ready outcomes', async ({ page }) => {
   await openSeededDocuments(page);
   await page.getByRole('link', { name: /QA Edge Missing Embeddings/ }).click();
 
   await expect(page.getByRole('heading', { name: 'QA Edge Missing Embeddings' })).toBeVisible();
-  await expect(page.getByTestId('document-processing-stat-chunks')).toContainText('2');
-  await expect(page.getByTestId('document-processing-stat-embeddings')).toContainText('0');
   await expect(page.getByTestId('document-processing-stat-pages')).toContainText('2');
+  await expect(page.getByTestId('document-processing-stat-ask-paperbridge')).toContainText('Not ready');
+  await expect(page.getByText('Chunks', { exact: true })).toHaveCount(0);
+  await expect(page.getByText('Embeddings', { exact: true })).toHaveCount(0);
 
   await backToSeededDocuments(page);
   await page.getByRole('link', { name: /QA Edge Partial Embeddings/ }).click();
 
   await expect(page.getByRole('heading', { name: 'QA Edge Partial Embeddings' })).toBeVisible();
-  await expect(page.getByTestId('document-processing-stat-chunks')).toContainText('3');
-  await expect(page.getByTestId('document-processing-stat-embeddings')).toContainText('1');
   await expect(page.getByTestId('document-processing-stat-pages')).toContainText('2');
+  await expect(page.getByTestId('document-processing-stat-ask-paperbridge')).toContainText('Not ready');
 
   await backToSeededDocuments(page);
   await page.getByRole('link', { name: /QA Edge No Summary/ }).click();
 
   await expect(page.getByRole('heading', { name: 'QA Edge No Summary' })).toBeVisible();
-  await expect(page.getByTestId('document-processing-stat-embeddings')).toContainText('1');
-  await expect(page.getByText('No summary has been generated yet.')).toBeVisible();
+  await expect(page.getByTestId('document-processing-stat-summary')).toContainText('Not ready');
+  await expect(page.getByTestId('document-processing-stat-ask-paperbridge')).toContainText('Ready');
+  await expect(page.getByText('A summary isn’t available yet.')).toBeVisible();
 });

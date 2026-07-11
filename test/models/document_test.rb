@@ -68,6 +68,15 @@ class DocumentTest < ActiveSupport::TestCase
     assert_equal "queued", document.reload.status
   end
 
+  test "searches original filenames case insensitively by partial match" do
+    assert_equal [ documents(:advance_directive) ], Document.search_by_filename("DIRECT").to_a
+  end
+
+  test "treats SQL wildcard characters as literal filename search text" do
+    assert_empty Document.search_by_filename("%")
+    assert_empty Document.search_by_filename("_")
+  end
+
   private
 
     def build_document(account: accounts(:greenfield), dependent: dependents(:emma), user: users(:family_admin), title: "Trust")

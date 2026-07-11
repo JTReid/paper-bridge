@@ -1,5 +1,3 @@
-<% chunks = @document.document_chunks.includes(:document_page) %>
-
 <%= app_shell(active: :documents, dependent: @dependent) do %>
 <%= turbo_stream_from @document %>
 
@@ -34,17 +32,6 @@
     <div class="space-y-6">
       <%= render "documents/processing_stats", document: @document %>
       <%= render "documents/summary", document: @document %>
-
-      <section>
-        <div class="mb-4 flex items-end justify-between gap-4">
-          <div>
-            <h2 class="text-xl font-semibold text-slate-950">Chunks</h2>
-            <p class="mt-1 text-sm text-slate-600">Page-aware chunks extracted from the uploaded document.</p>
-          </div>
-        </div>
-
-        <%= render "documents/chunks", document: @document, chunks: chunks %>
-      </section>
     </div>
 
     <%= render "documents/file_details", document: @document %>

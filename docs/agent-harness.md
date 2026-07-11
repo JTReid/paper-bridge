@@ -51,7 +51,21 @@ ruby scripts/paper_bridge_harness.rb product
 Use that command when changing public/auth entry points, registration-created
 accounts, dashboard or dependent workspace navigation, dependent profile
 workflows, care team invitations, care team category permissions,
-search-access mapping, document sharing, or mailers.
+search-access mapping, document listing and filename/category filters,
+upload-form defaults, document sharing, or mailers. Use the focused document UI
+command while iterating:
+
+```bash
+ruby scripts/paper_bridge_harness.rb document-ui
+```
+
+Pair it with the browser workflow when changing filename search, category
+navigation, empty states, upload handoffs, or other multi-page document
+interactions:
+
+```bash
+ruby scripts/paper_bridge_qa_harness.rb workflow documents
+```
 
 The document ingestion pipeline remains encoded in the agentic harness as a
 feature-specific command:

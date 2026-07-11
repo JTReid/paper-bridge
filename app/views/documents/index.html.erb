@@ -6,14 +6,14 @@
       <div>
         <p class="mb-1 text-xs font-medium uppercase tracking-widest text-accent">Care Records</p>
         <h1 class="text-2xl font-bold tracking-tight text-primary md:text-3xl"><%= @dependent ? "#{@dependent.name}'s Documents" : "Documents" %></h1>
-        <p class="mt-1.5 text-sm text-muted-foreground">All records organized by user and ready to search.</p>
+        <p class="mt-1.5 text-sm text-muted-foreground">All records for this profile, organized and ready to search.</p>
       </div>
       <div class="flex flex-col gap-2 sm:flex-row">
         <%= link_to dependent_ai_assistant_path(@dependent), class: "inline-flex h-10 items-center justify-center rounded-full border border-accent text-primary px-4 text-xs font-medium transition-colors hover:bg-accent/10", data: { testid: "documents-ask-ai-link" } do %>
           <%= pb_icon("sparkles", class_name: "mr-1.5 h-3.5 w-3.5") %>
-          Ask AI
+          Ask PaperBridge
         <% end %>
-        <%= link_to new_dependent_document_path(@dependent), class: "inline-flex h-10 items-center justify-center rounded-full bg-accent px-5 text-sm font-medium text-accent-foreground shadow-sm transition-all duration-200 hover:bg-accent/80", data: { testid: "documents-add-link" } do %>
+        <%= link_to new_dependent_document_path(@dependent, category: @category), class: "inline-flex h-10 items-center justify-center rounded-full bg-accent px-5 text-sm font-medium text-accent-foreground shadow-sm transition-all duration-200 hover:bg-accent/80", data: { testid: "documents-add-link" } do %>
           <%= pb_icon("upload", class_name: "mr-1.5 h-4 w-4") %>
           Add Documents
         <% end %>
@@ -26,7 +26,7 @@
         <p class="mt-1 text-2xl font-bold text-primary"><%= @documents.count %></p>
       </article>
       <article class="rounded-2xl border border-border/60 bg-white p-5 shadow-sm">
-        <p class="text-xs text-muted-foreground">Processed</p>
+        <p class="text-xs text-muted-foreground">Ready</p>
         <p class="mt-1 text-2xl font-bold text-primary"><%= @processed_count %></p>
       </article>
       <article class="rounded-2xl border border-border/60 bg-white p-5 shadow-sm">
@@ -35,29 +35,25 @@
       </article>
     </section>
 
-    <section class="flex flex-col gap-3 sm:flex-row">
-      <%= form_with url: dependent_ai_assistant_path(@dependent), method: :get, class: "relative flex-1" do |form| %>
+    <section class="space-y-3">
+      <%= form_with url: dependent_documents_path(@dependent), method: :get, class: "relative flex-1", data: { controller: "document-search", testid: "documents-search-form" } do |form| %>
+        <%= form.hidden_field :category, value: @category if @category %>
         <%= pb_icon("search", class_name: "pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground") %>
-        <%= form.search_field :q, placeholder: "Search documents with AI...", class: "h-10 w-full rounded-xl border border-border bg-white pl-9 pr-3 text-sm text-foreground outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/10" %>
+        <%= form.search_field :q, value: @query, placeholder: "Search by file name...", class: "h-10 w-full rounded-xl border border-border bg-white pl-9 pr-3 text-sm text-foreground outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/10", aria: { label: "Search documents by file name" }, data: { action: "search->document-search#clear", testid: "documents-search-field" } %>
       <% end %>
-      <div class="inline-flex h-10 items-center rounded-xl border border-border bg-white px-3 text-sm text-muted-foreground">
-        All Categories
-      </div>
+      <nav class="flex flex-wrap gap-2" aria-label="Filter documents by category" data-testid="documents-category-filters">
+        <%= link_to "All Categories", dependent_documents_path(@dependent, q: @query), class: "inline-flex h-8 items-center rounded-full border px-3 text-xs font-medium transition-colors #{@category ? 'border-border bg-white text-muted-foreground hover:bg-muted' : 'border-primary bg-primary text-white'}", aria: { current: @category.nil? ? "page" : nil }, data: { testid: "documents-category-filter-all" } %>
+        <% Document.categories.each_key do |category| %>
+          <% selected = @category == category %>
+          <%= link_to category.humanize, dependent_documents_path(@dependent, category: category, q: @query), class: "inline-flex h-8 items-center rounded-full border px-3 text-xs font-medium transition-all #{document_category_classes(category)} #{selected ? 'border-current ring-2 ring-current/20' : 'border-transparent hover:border-current/20'}", aria: { current: selected ? "page" : nil }, data: { testid: "documents-category-filter-#{category}" } %>
+        <% end %>
+      </nav>
     </section>
 
     <% if @documents.any? %>
       <section class="overflow-hidden rounded-2xl border border-border/60 bg-white shadow-sm">
         <div class="divide-y divide-border/40">
           <% @documents.each do |document| %>
-            <% label = document.document_chunks.first&.label || "general" %>
-            <% label_class = case label
-              when "medical" then "bg-red-50 text-red-700"
-              when "education" then "bg-blue-50 text-blue-700"
-              when "therapy" then "bg-green-50 text-green-700"
-              when "legal" then "bg-violet-50 text-violet-700"
-              when "financial" then "bg-amber-50 text-amber-700"
-              else "bg-muted text-muted-foreground"
-            end %>
             <div class="group flex items-center gap-3 px-5 py-4 transition-colors hover:bg-muted/20" data-testid="document-row-<%= document.id %>">
               <%= check_box_tag "document_selection[]", document.id, false, id: dom_id(document, :share_checkbox), class: "h-4 w-4 rounded border-border text-primary focus:ring-primary", aria: { label: "Select #{document.title} to share" }, data: { document_share_target: "checkbox", document_title: document.title, testid: "document-share-checkbox-#{document.id}" } %>
               <%= link_to document_path(document), class: "flex min-w-0 flex-1 items-center gap-4" do %>
@@ -73,11 +69,11 @@
                   </p>
                 </div>
               <% end %>
-              <span class="hidden rounded-full border-0 px-2 py-0.5 text-[10px] font-medium sm:inline-flex <%= label_class %>">
+              <span class="hidden rounded-full border-0 px-2 py-0.5 text-[10px] font-medium sm:inline-flex <%= document_category_classes(document.category) %>">
                 <%= document.category.humanize %>
               </span>
-              <span class="rounded-full border-0 px-2 py-0.5 text-[10px] font-medium <%= document.processed? ? "bg-green-50 text-green-700" : document.failed? ? "bg-red-50 text-red-700" : "bg-blue-50 text-blue-600" %>">
-                <%= document.status.humanize %>
+              <span class="rounded-full border px-2 py-0.5 text-[10px] font-medium <%= document_status_classes(document) %>">
+                <%= document_status_label(document) %>
               </span>
               <%= button_tag type: "button", class: "flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-primary/5 hover:text-primary focus:outline-none focus:ring-2 focus:ring-primary/20", aria: { label: "Share #{document.title}" }, data: { action: "document-share#open", document_share_document_id_param: document.id, document_share_document_title_param: document.title, testid: "document-share-button-#{document.id}" } do %>
                 <%= pb_icon("share-2", class_name: "h-4 w-4") %>
@@ -121,9 +117,15 @@
           <div class="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl border border-primary/10 bg-primary/5">
             <%= pb_icon("file-text", class_name: "h-5 w-5 text-primary/50") %>
           </div>
-          <h2 class="text-base font-semibold text-foreground">Start by adding your first document</h2>
-          <p class="mt-2 text-sm leading-relaxed text-muted-foreground">Upload school reports, medical notes, therapy summaries, or insurance documents in one secure place.</p>
-          <%= link_to "Add First Document", new_dependent_document_path(@dependent), class: "mt-5 inline-flex rounded-full bg-primary px-5 py-2 text-xs font-medium text-white transition-colors hover:bg-primary/90" %>
+          <% if @query %>
+            <h2 class="text-base font-semibold text-foreground">No documents found</h2>
+            <p class="mt-2 text-sm leading-relaxed text-muted-foreground">No file names match “<%= @query %>”<%= " in #{@category.humanize.downcase}" if @category %>.</p>
+            <%= link_to "Clear search", dependent_documents_path(@dependent, category: @category), class: "mt-5 inline-flex rounded-full border border-primary/20 bg-white px-5 py-2 text-xs font-medium text-primary transition-colors hover:bg-primary/5", data: { testid: "documents-search-clear" } %>
+          <% else %>
+            <h2 class="text-base font-semibold text-foreground"><%= @category ? "No #{@category.humanize.downcase} documents yet" : "Start by adding your first document" %></h2>
+            <p class="mt-2 text-sm leading-relaxed text-muted-foreground">Upload school reports, medical notes, therapy summaries, or insurance documents in one secure place.</p>
+            <%= link_to @category ? "Add #{@category.humanize} Document" : "Add First Document", new_dependent_document_path(@dependent, category: @category), class: "mt-5 inline-flex rounded-full bg-primary px-5 py-2 text-xs font-medium text-white transition-colors hover:bg-primary/90", data: { testid: "documents-empty-add-link" } %>
+          <% end %>
         </div>
       </section>
     <% end %>

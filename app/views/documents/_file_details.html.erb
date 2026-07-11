@@ -3,13 +3,13 @@
 
   <dl class="mt-4 divide-y divide-slate-100 text-sm">
     <div class="py-3">
-      <dt class="font-medium text-slate-500">Original filename</dt>
+      <dt class="font-medium text-slate-500">File name</dt>
       <dd class="mt-1 break-words text-slate-950"><%= document.original_filename %></dd>
     </div>
 
     <div class="py-3">
-      <dt class="font-medium text-slate-500">Content type</dt>
-      <dd class="mt-1 break-words text-slate-950"><%= document.content_type %></dd>
+      <dt class="font-medium text-slate-500">File type</dt>
+      <dd class="mt-1 break-words text-slate-950"><%= document_file_type(document) %></dd>
     </div>
 
     <div class="py-3">

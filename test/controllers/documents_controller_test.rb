@@ -29,6 +29,115 @@ class DocumentsControllerTest < ActionDispatch::IntegrationTest
     assert_includes response.body, ActionView::RecordIdentifier.dom_id(documents(:advance_directive), :share_checkbox)
   end
 
+  test "filters documents by category" do
+    dependent = dependents(:emma)
+    medical_document = create_attached_document(
+      dependent: dependent,
+      title: "Medical Evaluation",
+      category: :medical
+    )
+    sign_in users(:family_admin)
+
+    get dependent_documents_path(dependent, category: "medical")
+
+    assert_response :success
+    assert_select "[data-testid='document-row-#{medical_document.id}']", text: /#{Regexp.escape(medical_document.title)}/
+    assert_select "[data-testid='document-row-#{documents(:advance_directive).id}']", count: 0
+    assert_select "a[data-testid='documents-category-filter-medical'][aria-current='page'][href='#{dependent_documents_path(dependent, category: "medical")}']", text: "Medical"
+    assert_select "a[data-testid='documents-category-filter-all'][href='#{dependent_documents_path(dependent)}']"
+  end
+
+  test "searches documents by original filename" do
+    dependent = dependents(:emma)
+    matching_document = create_attached_document(
+      dependent: dependent,
+      title: "Annual Evaluation",
+      category: :medical,
+      filename: "Annual-Medical-Evaluation.PDF"
+    )
+    sign_in users(:family_admin)
+
+    get dependent_documents_path(dependent, q: "medical-evaluation")
+
+    assert_response :success
+    assert_select "form[data-controller='document-search'][data-testid='documents-search-form'][action='#{dependent_documents_path(dependent)}'][method='get']"
+    assert_select "input[data-testid='documents-search-field'][data-action='search->document-search#clear'][name='q'][value='medical-evaluation']"
+    assert_select "[data-testid='document-row-#{matching_document.id}']", text: /Annual-Medical-Evaluation\.PDF/
+    assert_select "[data-testid='document-row-#{documents(:advance_directive).id}']", count: 0
+    assert_select "a[data-testid='documents-category-filter-medical'][href='#{dependent_documents_path(dependent, category: "medical", q: "medical-evaluation")}']"
+  end
+
+  test "filename search composes with category and has a clearable empty state" do
+    dependent = dependents(:emma)
+    create_attached_document(
+      dependent: dependent,
+      title: "Annual Evaluation",
+      category: :medical,
+      filename: "annual-evaluation.pdf"
+    )
+    sign_in users(:family_admin)
+
+    get dependent_documents_path(dependent, category: "general", q: "annual")
+
+    assert_response :success
+    assert_select "input[type='hidden'][name='category'][value='general']"
+    assert_select "[data-testid^='document-row-']", count: 0
+    assert_select "h2", text: "No documents found"
+    assert_select "a[data-testid='documents-search-clear'][href='#{dependent_documents_path(dependent, category: "general")}']", text: "Clear search"
+  end
+
+  test "filename search treats SQL wildcards literally and remains dependent scoped" do
+    dependent = dependents(:emma)
+    sign_in users(:family_admin)
+
+    get dependent_documents_path(dependent, q: "%")
+
+    assert_response :success
+    assert_select "[data-testid^='document-row-']", count: 0
+    assert_select "h2", text: "No documents found"
+
+    get dependent_documents_path(dependent, q: "outside")
+
+    assert_response :success
+    assert_select "[data-testid^='document-row-']", count: 0
+    assert_not_includes response.body, documents(:outside_account).title
+  end
+
+  test "ignores an unknown category filter" do
+    dependent = dependents(:emma)
+    sign_in users(:family_admin)
+
+    get dependent_documents_path(dependent, category: "unknown")
+
+    assert_response :success
+    assert_includes response.body, documents(:advance_directive).title
+    assert_select "a[data-testid='documents-category-filter-all'][aria-current='page'][href='#{dependent_documents_path(dependent)}']", text: "All Categories"
+    assert_select "a[data-testid^='documents-category-filter-'][aria-current='page']", count: 1
+  end
+
+  test "renders a filter chip for every document category" do
+    dependent = dependents(:emma)
+    sign_in users(:family_admin)
+
+    get dependent_documents_path(dependent)
+
+    assert_response :success
+    Document.categories.each_key do |category|
+      assert_select "a[data-testid='documents-category-filter-#{category}'][href='#{dependent_documents_path(dependent, category: category)}']", text: category.humanize
+    end
+  end
+
+  test "category badge color follows the document category rather than its chunk label" do
+    document = documents(:advance_directive)
+    assert_not_equal document.category, document.document_chunks.first.label
+    sign_in users(:family_admin)
+
+    get dependent_documents_path(document.dependent)
+
+    assert_response :success
+    assert_select "[data-testid='document-row-#{document.id}'] span.bg-slate-100.text-slate-700", text: "General"
+  end
+
   test "renders upload form inside selected dependent workspace" do
     dependent = dependents(:emma)
     sign_in users(:family_admin)
@@ -43,6 +152,38 @@ class DocumentsControllerTest < ActionDispatch::IntegrationTest
     assert_includes response.body, "data-file-dropzone-category-options-value"
     assert_includes response.body, "name=\"document[files][]\""
     assert_includes response.body, "multiple=\"multiple\""
+  end
+
+  test "preselects a valid category passed to the upload form" do
+    dependent = dependents(:emma)
+    sign_in users(:family_admin)
+
+    get new_dependent_document_path(dependent, category: "insurance")
+
+    assert_response :success
+    assert_select "select[name='document[category]'] option[selected='selected'][value='insurance']", text: "Insurance"
+  end
+
+  test "falls back to general when the upload category is unknown" do
+    dependent = dependents(:emma)
+    sign_in users(:family_admin)
+
+    get new_dependent_document_path(dependent, category: "unknown")
+
+    assert_response :success
+    assert_select "select[name='document[category]'] option[selected='selected'][value='general']", text: "General"
+  end
+
+  test "filtered empty state carries its category to the upload form" do
+    dependent = dependents(:emma)
+    sign_in users(:family_admin)
+
+    get dependent_documents_path(dependent, category: "insurance")
+
+    assert_response :success
+    assert_includes response.body, "No insurance documents yet"
+    assert_includes response.body, "Add Insurance Document"
+    assert_select "a[data-testid='documents-empty-add-link'][href='#{new_dependent_document_path(dependent, category: "insurance")}']"
   end
 
   test "uploads a document into the signed in account" do
@@ -95,7 +236,7 @@ class DocumentsControllerTest < ActionDispatch::IntegrationTest
     end
 
     assert_redirected_to dependent_documents_path(dependent)
-    assert_equal "2 documents uploaded and queued for evaluation.", flash[:notice]
+    assert_equal "2 documents uploaded and being prepared.", flash[:notice]
 
     documents = Document.order(:created_at).last(2)
     assert_equal [ "first-document", "second-document" ], documents.map(&:title)
@@ -128,7 +269,7 @@ class DocumentsControllerTest < ActionDispatch::IntegrationTest
     end
 
     assert_redirected_to dependent_documents_path(dependent)
-    assert_equal "1 document uploaded and queued for evaluation.", flash[:notice]
+    assert_equal "1 document uploaded and being prepared.", flash[:notice]
     assert_equal "1 file could not be uploaded: Unnamed file.", flash[:alert]
 
     document = Document.order(:created_at).last
@@ -155,13 +296,14 @@ class DocumentsControllerTest < ActionDispatch::IntegrationTest
     assert_includes response.body, dependent_documents_path(dependent)
   end
 
-  test "shows persisted document chunks" do
+  test "shows family-facing document details and opens the original file" do
     document = documents(:advance_directive)
     document.file.attach(
-      io: file_fixture("sample.txt").open,
-      filename: document.original_filename,
-      content_type: document.content_type
+      io: StringIO.new("%PDF-1.4\n% fake test pdf"),
+      filename: "advance-directive.pdf",
+      content_type: "application/pdf"
     )
+    document.update!(original_filename: "advance-directive.pdf", content_type: "application/pdf")
     document.update!(
       status: :processed,
       preparation_status: :prepared,
@@ -182,20 +324,22 @@ class DocumentsControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_includes response.body, "All Profiles"
     assert_includes response.body, dependent_documents_path(document.dependent)
-    assert_includes response.body, "Legal chunk 1"
     assert_includes response.body, "Summary"
     assert_includes response.body, "This document covers legal planning needs."
     assert_includes response.body, "Legal authority is documented."
-    assert_includes response.body, "Embedded page text"
-    assert_includes response.body, "Starts on page 1"
-    assert_not_includes response.body, "No chunks have been created yet."
-    assert_includes response.body, "Chunks ready"
-    assert_includes response.body, "Pages ready"
+    assert_includes response.body, "File name"
+    assert_includes response.body, "PDF"
+    assert_includes response.body, "Ask PaperBridge"
+    assert_not_includes response.body, "View document text"
+    assert_not_includes response.body, "Embedded page text"
+    assert_select "a[data-testid='document-open-original'][target='_blank'][rel='noopener'][href='#{rails_blob_path(document.file, disposition: "inline")}']", text: "Open original"
+
+    visible_text = Nokogiri::HTML(response.body).text.squish
+    assert_no_match(/\bchunks?\b|\bembeddings?\b|ingestion job|\bchars\b/i, visible_text)
     assert_includes response.body, "turbo-cable-stream-source"
     assert_includes response.body, ActionView::RecordIdentifier.dom_id(document, :processing_status)
     assert_includes response.body, ActionView::RecordIdentifier.dom_id(document, :processing_stats)
     assert_includes response.body, ActionView::RecordIdentifier.dom_id(document, :summary)
-    assert_includes response.body, ActionView::RecordIdentifier.dom_id(document, :chunks)
     assert_includes response.body, ActionView::RecordIdentifier.dom_id(document, :file_details)
   end
 
@@ -275,4 +419,23 @@ class DocumentsControllerTest < ActionDispatch::IntegrationTest
 
     assert_response :not_found
   end
+
+  private
+
+    def create_attached_document(dependent:, title:, category:, filename: "#{title.parameterize}.txt")
+      Document.new(
+        account: dependent.account,
+        dependent: dependent,
+        user: users(:family_admin),
+        title: title,
+        category: category
+      ).tap do |document|
+        document.file.attach(
+          io: file_fixture("sample.txt").open,
+          filename: filename,
+          content_type: "text/plain"
+        )
+        document.save!
+      end
+    end
 end

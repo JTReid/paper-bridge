@@ -14,8 +14,11 @@ operational harness checks until matching implementation exists.
 - Registration-created family accounts with an admin `AccountMembership`.
 - Account-scoped dashboard and dependent profile workspace navigation.
 - Dependent profile listing, display, create, edit, update, and destroy paths.
-- Document upload, listing, show, edit, update, and destroy paths.
-- Document processing status, summary, page, chunk, and file-detail rendering.
+- Document upload, listing, case-insensitive original-filename search, category
+  filtering, filter-aware upload defaults, show, edit, update, and destroy
+  paths.
+- Document processing status, summary, readiness, file-detail rendering, and an
+  original-file link that opens PDFs in a new tab and downloads other formats.
 - Care team invitations for a dependent, backed by `CareTeamMembership`.
 - Care team category permissions for education, medical, therapy, insurance,
   and general document categories.
@@ -28,6 +31,24 @@ operational harness checks until matching implementation exists.
   subscription sync, signed-in account subscription enforcement, a reusable
   `require_subscription!` controller gate, and a super-admin account billing
   overview.
+
+## Family-Facing Language
+
+Customer pages use language intended for a parent or caregiver rather than
+describing the implementation:
+
+- People whose records are managed are called **Profiles**.
+- The question-and-answer feature is called **Ask PaperBridge**. The page still
+  explains that answers are AI-generated and should be verified.
+- Supporting records shown with an answer are called **Sources**.
+- Document states are **Uploaded**, **Getting ready**, **Preparing**, **Ready**,
+  and **Needs attention**.
+- Internal concepts such as chunks, embeddings, retrieval, run identifiers,
+  MIME types, and raw service errors are not shown on family-facing pages.
+- Extracted document text remains internal; families open the original file
+  instead of reviewing processing fragments.
+- Internal failures are logged for diagnosis while the interface gives a short,
+  actionable message.
 
 ## Not Current Harness Scope
 
@@ -51,6 +72,7 @@ For current product shape checks:
 
 ```bash
 ruby scripts/paper_bridge_harness.rb static
+ruby scripts/paper_bridge_harness.rb document-ui
 ruby scripts/paper_bridge_harness.rb product
 ```
 

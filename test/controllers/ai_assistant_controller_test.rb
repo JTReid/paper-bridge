@@ -26,10 +26,14 @@ class AiAssistantControllerTest < ActionDispatch::IntegrationTest
     end
 
     assert_response :success
-    assert_includes response.body, "AI Assistant"
+    assert_includes response.body, "Ask PaperBridge"
     assert_includes response.body, "Suggested questions"
-    assert_includes response.body, "No guessing"
+    assert_includes response.body, "Based on your records"
+    assert_includes response.body, "PaperBridge uses AI to answer from these records"
     assert_no_match(/<button[^>]+disabled/, response.body)
+
+    visible_text = Nokogiri::HTML(response.body).text.squish
+    assert_no_match(/\bchunks?\b|\bembeddings?\b|\bretrieval\b|Run #/i, visible_text)
   end
 
   test "renders assistant inside selected dependent workspace" do
@@ -43,7 +47,7 @@ class AiAssistantControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_includes response.body, "All Profiles"
     assert_includes response.body, dependent.name
-    assert_includes response.body, "AI Assistant"
+    assert_includes response.body, "Ask PaperBridge"
     assert_includes response.body, "Care Team"
   end
 
@@ -69,8 +73,8 @@ class AiAssistantControllerTest < ActionDispatch::IntegrationTest
     end
 
     assert_response :success
-    assert_includes response.body, "AI search failed"
-    assert_includes response.body, "Simulated QA failure"
-    assert_no_match(/AI Response/, response.body)
+    assert_includes response.body, "We couldn’t answer that right now"
+    assert_not_includes response.body, "Simulated QA failure"
+    assert_no_match(/PaperBridge Answer/, response.body)
   end
 end

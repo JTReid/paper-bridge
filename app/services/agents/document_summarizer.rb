@@ -91,6 +91,9 @@ module Agents
           Keep the summary source-grounded and concise.
           Include the most important facts, decisions, dates, services, needs, and follow-up items when they are present.
           Do not infer facts that are not supported by the evidence.
+          Write for a parent or caregiver in plain language.
+          Explain necessary medical or educational terms briefly.
+          Never mention chunks, embeddings, retrieval, IDs, pipelines, models, or other system internals.
           #{truncation_notice}
 
           Evidence chunks:

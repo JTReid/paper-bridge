@@ -37,6 +37,11 @@ class Document < ApplicationRecord
     preparation_failed: "failed"
   }
 
+  scope :search_by_filename, ->(query) {
+    filename = sanitize_sql_like(query.to_s.strip)
+    where("documents.original_filename ILIKE ?", "%#{filename}%")
+  }
+
   before_validation :default_title_from_file
   before_validation :cache_file_metadata
   after_create_commit :enqueue_processing_pipeline, if: :file_attached?
@@ -47,12 +52,11 @@ class Document < ApplicationRecord
   validate :account_matches_user
   validate :account_matches_dependent
 
-  def broadcast_processing_update(refresh_chunks: false)
+  def broadcast_processing_update
     broadcast_processing_status_update
     broadcast_processing_stats_update
     broadcast_summary_update
     broadcast_file_details_update
-    broadcast_chunks_update if refresh_chunks
   end
 
   def broadcast_processing_stats_update
@@ -60,15 +64,6 @@ class Document < ApplicationRecord
       self,
       target: processing_target(:processing_stats),
       partial: "documents/processing_stats",
-      locals: { document: self }
-    )
-  end
-
-  def broadcast_chunks_update
-    broadcast_replace_to(
-      self,
-      target: processing_target(:chunks),
-      partial: "documents/chunks",
       locals: { document: self }
     )
   end
@@ -107,7 +102,7 @@ class Document < ApplicationRecord
     end
 
     def broadcast_processing_update_for_change
-      broadcast_processing_update(refresh_chunks: previous_changes.key?("status") && (processed? || failed?))
+      broadcast_processing_update
     end
 
     def processing_broadcastable_change?

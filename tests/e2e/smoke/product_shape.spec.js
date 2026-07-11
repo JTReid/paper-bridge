@@ -43,8 +43,8 @@ test('dependent workspace exposes implemented child workflows', async ({ page })
   await expect(page.getByTestId('document-upload-form')).toBeVisible();
   await page.goBack();
 
-  await page.getByRole('link', { name: /Advance Directive/ }).click();
-  await expect(page.getByRole('heading', { name: 'Advance Directive' })).toBeVisible();
+  await page.locator('[data-testid^="document-row-"]').first().getByRole('link').click();
+  await expect(page).toHaveURL(/\/documents\/\d+$/);
   await expect(page.getByTestId('document-edit-link')).toBeVisible();
 });
 
@@ -62,7 +62,7 @@ test('care team and ai assistant surfaces render without submitting workflows', 
   await expect(page.getByTestId('care-team-form')).toBeVisible();
 
   await page.goto(aiAssistantPath || '/dashboard');
-  await expect(page.getByRole('heading', { name: 'AI Assistant' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Ask PaperBridge' })).toBeVisible();
   await expect(page.getByTestId('ai-assistant-form')).toBeVisible();
   await expect(page.getByText('Suggested questions')).toBeVisible();
   await expectAccessible(page);

@@ -50,7 +50,7 @@ class BillingControllerTest < ActionDispatch::IntegrationTest
     get billing_path
 
     assert_response :success
-    assert_includes response.body, "Ask an account admin to manage this subscription."
+    assert_includes response.body, "Ask the person who manages billing for your family account."
   end
 
   test "renders checkout form with turbo disabled for stripe redirect" do
@@ -85,6 +85,6 @@ class BillingControllerTest < ActionDispatch::IntegrationTest
     get billing_path
 
     assert_redirected_to admin_accounts_path
-    assert_equal "An account is required to continue.", flash[:alert]
+    assert_equal "We couldn’t find a family account for this sign-in.", flash[:alert]
   end
 end

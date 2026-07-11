@@ -27,7 +27,7 @@ class ApplicationController < ActionController::Base
       return if current_account.present?
 
       redirect_path = current_user&.super_admin? ? admin_accounts_path : root_path
-      redirect_to redirect_path, alert: "An account is required to continue."
+      redirect_to redirect_path, alert: "We couldn’t find a family account for this sign-in."
     end
 
     def after_sign_in_path_for(_resource)

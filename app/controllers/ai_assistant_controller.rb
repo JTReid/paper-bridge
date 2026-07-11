@@ -26,9 +26,9 @@ class AiAssistantController < ApplicationController
     @results = response[:results]
     @result_count = response[:result_count]
     @answer = response[:answer]
-    @pipeline_run = pipeline_run
   rescue Agentic::Errors::Error => e
-    @search_error = e.message
+    Rails.logger.error("paperbridge_answer_failed error_class=#{e.class.name} error_message=#{e.message.to_s.squish}")
+    @search_error = "We couldn’t answer that right now. Please try again in a moment."
     @results = []
     @answer = nil
   end

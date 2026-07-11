@@ -18,6 +18,8 @@ class CareTeamMembershipsControllerTest < ActionDispatch::IntegrationTest
     assert_includes response.body, dependent.name
     assert_includes response.body, "Care Team"
     assert_includes response.body, "Invite Member"
+    assert_includes response.body, "Can access"
+    assert_not_includes response.body, ">Active<"
   end
 
   test "invites a care team member by creating a login and membership" do

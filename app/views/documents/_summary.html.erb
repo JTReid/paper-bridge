@@ -12,11 +12,11 @@
 
     <% if document.processing? || document.queued? %>
       <span class="inline-flex w-fit items-center rounded-full bg-sky-50 px-2.5 py-1 text-xs font-medium text-sky-700">
-        Processing
+        Preparing
       </span>
     <% elsif document.failed? %>
       <span class="inline-flex w-fit items-center rounded-full bg-red-50 px-2.5 py-1 text-xs font-medium text-red-700">
-        Failed
+        Needs attention
       </span>
     <% elsif document.summarized_at.present? %>
       <span class="inline-flex w-fit items-center rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700">
@@ -39,10 +39,10 @@
       </ul>
     <% end %>
   <% elsif document.processing? || document.queued? %>
-    <p class="mt-4 text-sm text-slate-600">Summary will appear when processing completes.</p>
-  <% elsif document.failed? && summary.dig(:error, :message).present? %>
-    <p class="mt-4 text-sm text-red-700"><%= summary.dig(:error, :message) %></p>
+    <p class="mt-4 text-sm text-slate-600">Your summary will appear when it’s ready.</p>
+  <% elsif document.failed? %>
+    <p class="mt-4 text-sm text-red-700">We couldn’t prepare a summary for this file. Try uploading it again, or contact support if the problem continues.</p>
   <% else %>
-    <p class="mt-4 text-sm text-slate-600">No summary has been generated yet.</p>
+    <p class="mt-4 text-sm text-slate-600">A summary isn’t available yet.</p>
   <% end %>
 </section>

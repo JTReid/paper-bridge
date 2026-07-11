@@ -6,7 +6,7 @@ module Billing
 
     def create
       unless Billing::StripeConfig.portal_ready?(current_account)
-        redirect_to billing_path, alert: "Stripe customer portal is not available yet."
+        redirect_to billing_path, alert: "Billing settings aren’t available right now."
         return
       end
 
@@ -18,7 +18,7 @@ module Billing
       redirect_to portal_session.url, allow_other_host: true, status: :see_other
     rescue Stripe::StripeError => e
       Rails.logger.error("stripe_portal_failed account_id=#{current_account.id} error_class=#{e.class.name} error_message=#{e.message.to_s.squish}")
-      redirect_to billing_path, alert: "Stripe customer portal could not be started."
+      redirect_to billing_path, alert: "We couldn’t open billing settings. Please try again."
     end
 
     private
@@ -26,7 +26,7 @@ module Billing
       def require_account_admin!
         return if current_user.super_admin? || current_user.can_manage_account?(current_account)
 
-        redirect_to billing_path, alert: "Only account admins can manage subscriptions."
+        redirect_to billing_path, alert: "Only the person who manages billing can change this subscription."
       end
   end
 end

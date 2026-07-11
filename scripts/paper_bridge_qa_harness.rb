@@ -90,6 +90,7 @@ STATIC_FILES = %w[
   docs/runbooks/qa-seed-data.md
   db/seeds/qa_harness.rb
   scripts/paper_bridge_qa_harness.rb
+  app/javascript/controllers/document_search_controller.js
   playwright.config.js
   package.json
   package-lock.json

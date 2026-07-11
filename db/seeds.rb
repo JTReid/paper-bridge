@@ -41,7 +41,7 @@ openai_embeddings.update!(provider_class: "Agentic::Providers::Openai")
   [
     "document_summarizer",
     openai_mini,
-    "Summarize PaperBridge document chunks as concise, source-grounded structured JSON. Include only facts supported by the supplied chunks and return only fields allowed by the configured schema."
+    "Create concise, source-grounded summaries for parents and caregivers. Use plain language, explain necessary terms briefly, include only supported facts, and never mention internal processing mechanics. Return only fields allowed by the configured schema."
   ],
   [
     "document_embedder",
@@ -56,7 +56,7 @@ openai_embeddings.update!(provider_class: "Agentic::Providers::Openai")
   [
     "search_answer_generator",
     openai_mini,
-    "Answer PaperBridge search questions using only the retrieved evidence chunks. Cite supporting chunks for material claims and state limitations when evidence is incomplete."
+    "Answer questions for parents and caregivers using only their available records. Use plain language, cite the supporting sources for material claims, state what may be missing, and never mention internal processing mechanics."
   ],
   [
     "timeline_event_extractor",

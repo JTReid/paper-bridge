@@ -18,6 +18,7 @@ This verifies that required agent-facing docs exist and that Markdown files in
 ruby scripts/paper_bridge_harness.rb static
 ruby scripts/paper_bridge_harness.rb assets
 ruby scripts/paper_bridge_harness.rb foundation
+ruby scripts/paper_bridge_harness.rb document-ui
 ruby scripts/paper_bridge_harness.rb access
 ruby scripts/paper_bridge_harness.rb sharing
 ruby scripts/paper_bridge_harness.rb billing
@@ -27,9 +28,11 @@ ruby scripts/paper_bridge_harness.rb review
 
 This product-level harness covers behavior implemented in the Rails app today:
 public/auth entry points, registration-created accounts, dashboard and
-dependent workspace navigation, dependent profile access, care team invitations,
-category permissions, search-access mapping, email-attachment document sharing,
-and the Stripe billing foundation.
+dependent workspace navigation, dependent profile access, document listing,
+filename-search/category-filter/upload-form behavior, family-facing document
+status and AI language, care team invitations, category permissions,
+search-access mapping, email-attachment document sharing, and the Stripe billing
+foundation.
 
 Future product requirements that are not implemented yet, such as calendar
 persistence, in-app notifications, audit-log exports, tokenized sharing links,

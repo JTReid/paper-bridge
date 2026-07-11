@@ -5,7 +5,11 @@ class DocumentsController < ApplicationController
 
   def index
     scope = @dependent ? @dependent.documents : current_account.documents
-    @documents = scope.includes(:dependent, :document_chunks, file_attachment: :blob).order(created_at: :desc).to_a
+    @query = params[:q].to_s.strip.presence
+    @category = params[:category] if Document.categories.key?(params[:category])
+    scope = scope.search_by_filename(@query) if @query
+    scope = scope.where(category: @category) if @category
+    @documents = scope.includes(:dependent, file_attachment: :blob).order(created_at: :desc).to_a
     @processed_count = @documents.count(&:processed?)
     @processing_count = @documents.count { |document| document.queued? || document.processing? }
     @share_recipient_options = share_recipient_options
@@ -20,7 +24,8 @@ class DocumentsController < ApplicationController
   def new
     set_form_options
 
-    @document = current_account.documents.new(user: current_user, dependent: @dependent, category: :general)
+    category = params[:category] if Document.categories.key?(params[:category])
+    @document = current_account.documents.new(user: current_user, dependent: @dependent, category: category || :general)
   end
 
   def create
@@ -112,7 +117,8 @@ class DocumentsController < ApplicationController
             failed_uploads << failed_upload_for(file, document)
           end
         rescue ActiveSupport::MessageVerifier::InvalidSignature, ArgumentError => error
-          document.errors.add(:file, error.message)
+          Rails.logger.warn("document_upload_rejected error_class=#{error.class.name} error_message=#{error.message.to_s.squish}")
+          document.errors.add(:file, "could not be attached. Please choose the file again.")
           failed_uploads << failed_upload_for(file, document)
         end
       end
@@ -152,7 +158,7 @@ class DocumentsController < ApplicationController
     end
 
     def upload_success_message(count)
-      "#{count} #{'document'.pluralize(count)} uploaded and queued for evaluation."
+      "#{count} #{'document'.pluralize(count)} uploaded and being prepared."
     end
 
     def upload_failure_message(failed_uploads)

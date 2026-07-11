@@ -28,6 +28,8 @@ CURRENT_PRODUCT_FILES = %w[
   app/controllers/billing/portal_sessions_controller.rb
   app/controllers/admin/base_controller.rb
   app/controllers/admin/accounts_controller.rb
+  app/helpers/documents_helper.rb
+  app/javascript/controllers/document_search_controller.js
   app/models/account.rb
   app/models/account_membership.rb
   app/models/user.rb
@@ -40,6 +42,10 @@ CURRENT_PRODUCT_FILES = %w[
   app/services/billing/stripe_config.rb
   app/services/billing/stripe_webhook_handler.rb
   app/mailers/document_share_mailer.rb
+  app/views/care_team_memberships/index.html.erb
+  app/views/dependents/show.html.erb
+  app/views/documents/_form.html.erb
+  app/views/documents/index.html.erb
   test/controllers/home_controller_test.rb
   test/controllers/devise_registrations_controller_test.rb
   test/controllers/devise_sessions_controller_test.rb
@@ -64,6 +70,8 @@ CURRENT_PRODUCT_FILES = %w[
   test/services/billing/stripe_webhook_handler_test.rb
   test/mailers/document_share_mailer_test.rb
   test/mailers/previews/document_share_mailer_preview_test.rb
+  test/helpers/documents_helper_test.rb
+  tests/e2e/product/document_management.spec.js
 ].freeze
 
 FOUNDATION_TESTS = %w[
@@ -74,6 +82,12 @@ FOUNDATION_TESTS = %w[
   test/controllers/devise_sessions_controller_test.rb
   test/controllers/dashboard_controller_test.rb
   test/controllers/dependents_controller_test.rb
+].freeze
+
+DOCUMENT_UI_TESTS = %w[
+  test/models/document_test.rb
+  test/controllers/documents_controller_test.rb
+  test/helpers/documents_helper_test.rb
 ].freeze
 
 ACCESS_TESTS = %w[
@@ -117,6 +131,7 @@ RUBOCOP_PATHS = %w[
   app/controllers/billing/portal_sessions_controller.rb
   app/controllers/admin/base_controller.rb
   app/controllers/admin/accounts_controller.rb
+  app/helpers/documents_helper.rb
   app/models/account.rb
   app/models/account_membership.rb
   app/models/user.rb
@@ -154,6 +169,7 @@ RUBOCOP_PATHS = %w[
   test/services/billing/stripe_webhook_handler_test.rb
   test/mailers/document_share_mailer_test.rb
   test/mailers/previews/document_share_mailer_preview_test.rb
+  test/helpers/documents_helper_test.rb
   scripts/paper_bridge_harness.rb
 ].freeze
 
@@ -166,6 +182,9 @@ COMMANDS = {
   ],
   "foundation" => [
     [ "bin/rails", "test", *FOUNDATION_TESTS ]
+  ],
+  "document-ui" => [
+    [ "bin/rails", "test", *DOCUMENT_UI_TESTS ]
   ],
   "access" => [
     [ "bin/rails", "test", *ACCESS_TESTS ]
@@ -198,12 +217,13 @@ def usage
       assets      Build generated Tailwind CSS for Rails view tests
       static      Check current product-shape files and runbooks exist
       foundation  Run public/auth/account/dashboard/dependent workflow tests
+      document-ui Run document listing, filename/category filter, upload-form, and presentation tests
       access      Run care team and search-access permission tests
       sharing     Run current document sharing and mailer tests
       billing     Run Stripe billing foundation tests
       documents   Delegate document ingestion/search checks to the agentic harness
       agentic     Run agentic static, framework, and document lifecycle checks
-      product     Run foundation, access, sharing, and billing checks
+      product     Run foundation, document UI, access, sharing, and billing checks
       rubocop     Run RuboCop on current product-shape files
       review      Run docs, static, product, agentic, and rubocop checks
   USAGE
@@ -230,7 +250,7 @@ def static_check_passed?
   end
 
   puts "Expected current product-shape files exist."
-  puts "Product workflows covered: foundation, access, sharing, billing."
+  puts "Product workflows covered: foundation, document UI, access, sharing, billing."
   puts "Agentic document workflows remain delegated to scripts/agentic_pipeline_harness.rb."
   true
 end
@@ -240,10 +260,10 @@ def run_named_command(name)
   when "static"
     static_check_passed?
   when "product"
-    run_command_group("assets") && %w[foundation access sharing billing].all? { |command| run_command_group(command) }
+    run_command_group("assets") && %w[foundation document-ui access sharing billing].all? { |command| run_command_group(command) }
   when "review"
     %w[docs static product agentic rubocop].all? { |command| run_named_command(command) }
-  when "foundation", "access", "sharing", "billing"
+  when "foundation", "document-ui", "access", "sharing", "billing"
     run_command_group("assets") && run_command_group(name)
   else
     run_command_group(name)

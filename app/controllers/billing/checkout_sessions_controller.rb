@@ -6,7 +6,7 @@ module Billing
 
     def create
       unless Billing::StripeConfig.checkout_ready?
-        redirect_to billing_path, alert: "Stripe Checkout is not configured yet."
+        redirect_to billing_path, alert: "Online checkout isn’t available right now."
         return
       end
 
@@ -28,7 +28,7 @@ module Billing
       redirect_to checkout_session.url, allow_other_host: true, status: :see_other
     rescue Stripe::StripeError => e
       Rails.logger.error("stripe_checkout_failed account_id=#{current_account.id} error_class=#{e.class.name} error_message=#{e.message.to_s.squish}")
-      redirect_to billing_path, alert: "Stripe Checkout could not be started."
+      redirect_to billing_path, alert: "We couldn’t start checkout. Please try again."
     end
 
     private
@@ -36,7 +36,7 @@ module Billing
       def require_account_admin!
         return if current_user.super_admin? || current_user.can_manage_account?(current_account)
 
-        redirect_to billing_path, alert: "Only account admins can manage subscriptions."
+        redirect_to billing_path, alert: "Only the person who manages billing can change this subscription."
       end
 
       def create_stripe_customer

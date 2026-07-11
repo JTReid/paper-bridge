@@ -7,7 +7,7 @@ class BillingCheckoutSessionsControllerTest < ActionDispatch::IntegrationTest
     post billing_checkout_session_path
 
     assert_redirected_to billing_path
-    assert_equal "Only account admins can manage subscriptions.", flash[:alert]
+    assert_equal "Only the person who manages billing can change this subscription.", flash[:alert]
   end
 
   test "redirects when checkout is not configured" do
@@ -18,7 +18,7 @@ class BillingCheckoutSessionsControllerTest < ActionDispatch::IntegrationTest
     end
 
     assert_redirected_to billing_path
-    assert_equal "Stripe Checkout is not configured yet.", flash[:alert]
+    assert_equal "Online checkout isn’t available right now.", flash[:alert]
   end
 
   test "redirects super admins without an account before checkout" do
@@ -27,7 +27,7 @@ class BillingCheckoutSessionsControllerTest < ActionDispatch::IntegrationTest
     post billing_checkout_session_path
 
     assert_redirected_to admin_accounts_path
-    assert_equal "An account is required to continue.", flash[:alert]
+    assert_equal "We couldn’t find a family account for this sign-in.", flash[:alert]
   end
 
   test "creates a stripe customer and checkout session" do
