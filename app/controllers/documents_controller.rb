@@ -1,7 +1,9 @@
 class DocumentsController < ApplicationController
+  include ActiveStorage::SetCurrent
+
   before_action :authenticate_user!
   before_action :set_dependent_from_param
-  before_action :set_document, only: %i[show edit update destroy]
+  before_action :set_document, only: %i[show edit update destroy original]
 
   def index
     scope = @dependent ? @dependent.documents : current_account.documents
@@ -16,6 +18,17 @@ class DocumentsController < ApplicationController
   end
 
   def show
+  end
+
+  def original
+    return head :not_found unless @document.file.attached?
+
+    disposition = @document.content_type == "application/pdf" ? "inline" : "attachment"
+    storage_url = @document.file.url(disposition: disposition, expires_in: 5.minutes)
+    page_number = positive_page_number
+    storage_url = "#{storage_url}#page=#{page_number}" if disposition == "inline" && page_number
+
+    redirect_to storage_url, allow_other_host: true
   end
 
   def edit
@@ -88,6 +101,11 @@ class DocumentsController < ApplicationController
 
     def document_upload_params
       params.require(:document).permit(:title, :description, :category, :file, files: [], file_categories: [])
+    end
+
+    def positive_page_number
+      page_number = Integer(params[:page], exception: false)
+      page_number if page_number&.positive?
     end
 
     def document_update_params

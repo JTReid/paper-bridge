@@ -85,7 +85,7 @@ test('document details link to the original file without showing extracted text'
   await expect(page.getByText('View document text')).toHaveCount(0);
   const downloadOriginal = page.getByTestId('document-download-original');
   await expect(downloadOriginal).toHaveAttribute('download', 'advance-directive.txt');
-  await expect(downloadOriginal).toHaveAttribute('href', /\/rails\/active_storage\//);
+  await expect(downloadOriginal).toHaveAttribute('href', /\/documents\/\d+\/original$/);
 });
 
 test('admin can edit document metadata', async ({ page }) => {

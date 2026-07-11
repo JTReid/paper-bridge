@@ -10,7 +10,9 @@ Rails.application.routes.draw do
     resources :care_team_memberships, path: "care-team", except: :show
   end
   resources :share_events, only: :create
-  resources :documents, only: %i[show edit update destroy]
+  resources :documents, only: %i[show edit update destroy] do
+    get :original, on: :member
+  end
   resource :billing, only: :show, controller: :billing
   namespace :billing do
     resource :checkout_session, only: :create

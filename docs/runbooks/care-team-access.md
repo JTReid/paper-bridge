@@ -21,8 +21,11 @@ team access shape.
 - Only account managers can invite care team members for an account dependent.
 - Care team category permissions normalize checkbox/string/symbol inputs into
   deterministic booleans.
-- Search authorization maps account roles or care team category permissions to
-  allowed document chunk labels through `Documents::SearchAccessProfile`.
+- Search authorization preserves care team document-category permissions and
+  maps them to allowed text labels through `Documents::SearchAccessProfile`.
+- Vector retrieval enforces both the whole-document category and text-label
+  filters, preventing a generally labeled passage from exposing a disallowed
+  record category.
 
 ## Validation
 

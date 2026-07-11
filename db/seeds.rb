@@ -144,7 +144,10 @@ search_answer_schema = {
         type: "object",
         additionalProperties: false,
         properties: {
-          chunk_id: { type: "integer" },
+          chunk_id: {
+            type: "integer",
+            description: "The temporary source number from the current prompt, not a database record ID."
+          },
           document_title: { type: "string" },
           page_number: { type: "integer" },
           quote: { type: "string" }

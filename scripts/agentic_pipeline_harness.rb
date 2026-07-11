@@ -46,6 +46,7 @@ AGENTIC_CORE_FILES = %w[
 
 DOCUMENT_PIPELINE_FILES = %w[
   app/controllers/ai_assistant_controller.rb
+  app/helpers/ai_assistant_helper.rb
   app/jobs/process_document_job.rb
   app/models/document.rb
   app/models/document_chunk.rb
@@ -68,6 +69,7 @@ DOCUMENT_PIPELINE_FILES = %w[
   app/services/documents/prepare_pdf.rb
   app/services/documents/prepare_text.rb
   app/services/documents/search_access_profile.rb
+  app/services/documents/search_answer_citation_normalizer.rb
   app/services/documents/vector_search.rb
   docs/runbooks/document-ingestion.md
   docs/runbooks/ai-assistant-search.md
@@ -80,6 +82,7 @@ DOCUMENT_PIPELINE_FILES = %w[
   db/migrate/20260615020405_create_timeline_events.rb
   test/controllers/documents_controller_test.rb
   test/controllers/ai_assistant_controller_test.rb
+  test/helpers/ai_assistant_helper_test.rb
   test/jobs/process_document_job_test.rb
   test/models/document_chunk_test.rb
   test/models/document_embedding_test.rb
@@ -89,7 +92,9 @@ DOCUMENT_PIPELINE_FILES = %w[
   test/services/documents/prepare_pdf_test.rb
   test/services/documents/prepare_text_test.rb
   test/services/documents/search_access_profile_test.rb
+  test/services/documents/search_answer_citation_normalizer_test.rb
   test/services/documents/vector_search_test.rb
+  test/services/agents/search_answer_generator_test.rb
 ].freeze
 
 PROVIDER_FILES = %w[
@@ -262,10 +267,13 @@ COMMANDS = {
       "test/models/timeline_event_test.rb",
       "test/controllers/documents_controller_test.rb",
       "test/controllers/ai_assistant_controller_test.rb",
+      "test/helpers/ai_assistant_helper_test.rb",
       "test/jobs/process_document_job_test.rb",
       "test/services/documents/prepare_text_test.rb",
       "test/services/documents/prepare_pdf_test.rb",
       "test/services/documents/search_access_profile_test.rb",
+      "test/services/documents/search_answer_citation_normalizer_test.rb",
+      "test/services/agents/search_answer_generator_test.rb",
       "test/services/documents/vector_search_test.rb"
     ]
   ],
@@ -281,6 +289,7 @@ COMMANDS = {
       "--cache", "false",
       "app/controllers/ai_assistant_controller.rb",
       "app/controllers/documents_controller.rb",
+      "app/helpers/ai_assistant_helper.rb",
       "app/jobs",
       "app/models/agent_type.rb",
       "app/models/document.rb",
@@ -300,8 +309,10 @@ COMMANDS = {
       "app/services/documents",
       "test/controllers/ai_assistant_controller_test.rb",
       "test/controllers/documents_controller_test.rb",
+      "test/helpers/ai_assistant_helper_test.rb",
       "test/jobs",
       "test/services/agentic",
+      "test/services/agents",
       "test/services/documents",
       "test/models/document_test.rb",
       "test/models/document_page_test.rb",

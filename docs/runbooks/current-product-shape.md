@@ -41,6 +41,8 @@ describing the implementation:
 - The question-and-answer feature is called **Ask PaperBridge**. The page still
   explains that answers are AI-generated and should be verified.
 - Supporting records shown with an answer are called **Sources**.
+- Numbered sources open the original PDF at the cited page after PaperBridge
+  rechecks access to the document.
 - Document states are **Uploaded**, **Getting ready**, **Preparing**, **Ready**,
   and **Needs attention**.
 - Internal concepts such as chunks, embeddings, retrieval, run identifiers,

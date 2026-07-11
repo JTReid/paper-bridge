@@ -37,6 +37,48 @@ class Documents::VectorSearchTest < ActiveSupport::TestCase
     assert_equal [ education_chunk ], results.map(&:chunk)
   end
 
+  test "filters whole documents by category before ranking" do
+    insurance_document = Document.create!(
+      account: @account,
+      dependent: @dependent,
+      user: users(:family_admin),
+      title: "Insurance record",
+      category: :insurance,
+      file: {
+        io: StringIO.new("Insurance content"),
+        filename: "insurance.txt",
+        content_type: "text/plain"
+      }
+    )
+    clear_enqueued_jobs
+    insurance_page = DocumentPage.create!(
+      account: @account,
+      document: insurance_document,
+      page_number: 1,
+      embedded_text: "General insurance details",
+      ocr_text: "",
+      status: "processed"
+    )
+    disallowed_general_chunk = create_chunk!(
+      "General text inside a disallowed insurance document",
+      document: insurance_document,
+      page: insurance_page,
+      label: "general",
+      chunk_index: 1
+    )
+    allowed_general_chunk = create_chunk!("General family note", label: "general", chunk_index: 2)
+
+    create_embedding!(disallowed_general_chunk, unit_vector(0))
+    create_embedding!(allowed_general_chunk, unit_vector(1))
+
+    results = search(
+      query_embedding: unit_vector(0),
+      access_profile: Documents::SearchAccessProfile.new(role: "teacher")
+    )
+
+    assert_equal [ allowed_general_chunk ], results.map(&:chunk)
+  end
+
   test "filters by account before ranking" do
     other_page = DocumentPage.create!(
       account: accounts(:other),

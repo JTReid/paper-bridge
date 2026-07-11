@@ -51,6 +51,61 @@ class AiAssistantControllerTest < ActionDispatch::IntegrationTest
     assert_includes response.body, "Care Team"
   end
 
+  test "renders validated inline citations and source cards that open the cited PDF page" do
+    dependent = dependents(:emma)
+    document = documents(:advance_directive)
+    chunk = document_chunks(:one)
+    document.file.attach(
+      io: StringIO.new("%PDF-1.4\n% fake test pdf"),
+      filename: "advance-directive.pdf",
+      content_type: "application/pdf"
+    )
+    document.update!(original_filename: "advance-directive.pdf", content_type: "application/pdf")
+    result = Documents::VectorSearch::Result.new(
+      chunk: chunk,
+      document: document,
+      page: chunk.document_page,
+      similarity: 0.95
+    )
+    pipeline = Struct.new(:response) do
+      def execute; end
+      def to_response = response
+    end.new(
+      {
+        results: [ result ],
+        result_count: 1,
+        answer: {
+          answer: "The record supports this answer [1].",
+          citations: [
+            {
+              source_number: 1,
+              document_id: document.id,
+              document_title: document.title,
+              page_number: 1,
+              quote: "<script>alert('source')</script>"
+            }
+          ],
+          limitations: [ "<img src=x onerror=alert(1)>" ]
+        }
+      }
+    )
+    sign_in users(:family_admin)
+
+    with_stubbed_singleton_method(Agentic::DocumentSearchPipeline, :new, ->(*_args) { pipeline }) do
+      get dependent_ai_assistant_path(dependent, q: "What does the record say?")
+    end
+
+    assert_response :success
+    source_path = original_document_path(document, page: 1)
+    assert_select "a[data-testid='ai-inline-source-1'][target='_blank'][rel='noopener'][href='#{source_path}']", text: "[1]"
+    assert_select "a[data-testid='ai-source-card-1'][target='_blank'][rel='noopener'][href='#{source_path}']", text: "#{document.title}, page 1"
+    visible_text = Nokogiri::HTML(response.body).text
+    assert_includes visible_text, "<script>alert('source')</script>"
+    assert_includes visible_text, "<img src=x onerror=alert(1)>"
+    assert_not_includes response.body, "<script>alert('source')</script>"
+    assert_not_includes response.body, "<img src=x onerror=alert(1)>"
+  end
+
   test "renders search error when agentic pipeline fails" do
     dependent = dependents(:emma)
     sign_in users(:family_admin)

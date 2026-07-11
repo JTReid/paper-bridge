@@ -15,7 +15,7 @@ module Documents
     end
 
     def call
-      return [] if allowed_labels.empty?
+      return [] if allowed_labels.empty? || allowed_categories.empty?
 
       relation.map do |embedding|
         build_result(embedding)
@@ -29,7 +29,10 @@ module Documents
       def relation
         scope = DocumentEmbedding
           .joins(document_chunk: :document)
-          .where(document_chunks: { account_id: account.id, label: allowed_labels })
+          .where(
+            document_chunks: { account_id: account.id, label: allowed_labels },
+            documents: { category: allowed_categories }
+          )
           .includes(document_chunk: [ :document, :document_page ])
           .nearest_neighbors(:embedding, query_embedding, distance: DocumentEmbedding::DISTANCE_METRIC)
 
@@ -39,6 +42,10 @@ module Documents
 
       def allowed_labels
         @allowed_labels ||= access_profile.allowed_chunk_labels
+      end
+
+      def allowed_categories
+        @allowed_categories ||= access_profile.allowed_document_categories
       end
 
       def build_result(embedding)

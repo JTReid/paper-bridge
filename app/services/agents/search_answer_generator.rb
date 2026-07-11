@@ -49,7 +49,11 @@ module Agents
     end
 
     def set_response
-      @response = JSON.parse(provider.parse_response(raw_response)).deep_symbolize_keys
+      parsed_response = JSON.parse(provider.parse_response(raw_response)).deep_symbolize_keys
+      @response = Documents::SearchAnswerCitationNormalizer.new(
+        response: parsed_response,
+        search_results: search_results
+      ).call
       data[:context][:search_answer] = response
 
       log_activity(
@@ -87,24 +91,22 @@ module Agents
           #{evidence_text}
 
           Answer the user question using only the evidence chunks above.
-          Cite every material claim with one or more provided chunk IDs.
+          Cite every material claim with one or more source numbers in square brackets, such as [1] or [1, 2].
+          In each structured citation, put that same source number in the chunk_id field.
+          Use only source numbers listed below. Never expose database IDs.
           If the evidence is incomplete, state the limitation instead of guessing.
           Write for a parent or caregiver in plain language.
           Explain necessary medical or educational terms briefly.
-          Never mention chunks, embeddings, retrieval, IDs, pipelines, models, or other system internals.
+          Outside the required source markers, never mention chunks, embeddings, retrieval, IDs, pipelines, models, or other system internals.
         PROMPT
       end
 
       def evidence_text
         @evidence_text ||= search_results.each_with_index.map do |result, index|
           <<~EVIDENCE
-            Evidence #{index + 1}
-            chunk_id: #{result.chunk.id}
-            document_id: #{result.document.id}
+            Source #{index + 1}
             document_title: #{result.document.title}
             page_number: #{result.page.page_number}
-            label: #{result.chunk.label}
-            similarity: #{format("%.4f", result.similarity)}
             content:
             #{result.chunk.content}
           EVIDENCE

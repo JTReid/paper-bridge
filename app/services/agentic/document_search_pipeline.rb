@@ -26,6 +26,7 @@ module Agentic
         results: retrieval.fetch(:results, []),
         result_count: retrieval.fetch(:result_count, 0),
         allowed_chunk_labels: retrieval.fetch(:allowed_chunk_labels, []),
+        allowed_document_categories: retrieval.fetch(:allowed_document_categories, []),
         answer: answer
       }
     end

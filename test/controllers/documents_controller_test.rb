@@ -7,6 +7,63 @@ class DocumentsControllerTest < ActionDispatch::IntegrationTest
     assert_redirected_to new_user_session_path
   end
 
+  test "original file requires authentication" do
+    get original_document_path(documents(:advance_directive))
+
+    assert_redirected_to new_user_session_path
+  end
+
+  test "opens an authorized PDF at a requested page through a temporary storage URL" do
+    document = documents(:advance_directive)
+    document.file.attach(
+      io: StringIO.new("%PDF-1.4\n% fake test pdf"),
+      filename: "advance-directive.pdf",
+      content_type: "application/pdf"
+    )
+    document.update!(original_filename: "advance-directive.pdf", content_type: "application/pdf")
+    sign_in users(:family_admin)
+
+    get original_document_path(document, page: 4)
+
+    assert_response :redirect
+    assert_equal "page=4", URI.parse(response.location).fragment
+
+    follow_redirect!
+
+    assert_response :success
+    assert_equal "application/pdf", response.media_type
+    assert_match(/inline/, response.headers.fetch("Content-Disposition"))
+  end
+
+  test "does not open an original file from another account" do
+    sign_in users(:family_admin)
+
+    get original_document_path(documents(:outside_account))
+
+    assert_response :not_found
+  end
+
+  test "downloads a non-PDF original without a page fragment" do
+    document = documents(:advance_directive)
+    document.file.attach(
+      io: file_fixture("sample.txt").open,
+      filename: document.original_filename,
+      content_type: "text/plain"
+    )
+    sign_in users(:family_admin)
+
+    get original_document_path(document, page: 4)
+
+    assert_response :redirect
+    assert_nil URI.parse(response.location).fragment
+
+    follow_redirect!
+
+    assert_response :success
+    assert_equal "text/plain", response.media_type
+    assert_match(/attachment/, response.headers.fetch("Content-Disposition"))
+  end
+
   test "lists documents inside selected dependent workspace" do
     dependent = dependents(:emma)
     sign_in users(:family_admin)
@@ -332,7 +389,7 @@ class DocumentsControllerTest < ActionDispatch::IntegrationTest
     assert_includes response.body, "Ask PaperBridge"
     assert_not_includes response.body, "View document text"
     assert_not_includes response.body, "Embedded page text"
-    assert_select "a[data-testid='document-open-original'][target='_blank'][rel='noopener'][href='#{rails_blob_path(document.file, disposition: "inline")}']", text: "Open original"
+    assert_select "a[data-testid='document-open-original'][target='_blank'][rel='noopener'][href='#{original_document_path(document)}']", text: "Open original"
 
     visible_text = Nokogiri::HTML(response.body).text.squish
     assert_no_match(/\bchunks?\b|\bembeddings?\b|ingestion job|\bchars\b/i, visible_text)

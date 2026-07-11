@@ -15,7 +15,8 @@ module Agents
       @response = {
         results: results,
         result_count: results.count,
-        allowed_chunk_labels: access_profile.allowed_chunk_labels
+        allowed_chunk_labels: access_profile.allowed_chunk_labels,
+        allowed_document_categories: access_profile.allowed_document_categories
       }
 
       data[:context][:search_results] = results
@@ -25,7 +26,8 @@ module Agents
         message: "Vector search results retrieved",
         metadata: {
           result_count: results.count,
-          allowed_chunk_labels: access_profile.allowed_chunk_labels
+          allowed_chunk_labels: access_profile.allowed_chunk_labels,
+          allowed_document_categories: access_profile.allowed_document_categories
         }
       )
 

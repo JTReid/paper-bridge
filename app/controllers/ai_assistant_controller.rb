@@ -9,6 +9,7 @@ class AiAssistantController < ApplicationController
     @access_profile = Documents::SearchAccessProfile.for(current_user, account: current_account, dependent: @dependent)
     @documents = (@dependent ? @dependent.documents : current_account.documents).order(created_at: :desc)
     @results = []
+    @source_documents_by_id = {}
     @search_error = nil
 
     return if @query.blank?
@@ -26,10 +27,12 @@ class AiAssistantController < ApplicationController
     @results = response[:results]
     @result_count = response[:result_count]
     @answer = response[:answer]
+    @source_documents_by_id = @results.to_h { |result| [ result.document.id, result.document ] }
   rescue Agentic::Errors::Error => e
     Rails.logger.error("paperbridge_answer_failed error_class=#{e.class.name} error_message=#{e.message.to_s.squish}")
     @search_error = "We couldn’t answer that right now. Please try again in a moment."
     @results = []
+    @source_documents_by_id = {}
     @answer = nil
   end
 

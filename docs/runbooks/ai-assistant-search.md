@@ -20,13 +20,24 @@ lifecycle.
   `DocumentEmbedding` records.
 - `Agents::SearchAnswerGenerator` answers from retrieved chunks only and
   returns structured JSON with answer text, citations, and limitations.
+- The model receives temporary, request-local source numbers rather than
+  database chunk or document IDs.
+- Returned citations are allowlisted against that request's retrieved results;
+  titles, page numbers, and excerpts are rebuilt from canonical records.
+- Duplicate citations from the same document page collapse into one numbered
+  source, and unknown source numbers are discarded.
+- Inline answer citations and source cards link through an authenticated
+  document-original endpoint. PDFs open in a new tab at the cited physical page.
+- The current source-opening workflow is a family-account surface. Extending it
+  to accountless care-team logins requires a shared document-access scope and is
+  not implied by this citation-link feature.
 - If retrieval returns no chunks, answer synthesis is skipped without making a
   chat completion call.
 - Retrieval is constrained by account before results are ranked.
-- Retrieval is constrained by `Documents::SearchAccessProfile` labels before
-  results are ranked.
-- Search results expose answer text, citations, limitations, chunk text, label,
-  document title, page number, distance, and similarity.
+- Retrieval is constrained by both document category and
+  `Documents::SearchAccessProfile` labels before results are ranked.
+- Family-facing answers expose numbered sources, canonical document titles,
+  page numbers, excerpts, and limitations without internal record IDs.
 - Pipeline logs, activity entries, and LLM telemetry are recorded on the
   `PipelineRun`.
 
