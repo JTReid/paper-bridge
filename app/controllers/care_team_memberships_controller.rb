@@ -55,13 +55,9 @@ class CareTeamMembershipsController < ApplicationController
     def default_membership_attributes
       {
         role: :teacher,
-        permissions: {
-          educational: true,
-          medical: false,
-          therapy: false,
-          insurance: false,
-          general: false
-        }
+        permissions: CareTeamMembership::DOCUMENT_CATEGORY_PERMISSIONS.index_with do |category|
+          category == "educational"
+        end
       }
     end
 

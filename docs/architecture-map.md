@@ -12,7 +12,8 @@ from Scoutspace.
 - `Account` is the tenant boundary. Users join accounts through
   `AccountMembership` records with `admin` or `member` roles.
 - `Dependent` is the person whose care records are being managed. Dependents
-  belong to an account and own documents plus care team access.
+  belong to an account, own documents plus care team access, and may have one
+  validated Active Storage avatar.
 - `CareTeamMembership` links a login user to one dependent, records the care
   team role, tracks invite status, and stores document category permissions.
 - `Document` is the first-class upload record. It owns processing state,
@@ -69,7 +70,10 @@ from Scoutspace.
 - Admin/member authorization lives on `AccountMembership`. Care team document
   search authorization is derived from dependent-scoped `CareTeamMembership`
   category permissions.
-- Development Active Storage uses S3. Tests use the local test disk service.
+- Development and production Active Storage use S3. Tests use the local test
+  disk service. Profile avatars use a named 256-pixel square variant and an
+  authenticated, account-scoped endpoint that redirects to a five-minute
+  service URL; profiles without an avatar render initials.
 - PDF preparation currently uses Poppler and Tesseract locally: embedded text
   extraction, 300 DPI page rendering, and OCR for every page.
 - `ProcessDocumentJob` prepares uploads, creates a `PipelineRun`, runs

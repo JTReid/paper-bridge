@@ -10,6 +10,7 @@ class DocumentsHelperTest < ActionView::TestCase
   test "assigns a stable color to each document category" do
     assert_equal "bg-blue-50 text-blue-700", document_category_classes(:educational)
     assert_equal "bg-red-50 text-red-700", document_category_classes(:medical)
+    assert_equal "bg-violet-50 text-violet-700", document_category_classes(:prescriptions)
     assert_equal "bg-green-50 text-green-700", document_category_classes(:therapy)
     assert_equal "bg-amber-50 text-amber-700", document_category_classes(:insurance)
     assert_equal "bg-slate-100 text-slate-700", document_category_classes(:general)

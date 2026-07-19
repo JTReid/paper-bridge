@@ -255,6 +255,7 @@ module QaHarnessSeed
           "educational" => true,
           "general" => true,
           "medical" => false,
+          "prescriptions" => false,
           "therapy" => false,
           "insurance" => false
         }
@@ -267,6 +268,7 @@ module QaHarnessSeed
         permissions: {
           "therapy" => true,
           "medical" => true,
+          "prescriptions" => false,
           "general" => true,
           "educational" => false,
           "insurance" => false

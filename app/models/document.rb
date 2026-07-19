@@ -10,6 +10,7 @@ class Document < ApplicationRecord
   CATEGORIES = {
     educational: "educational",
     medical: "medical",
+    prescriptions: "prescriptions",
     therapy: "therapy",
     insurance: "insurance",
     general: "general"

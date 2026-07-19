@@ -34,7 +34,7 @@
     {
       icon: "folder-open",
       title: "Organize",
-      description: "Upload and store educational, medical, therapy, and insurance documents in one place.",
+      description: "Upload and store educational, medical, prescription, therapy, and insurance documents in one place.",
       color: "bg-primary/10 text-primary"
     },
     {
@@ -132,6 +132,7 @@
   permissions = [
     ["Educational", true],
     ["Medical", false],
+    ["Prescriptions", false],
     ["Therapy", true],
     ["Insurance", false]
   ]
@@ -312,7 +313,7 @@
               </div>
 
               <div class="grid grid-cols-2 gap-3">
-                <% [["Educational", 8, "bg-primary/10 text-primary"], ["Medical", 5, "bg-red-50 text-red-700"], ["Therapy", 6, "bg-green-50 text-green-700"], ["Insurance", 3, "bg-amber-50 text-amber-700"]].each do |label, count, color| %>
+                <% [["Educational", 8, "bg-primary/10 text-primary"], ["Medical", 5, "bg-red-50 text-red-700"], ["Prescriptions", 2, "bg-violet-50 text-violet-700"], ["Therapy", 6, "bg-green-50 text-green-700"], ["Insurance", 3, "bg-amber-50 text-amber-700"]].each do |label, count, color| %>
                   <div class="rounded-xl border border-border/60 bg-white p-3">
                     <p class="text-xs text-muted-foreground"><%= label %></p>
                     <p class="mt-1 text-lg font-semibold text-foreground"><%= count %></p>
@@ -356,7 +357,7 @@
         <p class="mb-4 text-xs font-semibold uppercase tracking-widest text-primary">The Problem</p>
         <h2 class="mb-5 text-3xl font-bold leading-tight tracking-tight text-foreground md:text-5xl">Care records should not live in chaos.</h2>
         <p class="text-lg leading-relaxed text-muted-foreground">
-          Families often manage IEPs, evaluations, therapy notes, medical records, insurance forms, and school documents across emails, portals, folders, and paper files. PaperBridge brings everything together.
+          Families often manage IEPs, evaluations, therapy notes, medical records, prescriptions, insurance forms, and school documents across emails, portals, folders, and paper files. PaperBridge brings everything together.
         </p>
       </div>
 

@@ -28,6 +28,7 @@ CURRENT_PRODUCT_FILES = %w[
   app/controllers/billing/portal_sessions_controller.rb
   app/controllers/admin/base_controller.rb
   app/controllers/admin/accounts_controller.rb
+  app/helpers/application_helper.rb
   app/helpers/documents_helper.rb
   app/helpers/ai_assistant_helper.rb
   app/javascript/controllers/document_search_controller.js
@@ -63,6 +64,7 @@ CURRENT_PRODUCT_FILES = %w[
   test/fixtures/billing_subscriptions.yml
   test/models/account_test.rb
   test/models/user_test.rb
+  test/models/dependent_test.rb
   test/models/care_team_membership_test.rb
   test/models/share_event_test.rb
   test/models/shared_document_test.rb
@@ -71,6 +73,7 @@ CURRENT_PRODUCT_FILES = %w[
   test/services/billing/stripe_webhook_handler_test.rb
   test/mailers/document_share_mailer_test.rb
   test/mailers/previews/document_share_mailer_preview_test.rb
+  test/helpers/application_helper_test.rb
   test/helpers/documents_helper_test.rb
   test/helpers/ai_assistant_helper_test.rb
   tests/e2e/product/document_management.spec.js
@@ -79,6 +82,8 @@ CURRENT_PRODUCT_FILES = %w[
 FOUNDATION_TESTS = %w[
   test/models/account_test.rb
   test/models/user_test.rb
+  test/models/dependent_test.rb
+  test/helpers/application_helper_test.rb
   test/controllers/home_controller_test.rb
   test/controllers/devise_registrations_controller_test.rb
   test/controllers/devise_sessions_controller_test.rb
@@ -133,6 +138,7 @@ RUBOCOP_PATHS = %w[
   app/controllers/billing/portal_sessions_controller.rb
   app/controllers/admin/base_controller.rb
   app/controllers/admin/accounts_controller.rb
+  app/helpers/application_helper.rb
   app/helpers/documents_helper.rb
   app/helpers/ai_assistant_helper.rb
   app/models/account.rb
@@ -164,6 +170,7 @@ RUBOCOP_PATHS = %w[
   test/controllers/stripe_webhooks_controller_test.rb
   test/models/account_test.rb
   test/models/user_test.rb
+  test/models/dependent_test.rb
   test/models/care_team_membership_test.rb
   test/models/share_event_test.rb
   test/models/shared_document_test.rb
@@ -172,6 +179,7 @@ RUBOCOP_PATHS = %w[
   test/services/billing/stripe_webhook_handler_test.rb
   test/mailers/document_share_mailer_test.rb
   test/mailers/previews/document_share_mailer_preview_test.rb
+  test/helpers/application_helper_test.rb
   test/helpers/documents_helper_test.rb
   test/helpers/ai_assistant_helper_test.rb
   scripts/paper_bridge_harness.rb

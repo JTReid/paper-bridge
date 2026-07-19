@@ -119,12 +119,12 @@
           </div>
           <% if @query %>
             <h2 class="text-base font-semibold text-foreground">No documents found</h2>
-            <p class="mt-2 text-sm leading-relaxed text-muted-foreground">No file names match “<%= @query %>”<%= " in #{@category.humanize.downcase}" if @category %>.</p>
+            <p class="mt-2 text-sm leading-relaxed text-muted-foreground">No file names match “<%= @query %>”<%= " in #{@category.humanize.downcase.singularize}" if @category %>.</p>
             <%= link_to "Clear search", dependent_documents_path(@dependent, category: @category), class: "mt-5 inline-flex rounded-full border border-primary/20 bg-white px-5 py-2 text-xs font-medium text-primary transition-colors hover:bg-primary/5", data: { testid: "documents-search-clear" } %>
           <% else %>
-            <h2 class="text-base font-semibold text-foreground"><%= @category ? "No #{@category.humanize.downcase} documents yet" : "Start by adding your first document" %></h2>
-            <p class="mt-2 text-sm leading-relaxed text-muted-foreground">Upload school reports, medical notes, therapy summaries, or insurance documents in one secure place.</p>
-            <%= link_to @category ? "Add #{@category.humanize} Document" : "Add First Document", new_dependent_document_path(@dependent, category: @category), class: "mt-5 inline-flex rounded-full bg-primary px-5 py-2 text-xs font-medium text-white transition-colors hover:bg-primary/90", data: { testid: "documents-empty-add-link" } %>
+            <h2 class="text-base font-semibold text-foreground"><%= @category ? "No #{@category.humanize.downcase.singularize} documents yet" : "Start by adding your first document" %></h2>
+            <p class="mt-2 text-sm leading-relaxed text-muted-foreground">Upload school reports, medical notes, prescriptions, therapy summaries, or insurance documents in one secure place.</p>
+            <%= link_to @category ? "Add #{@category.humanize.singularize} Document" : "Add First Document", new_dependent_document_path(@dependent, category: @category), class: "mt-5 inline-flex rounded-full bg-primary px-5 py-2 text-xs font-medium text-white transition-colors hover:bg-primary/90", data: { testid: "documents-empty-add-link" } %>
           <% end %>
         </div>
       </section>

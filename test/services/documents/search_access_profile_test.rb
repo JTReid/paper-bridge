@@ -1,6 +1,10 @@
 require "test_helper"
 
 class Documents::SearchAccessProfileTest < ActiveSupport::TestCase
+  test "defines chunk-label access for every document category" do
+    assert_equal Document.categories.keys.sort, Documents::SearchAccessProfile::CATEGORY_LABELS.keys.sort
+  end
+
   test "family admin can search every chunk label" do
     profile = Documents::SearchAccessProfile.for(users(:family_admin), account: accounts(:greenfield))
 
@@ -21,6 +25,22 @@ class Documents::SearchAccessProfileTest < ActiveSupport::TestCase
     assert_not profile.allows_label?("education")
     assert profile.allows_category?("medical")
     assert_not profile.allows_category?("insurance")
+  end
+
+  test "prescription permission grants medical and general search access" do
+    care_team_memberships(:emma_therapist).update!(permissions: { prescriptions: true })
+
+    profile = Documents::SearchAccessProfile.for(
+      users(:therapist),
+      account: accounts(:greenfield),
+      dependent: dependents(:emma)
+    )
+
+    assert_equal %w[general medical], profile.allowed_chunk_labels.sort
+    assert_equal %w[prescriptions], profile.allowed_document_categories
+    assert profile.allows_label?("medical")
+    assert profile.allows_label?("general")
+    assert profile.allows_category?("prescriptions")
   end
 
   test "teacher role is limited to school-relevant labels" do

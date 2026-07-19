@@ -8,6 +8,12 @@ class DashboardControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "renders the signed in account dashboard" do
+    dependent = dependents(:emma)
+    dependent.avatar.attach(
+      io: Rails.root.join("public/icon.png").open,
+      filename: "icon.png",
+      content_type: "image/png"
+    )
     sign_in users(:family_admin)
 
     get dashboard_path
@@ -17,7 +23,8 @@ class DashboardControllerTest < ActionDispatch::IntegrationTest
     assert_includes response.body, "Family Calendar"
     assert_includes response.body, "No upcoming events"
     assert_includes response.body, "Profiles"
-    assert_includes response.body, dependents(:emma).name
+    assert_includes response.body, dependent.name
+    assert_select "img[data-testid='dependent-avatar-dashboard-#{dependent.id}'][src='#{avatar_dependent_path(dependent)}']"
     assert_not_includes response.body, "Ask PaperBridge"
     assert_not_includes response.body, "All Profiles"
     assert_not_includes response.body, "AI Workspace"

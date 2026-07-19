@@ -22,6 +22,18 @@ class CareTeamMembershipsControllerTest < ActionDispatch::IntegrationTest
     assert_not_includes response.body, ">Active<"
   end
 
+  test "renders a permission control for every document category" do
+    dependent = dependents(:emma)
+    sign_in users(:family_admin)
+
+    get new_dependent_care_team_membership_path(dependent)
+
+    assert_response :success
+    Document.categories.each_key do |category|
+      assert_select "input[type='checkbox'][name='care_team_membership[permissions][#{category}]'][data-testid='care-team-permission-#{category}']"
+    end
+  end
+
   test "invites a care team member by creating a login and membership" do
     sign_in users(:family_admin)
 
@@ -36,6 +48,7 @@ class CareTeamMembershipsControllerTest < ActionDispatch::IntegrationTest
               permissions: {
                 educational: "0",
                 medical: "1",
+                prescriptions: "1",
                 therapy: "1",
                 insurance: "0",
                 general: "1"
@@ -53,7 +66,7 @@ class CareTeamMembershipsControllerTest < ActionDispatch::IntegrationTest
     assert_equal dependents(:emma), membership.dependent
     assert_equal "new-therapist@example.test", membership.user.email
     assert_nil membership.user.account
-    assert_equal %w[general medical therapy], membership.allowed_document_categories.sort
+    assert_equal %w[general medical prescriptions therapy], membership.allowed_document_categories.sort
   end
 
   test "inviting an existing user does not overwrite their identity" do

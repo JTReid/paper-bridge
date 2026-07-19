@@ -104,6 +104,23 @@ class DocumentsControllerTest < ActionDispatch::IntegrationTest
     assert_select "a[data-testid='documents-category-filter-all'][href='#{dependent_documents_path(dependent)}']"
   end
 
+  test "filters prescription documents by category" do
+    dependent = dependents(:emma)
+    prescription_document = create_attached_document(
+      dependent: dependent,
+      title: "Medication Schedule",
+      category: :prescriptions
+    )
+    sign_in users(:family_admin)
+
+    get dependent_documents_path(dependent, category: "prescriptions")
+
+    assert_response :success
+    assert_select "[data-testid='document-row-#{prescription_document.id}']", text: /#{Regexp.escape(prescription_document.title)}/
+    assert_select "[data-testid='document-row-#{documents(:advance_directive).id}']", count: 0
+    assert_select "a[data-testid='documents-category-filter-prescriptions'][aria-current='page'][href='#{dependent_documents_path(dependent, category: "prescriptions")}']", text: "Prescriptions"
+  end
+
   test "searches documents by original filename" do
     dependent = dependents(:emma)
     matching_document = create_attached_document(
@@ -215,10 +232,10 @@ class DocumentsControllerTest < ActionDispatch::IntegrationTest
     dependent = dependents(:emma)
     sign_in users(:family_admin)
 
-    get new_dependent_document_path(dependent, category: "insurance")
+    get new_dependent_document_path(dependent, category: "prescriptions")
 
     assert_response :success
-    assert_select "select[name='document[category]'] option[selected='selected'][value='insurance']", text: "Insurance"
+    assert_select "select[name='document[category]'] option[selected='selected'][value='prescriptions']", text: "Prescriptions"
   end
 
   test "falls back to general when the upload category is unknown" do
@@ -251,9 +268,9 @@ class DocumentsControllerTest < ActionDispatch::IntegrationTest
       assert_difference -> { Document.count } do
         post dependent_documents_path(dependents(:emma)), params: {
           document: {
-            title: "Durable Power of Attorney",
-            description: "Signed copy",
-            category: "general",
+            title: "Medication Instructions",
+            description: "Current prescription directions",
+            category: "prescriptions",
             files: [ Rack::Test::UploadedFile.new(file_fixture("sample.txt"), "text/plain") ]
           }
         }
@@ -264,7 +281,7 @@ class DocumentsControllerTest < ActionDispatch::IntegrationTest
     assert_redirected_to document_path(document)
     assert_equal user.account, document.account
     assert_equal dependents(:emma), document.dependent
-    assert_equal "general", document.category
+    assert_equal "prescriptions", document.category
     assert_equal user, document.user
     assert document.file.attached?
     assert_equal "sample.txt", document.original_filename

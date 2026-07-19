@@ -7,22 +7,22 @@ const sampleFile = readFileSync('test/fixtures/files/sample.txt');
 
 test('category filters carry an empty category into document upload', async ({ page }) => {
   await openDependentWorkspace(page);
-  await page.getByTestId('dependent-category-insurance').click();
+  await page.getByTestId('dependent-category-prescriptions').click();
 
-  await expect(page).toHaveURL(/\/dependents\/\d+\/documents\?category=insurance$/);
-  await expect(page.getByTestId('documents-category-filter-insurance')).toHaveAttribute('aria-current', 'page');
-  await expect(page.getByRole('heading', { name: 'No insurance documents yet' })).toBeVisible();
+  await expect(page).toHaveURL(/\/dependents\/\d+\/documents\?category=prescriptions$/);
+  await expect(page.getByTestId('documents-category-filter-prescriptions')).toHaveAttribute('aria-current', 'page');
+  await expect(page.getByRole('heading', { name: 'No prescription documents yet' })).toBeVisible();
 
   await page.getByTestId('documents-category-filter-all').click();
   await expect(page).toHaveURL(/\/dependents\/\d+\/documents$/);
   await expect(page.getByRole('link', { name: /Advance Directive/ })).toBeVisible();
 
-  await page.getByTestId('documents-category-filter-insurance').click();
-  await expect(page.getByRole('heading', { name: 'No insurance documents yet' })).toBeVisible();
+  await page.getByTestId('documents-category-filter-prescriptions').click();
+  await expect(page.getByRole('heading', { name: 'No prescription documents yet' })).toBeVisible();
   await page.getByTestId('documents-empty-add-link').click();
 
   await expect(page.getByRole('heading', { name: 'Upload Document' })).toBeVisible();
-  await expect(page.getByTestId('document-category-field')).toHaveValue('insurance');
+  await expect(page.getByTestId('document-category-field')).toHaveValue('prescriptions');
 });
 
 test('filename search stays on the document index and composes with category filters', async ({ page }) => {

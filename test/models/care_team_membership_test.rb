@@ -1,6 +1,10 @@
 require "test_helper"
 
 class CareTeamMembershipTest < ActiveSupport::TestCase
+  test "keeps document category permissions in parity with document categories" do
+    assert_equal Document.categories.keys, CareTeamMembership::DOCUMENT_CATEGORY_PERMISSIONS
+  end
+
   test "normalizes category permissions and copies user identity" do
     user = User.create!(
       name: "New Therapist",
@@ -17,13 +21,14 @@ class CareTeamMembershipTest < ActiveSupport::TestCase
       permissions: {
         "educational" => "0",
         "medical" => "1",
+        "prescriptions" => "1",
         "therapy" => true
       }
     )
 
     assert_equal "New Therapist", membership.name
     assert_equal "new-therapist@example.test", membership.email
-    assert_equal %w[medical therapy], membership.allowed_document_categories.sort
+    assert_equal %w[medical prescriptions therapy], membership.allowed_document_categories.sort
     assert_equal false, membership.permissions.fetch("general")
   end
 

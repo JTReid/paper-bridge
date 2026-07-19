@@ -13,15 +13,17 @@ operational harness checks until matching implementation exists.
 - Devise email/password registration and sign-in.
 - Registration-created family accounts with an admin `AccountMembership`.
 - Account-scoped dashboard and dependent profile workspace navigation.
-- Dependent profile listing, display, create, edit, update, and destroy paths.
+- Dependent profile listing, display, create, edit, update, and destroy paths,
+  including optional JPEG, PNG, or WebP avatar uploads up to 5 MB, initials
+  fallbacks, and account-scoped display through temporary storage URLs.
 - Document upload, listing, case-insensitive original-filename search, category
   filtering, filter-aware upload defaults, show, edit, update, and destroy
   paths.
 - Document processing status, summary, readiness, file-detail rendering, and an
   original-file link that opens PDFs in a new tab and downloads other formats.
 - Care team invitations for a dependent, backed by `CareTeamMembership`.
-- Care team category permissions for education, medical, therapy, insurance,
-  and general document categories.
+- Care team category permissions for educational, medical, prescriptions,
+  therapy, insurance, and general document categories.
 - Dependent-scoped AI assistant entry point.
 - Account-scoped and category-scoped vector search authorization.
 - Email-based document sharing through `ShareEvent`, `SharedDocument`, and

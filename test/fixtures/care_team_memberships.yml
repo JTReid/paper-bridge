@@ -10,6 +10,7 @@ emma_therapist:
   permissions:
     educational: false
     medical: true
+    prescriptions: false
     therapy: true
     insurance: false
     general: true

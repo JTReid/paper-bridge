@@ -2,6 +2,7 @@ module DocumentsHelper
   DOCUMENT_CATEGORY_CLASSES = {
     "educational" => "bg-blue-50 text-blue-700",
     "medical" => "bg-red-50 text-red-700",
+    "prescriptions" => "bg-violet-50 text-violet-700",
     "therapy" => "bg-green-50 text-green-700",
     "insurance" => "bg-amber-50 text-amber-700",
     "general" => "bg-slate-100 text-slate-700"

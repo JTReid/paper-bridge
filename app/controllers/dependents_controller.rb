@@ -1,9 +1,11 @@
 class DependentsController < ApplicationController
+  include ActiveStorage::SetCurrent
+
   before_action :authenticate_user!
-  before_action :set_dependent, only: %i[show edit update destroy]
+  before_action :set_dependent, only: %i[show edit update destroy avatar]
 
   def index
-    @dependents = current_account.dependents.order(:created_at)
+    @dependents = current_account.dependents.with_attached_avatar.order(:created_at)
     @documents = current_account.documents.order(created_at: :desc).to_a
   end
 
@@ -45,6 +47,12 @@ class DependentsController < ApplicationController
     end
   end
 
+  def avatar
+    return head :not_found unless @dependent.avatar.attached? && @dependent.avatar.variable?
+
+    redirect_to @dependent.avatar.variant(:display).processed.url(expires_in: 5.minutes), allow_other_host: true
+  end
+
   private
 
     def set_dependent
@@ -52,6 +60,6 @@ class DependentsController < ApplicationController
     end
 
     def dependent_params
-      params.require(:dependent).permit(:name, :date_of_birth, :avatar_url, :grade, :school, :notes)
+      params.require(:dependent).permit(:name, :date_of_birth, :avatar, :grade, :school, :notes)
     end
 end

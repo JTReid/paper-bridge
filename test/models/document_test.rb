@@ -1,6 +1,10 @@
 require "test_helper"
 
 class DocumentTest < ActiveSupport::TestCase
+  test "defines document categories in family-facing order" do
+    assert_equal %w[educational medical prescriptions therapy insurance general], Document.categories.keys
+  end
+
   test "belongs to an account and has one attached file" do
     document = build_document
 

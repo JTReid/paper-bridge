@@ -1,7 +1,9 @@
 Rails.application.routes.draw do
   devise_for :users
   get "dashboard" => "dashboard#index"
-  resources :dependents
+  resources :dependents do
+    get :avatar, on: :member
+  end
   get "dependents/:dependent_id/documents" => "documents#index", as: :dependent_documents
   get "dependents/:dependent_id/documents/new" => "documents#new", as: :new_dependent_document
   post "dependents/:dependent_id/documents" => "documents#create"

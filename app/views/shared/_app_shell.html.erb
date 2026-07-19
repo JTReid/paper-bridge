@@ -12,7 +12,6 @@
   end
 
   if dependent_context
-    dependent_initials = dependent.name.to_s.split.map { |word| word.first }.join.first(2).presence || "U"
     dependent_meta = [dependent.grade, dependent.school].compact_blank.join(" - ")
     nav_items = [
       { key: :overview, label: "Overview", path: dependent_path(dependent), icon: "user-circle" },
@@ -51,9 +50,12 @@
         <% end %>
 
         <div class="mt-5 flex items-center gap-3">
-          <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-sm font-bold text-primary">
-            <%= dependent_initials %>
-          </div>
+          <%= dependent_avatar(
+            dependent,
+            class_name: "h-11 w-11 rounded-2xl",
+            fallback_class_name: "bg-primary/10 text-sm font-bold text-primary",
+            testid: "dependent-avatar-sidebar"
+          ) %>
           <div class="min-w-0">
             <p class="truncate text-sm font-bold text-foreground"><%= dependent.name %></p>
             <% if dependent_meta.present? %>
@@ -111,9 +113,12 @@
                   All Profiles
                 <% end %>
                 <div class="flex items-center gap-3">
-                  <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-sm font-bold text-primary">
-                    <%= dependent_initials %>
-                  </div>
+                  <%= dependent_avatar(
+                    dependent,
+                    class_name: "h-10 w-10 rounded-2xl",
+                    fallback_class_name: "bg-primary/10 text-sm font-bold text-primary",
+                    testid: "dependent-avatar-mobile-menu"
+                  ) %>
                   <div class="min-w-0">
                     <p class="truncate text-sm font-bold text-foreground"><%= dependent.name %></p>
                     <% if dependent_meta.present? %>

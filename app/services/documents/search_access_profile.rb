@@ -20,6 +20,7 @@ module Documents
     CATEGORY_LABELS = {
       "educational" => %w[education behavior general],
       "medical" => %w[medical general],
+      "prescriptions" => %w[medical general],
       "therapy" => %w[therapy behavior medical general],
       "insurance" => %w[financial general],
       "general" => %w[general]
@@ -30,10 +31,10 @@ module Documents
       "admin" => Document.categories.keys,
       "member" => Document.categories.keys,
       "owner" => Document.categories.keys,
-      "doctor" => %w[medical therapy general],
-      "physician" => %w[medical therapy general],
-      "clinician" => %w[medical therapy general],
-      "therapist" => %w[medical therapy general],
+      "doctor" => %w[medical prescriptions therapy general],
+      "physician" => %w[medical prescriptions therapy general],
+      "clinician" => %w[medical prescriptions therapy general],
+      "therapist" => %w[medical prescriptions therapy general],
       "teacher" => %w[educational general],
       "school_admin" => %w[educational general],
       "educator" => %w[educational general],

@@ -20,6 +20,34 @@ module ApplicationHelper
     )
   end
 
+  def dependent_avatar(dependent, class_name:, fallback_class_name: "bg-primary/10 text-primary", testid: nil)
+    common_classes = [ "shrink-0", class_name ].compact_blank.join(" ")
+    data = testid.present? ? { testid: testid } : {}
+
+    if dependent.avatar.attached? && dependent.avatar.variable? && dependent.errors[:avatar].empty?
+      image_tag(
+        avatar_dependent_path(dependent),
+        alt: "#{dependent.name} profile photo",
+        class: "#{common_classes} object-cover",
+        data: data,
+        width: 128,
+        height: 128
+      )
+    else
+      tag.span(
+        dependent_initials(dependent),
+        class: "flex items-center justify-center #{common_classes} #{fallback_class_name}",
+        role: "img",
+        aria: { label: "#{dependent.name.presence || 'Profile'} photo placeholder" },
+        data: data
+      )
+    end
+  end
+
+  def dependent_initials(dependent)
+    dependent.name.to_s.split.filter_map { |word| word.first }.join.first(2).upcase.presence || "U"
+  end
+
   def paperbridge_logo(width: 160, height: 56, class_name: nil)
     class_attr = class_name.present? ? %( class="#{ERB::Util.html_escape(class_name)}") : ""
 

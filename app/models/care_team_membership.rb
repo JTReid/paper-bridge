@@ -1,11 +1,5 @@
 class CareTeamMembership < ApplicationRecord
-  DOCUMENT_CATEGORY_PERMISSIONS = %w[
-    educational
-    medical
-    therapy
-    insurance
-    general
-  ].freeze
+  DOCUMENT_CATEGORY_PERMISSIONS = Document::CATEGORIES.values.freeze
 
   ROLES = {
     teacher: "teacher",
