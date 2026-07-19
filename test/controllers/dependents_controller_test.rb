@@ -33,11 +33,13 @@ class DependentsControllerTest < ActionDispatch::IntegrationTest
     assert_includes response.body, dependent.name
     assert_includes response.body, "Overview"
     assert_includes response.body, "Documents"
+    assert_includes response.body, "Calendar"
     assert_includes response.body, "Ask PaperBridge"
     assert_includes response.body, "Care Team"
     assert_select "img[data-testid='dependent-avatar-profile'][src='#{avatar_dependent_path(dependent)}']"
     assert_select "img[data-testid='dependent-avatar-sidebar'][src='#{avatar_dependent_path(dependent)}']"
     assert_select "img[data-testid='dependent-avatar-mobile-menu'][src='#{avatar_dependent_path(dependent)}']"
+    assert_select "a[data-testid='nav-calendar'][href='#{calendar_path}']", text: "Calendar"
     Document.categories.each_key do |category|
       assert_select "a[data-testid='dependent-category-#{category}'][href='#{dependent_documents_path(dependent, category: category)}']"
     end

@@ -16,6 +16,7 @@
     nav_items = [
       { key: :overview, label: "Overview", path: dependent_path(dependent), icon: "user-circle" },
       { key: :documents, label: "Documents", path: dependent_documents_path(dependent), icon: "file-text" },
+      { key: :calendar, label: "Calendar", path: calendar_path, icon: "calendar-days" },
       { key: :ai_assistant, label: "Ask PaperBridge", path: dependent_ai_assistant_path(dependent), icon: "brain" },
       { key: :care_team, label: "Care Team", path: dependent_care_team_memberships_path(dependent), icon: "users" }
     ]
@@ -24,6 +25,7 @@
       [
         { key: :dashboard, label: "Dashboard", path: dashboard_path, icon: "sparkles" },
         { key: :dependents, label: "Profiles", path: dependents_path, icon: "users" },
+        { key: :calendar, label: "Calendar", path: calendar_path, icon: "calendar-days" },
         { key: :billing, label: "Billing", path: billing_path, icon: "shield" }
       ]
     elsif current_account.present?

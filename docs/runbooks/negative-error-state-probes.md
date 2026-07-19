@@ -11,7 +11,6 @@ ruby scripts/paper_bridge_qa_harness.rb negative all
 ## TODO
 
 - Decide whether zero-permission care team invites should be valid.
-- Decide whether unsupported document upload file types should be restricted.
 - Add deeper AI no-evidence browser coverage once the QA harness has a
   deterministic fake LLM/vector-search path.
 
@@ -103,6 +102,8 @@ Open product question:
 Current surface:
 
 - Upload requires an attached file.
+- Intake accepts text-like files, PDFs, and JPEG, PNG, WebP, HEIC/HEIF, or TIFF
+  images and rejects other file types before enqueueing.
 - Edit updates metadata only.
 - Controller tests already cover missing file and cross-account access.
 
@@ -110,7 +111,8 @@ Recommended probes:
 
 - Edit a document with a blank title.
 - Upload without a file through the browser and verify the user-visible error.
-- Try unsupported file types only if the product decides to restrict file types.
+- Upload an unsupported file type and verify the user sees a useful error and
+  no document or background job is created.
 
 Lower priority:
 

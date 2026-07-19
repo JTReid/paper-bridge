@@ -1,0 +1,160 @@
+<% content_for :title, "Calendar | PaperBridge" %>
+
+<%= app_shell(active: :calendar) do %>
+  <div class="space-y-8" data-controller="appointment-dialog" data-testid="calendar-page">
+    <header class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+      <div>
+        <p class="mb-1 text-xs font-medium uppercase tracking-widest text-accent">Family Schedule</p>
+        <h1 class="text-2xl font-bold tracking-tight text-primary md:text-3xl">Calendar</h1>
+        <p class="mt-1.5 text-sm text-muted-foreground">Appointments for everyone in your family account.</p>
+      </div>
+
+      <nav class="flex items-center gap-2" aria-label="Calendar month navigation">
+        <%= link_to calendar_path(month: @month.prev_month.strftime("%Y-%m")), class: "inline-flex h-9 items-center rounded-full border border-border bg-white px-3 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground", aria: { label: "Previous month" }, data: { testid: "calendar-previous-month" } do %>
+          <%= pb_icon("arrow-left", class_name: "mr-1 h-3.5 w-3.5") %>
+          Previous
+        <% end %>
+        <%= link_to "Today", calendar_path, class: "inline-flex h-9 items-center rounded-full border border-border bg-white px-3 text-xs font-medium text-foreground transition-colors hover:bg-muted", data: { testid: "calendar-today" } %>
+        <%= link_to calendar_path(month: @month.next_month.strftime("%Y-%m")), class: "inline-flex h-9 items-center rounded-full border border-border bg-white px-3 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground", aria: { label: "Next month" }, data: { testid: "calendar-next-month" } do %>
+          Next
+          <%= pb_icon("arrow-right", class_name: "ml-1 h-3.5 w-3.5") %>
+        <% end %>
+      </nav>
+    </header>
+
+    <div class="grid gap-6 xl:grid-cols-[minmax(0,1fr)_20rem]">
+      <section class="overflow-hidden rounded-2xl border border-border/60 bg-white shadow-sm" aria-labelledby="calendar-month-heading">
+        <div class="flex items-center justify-between border-b border-border/50 px-5 py-4">
+          <h2 id="calendar-month-heading" class="text-lg font-bold text-primary"><%= @month.strftime("%B %Y") %></h2>
+          <p class="text-xs text-muted-foreground"><%= pluralize(@appointments.size, "appointment") %></p>
+        </div>
+
+        <div class="overflow-x-auto [scrollbar-width:none] focus:outline-none focus:ring-2 focus:ring-inset focus:ring-primary/30 [&::-webkit-scrollbar]:hidden" role="region" aria-label="Monthly calendar grid" tabindex="0">
+          <div class="min-w-[42rem] sm:min-w-0" data-testid="calendar-grid">
+            <div class="grid grid-cols-7 border-b border-border/50 bg-muted/30">
+              <% Date::DAYNAMES.each do |day_name| %>
+                <div class="px-2 py-2 text-center text-[11px] font-semibold uppercase tracking-wider text-muted-foreground"><%= day_name.first(3) %></div>
+              <% end %>
+            </div>
+
+            <div class="grid grid-cols-7">
+              <% (@calendar_start..@calendar_end).each do |date| %>
+                <% in_current_month = date.month == @month.month %>
+                <% appointments = @appointments_by_date.fetch(date, []) %>
+                <div class="min-h-28 border-b border-r border-border/40 p-2 <%= in_current_month ? "bg-white" : "bg-muted/20" %>" data-calendar-date="<%= date.iso8601 %>">
+                  <time datetime="<%= date.iso8601 %>" class="flex h-6 w-6 items-center justify-center rounded-full text-xs font-medium <%= date == Date.current ? "bg-primary text-white" : in_current_month ? "text-foreground" : "text-muted-foreground" %>">
+                    <%= date.day %>
+                  </time>
+
+                  <% if appointments.any? %>
+                    <div class="mt-1.5 space-y-1">
+                      <% appointments.each do |appointment| %>
+                        <button
+                          type="button"
+                          class="block w-full rounded-lg bg-primary/10 px-2 py-1.5 text-left text-primary transition-colors hover:bg-primary/15 focus:outline-none focus:ring-2 focus:ring-primary/30"
+                          data-action="appointment-dialog#open"
+                          data-appointment-dialog-appointment-id-param="<%= appointment.id %>"
+                          data-appointment-dialog-dependent-param="<%= appointment.dependent.name %>"
+                          data-appointment-dialog-scheduled-at-param="<%= appointment.scheduled_at.in_time_zone.strftime("%A, %B %-d, %Y at %-I:%M %p %Z") %>"
+                          data-appointment-dialog-description-param="<%= appointment.description %>"
+                          data-testid="appointment-<%= appointment.id %>"
+                        >
+                          <span class="block text-[10px] font-semibold"><%= appointment.scheduled_at.in_time_zone.strftime("%-I:%M %p") %></span>
+                          <span class="block truncate text-[11px] font-medium"><%= appointment.dependent.name %></span>
+                          <span class="block truncate text-[10px] text-primary/75"><%= appointment.description %></span>
+                        </button>
+                      <% end %>
+                    </div>
+                  <% end %>
+                </div>
+              <% end %>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <aside class="self-start rounded-2xl border border-border/60 bg-white p-5 shadow-sm">
+        <div class="flex items-center gap-2">
+          <div class="flex h-8 w-8 items-center justify-center rounded-xl bg-primary/10 text-primary">
+            <%= pb_icon("calendar-days", class_name: "h-4 w-4") %>
+          </div>
+          <h2 class="text-base font-bold text-primary">Add Appointment</h2>
+        </div>
+
+        <% if @dependents.any? %>
+          <%= form_with model: @appointment, url: appointments_path, class: "mt-5 space-y-4", data: { testid: "appointment-form" } do |form| %>
+            <%= hidden_field_tag :month, @month.strftime("%Y-%m") %>
+
+            <% if @appointment.errors.any? %>
+              <div class="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700" role="alert" data-testid="appointment-errors">
+                <%= @appointment.errors.full_messages.to_sentence %>
+              </div>
+            <% end %>
+
+            <div>
+              <%= form.label :dependent_id, "Who is it for?", class: "text-xs font-semibold text-foreground" %>
+              <%= form.collection_select :dependent_id, @dependents, :id, :name, { prompt: "Choose a profile" }, required: true, class: "mt-1.5 h-10 w-full rounded-xl border border-border bg-white px-3 text-sm text-foreground outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/10", data: { testid: "appointment-dependent" } %>
+            </div>
+
+            <div>
+              <%= form.label :scheduled_at, "When (Central Time)", class: "text-xs font-semibold text-foreground" %>
+              <%= form.datetime_local_field :scheduled_at, value: @appointment.scheduled_at&.in_time_zone&.strftime("%Y-%m-%dT%H:%M"), required: true, class: "mt-1.5 h-10 w-full rounded-xl border border-border bg-white px-3 text-sm text-foreground outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/10", data: { testid: "appointment-scheduled-at" } %>
+            </div>
+
+            <div>
+              <%= form.label :description, class: "text-xs font-semibold text-foreground" %>
+              <%= form.text_area :description, rows: 4, required: true, placeholder: "For example, speech therapy", class: "mt-1.5 w-full resize-none rounded-xl border border-border bg-white px-3 py-2 text-sm text-foreground outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/10", data: { testid: "appointment-description" } %>
+            </div>
+
+            <%= form.submit "Add Appointment", class: "inline-flex h-10 w-full items-center justify-center rounded-full bg-primary px-5 text-sm font-medium text-white shadow-sm transition-colors hover:bg-primary/90", data: { testid: "appointment-submit" } %>
+          <% end %>
+        <% else %>
+          <div class="mt-5 rounded-xl bg-muted/40 p-4 text-center">
+            <p class="text-sm font-medium text-foreground">Add a profile first</p>
+            <p class="mt-1 text-xs text-muted-foreground">Appointments are connected to a family profile.</p>
+            <%= link_to "Add Profile", new_dependent_path, class: "mt-4 inline-flex rounded-full bg-primary px-4 py-2 text-xs font-medium text-white hover:bg-primary/90" %>
+          </div>
+        <% end %>
+      </aside>
+    </div>
+
+    <dialog class="fixed inset-0 m-auto w-full max-w-md rounded-2xl border border-border/60 bg-white p-0 text-foreground shadow-2xl backdrop:bg-slate-950/35 backdrop:backdrop-blur-sm" data-appointment-dialog-target="dialog" data-action="click->appointment-dialog#closeOnBackdrop close->appointment-dialog#restoreFocus" data-testid="appointment-dialog" aria-labelledby="appointment-dialog-title">
+      <div class="p-6">
+        <div class="flex items-start justify-between gap-4">
+          <div>
+            <p class="text-xs font-medium uppercase tracking-widest text-accent">Appointment Details</p>
+            <h2 id="appointment-dialog-title" class="mt-1 text-xl font-bold text-primary">Appointment</h2>
+          </div>
+          <button type="button" class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-border text-muted-foreground transition-colors hover:bg-muted hover:text-foreground" data-action="appointment-dialog#close" data-appointment-dialog-target="closeButton" aria-label="Close appointment details">
+            <%= pb_icon("x", class_name: "h-4 w-4") %>
+          </button>
+        </div>
+
+        <dl class="mt-6 space-y-4">
+          <div>
+            <dt class="text-xs font-semibold text-muted-foreground">When</dt>
+            <dd class="mt-1 text-sm text-foreground" data-appointment-dialog-target="scheduledAt"></dd>
+          </div>
+          <div>
+            <dt class="text-xs font-semibold text-muted-foreground">Who it’s for</dt>
+            <dd class="mt-1 text-sm text-foreground" data-appointment-dialog-target="dependent"></dd>
+          </div>
+          <div>
+            <dt class="text-xs font-semibold text-muted-foreground">Description</dt>
+            <dd class="mt-1 whitespace-pre-wrap text-sm leading-relaxed text-foreground" data-appointment-dialog-target="description"></dd>
+          </div>
+        </dl>
+
+        <%= form_with url: appointment_emails_path, scope: :appointment_email, class: "mt-6 border-t border-border/60 pt-5", data: { testid: "appointment-email-form" } do |form| %>
+          <%= form.hidden_field :appointment_id, data: { appointment_dialog_target: "appointmentId", testid: "appointment-email-appointment-id" } %>
+
+          <%= form.label :recipient_email, "Email to", class: "text-xs font-semibold text-muted-foreground" %>
+          <div class="mt-1.5 flex gap-2">
+            <%= form.email_field :recipient_email, required: true, autocomplete: "email", placeholder: "Recipient email", class: "h-10 min-w-0 flex-1 rounded-xl border border-border bg-white px-3 text-sm text-foreground outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/10", data: { appointment_dialog_target: "recipientEmail", testid: "appointment-email-recipient" } %>
+            <%= form.submit "Send", class: "inline-flex h-10 shrink-0 items-center justify-center rounded-full bg-primary px-5 text-sm font-medium text-white shadow-sm transition-colors hover:bg-primary/90", data: { testid: "appointment-email-submit" } %>
+          </div>
+        <% end %>
+      </div>
+    </dialog>
+  </div>
+<% end %>

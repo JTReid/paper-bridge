@@ -1,3 +1,4 @@
+require "base64"
 require "test_helper"
 
 class DocumentTest < ActiveSupport::TestCase
@@ -72,6 +73,27 @@ class DocumentTest < ActiveSupport::TestCase
     assert_equal "queued", document.reload.status
   end
 
+  test "queues image processing after an image document is created" do
+    document = Document.new(
+      account: accounts(:greenfield),
+      dependent: dependents(:emma),
+      user: users(:family_admin),
+      title: "Prescription photo",
+      category: :general,
+      file: {
+        io: StringIO.new(one_by_one_png),
+        filename: "prescription.png",
+        content_type: "image/png"
+      }
+    )
+
+    assert_enqueued_with(job: ProcessImageDocumentJob) do
+      document.save!
+    end
+
+    assert_equal "queued", document.reload.status
+  end
+
   test "searches original filenames case insensitively by partial match" do
     assert_equal [ documents(:advance_directive) ], Document.search_by_filename("DIRECT").to_a
   end
@@ -95,6 +117,12 @@ class DocumentTest < ActiveSupport::TestCase
           filename: "sample.txt",
           content_type: "text/plain"
         }
+      )
+    end
+
+    def one_by_one_png
+      Base64.decode64(
+        "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=="
       )
     end
 end

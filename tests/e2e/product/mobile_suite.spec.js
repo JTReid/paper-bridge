@@ -14,14 +14,23 @@ test.describe('mobile product surfaces', () => {
     await expect(page.getByTestId('home-mobile-primary')).toBeVisible();
   });
 
-  test('signed-in mobile shell reaches dashboard and billing', async ({ page }) => {
+  test('signed-in mobile shell reaches the account calendar and billing', async ({ page }) => {
     await signIn(page);
 
     await expect(page.getByRole('heading', { name: 'Good to see you.' })).toBeVisible();
     await expect(page.getByTestId('desktop-sidebar')).not.toBeVisible();
 
-    await page.locator('summary').first().click();
-    await page.getByRole('link', { name: 'Billing' }).click();
+    const mobileMenu = page.locator('details').first();
+    await mobileMenu.locator('summary').click();
+    await mobileMenu.getByRole('link', { name: 'Calendar', exact: true }).click();
+    await expect(page.getByRole('heading', { name: 'Calendar', exact: true })).toBeVisible();
+    await expect(page.getByTestId('calendar-grid')).toBeVisible();
+    const calendarRegion = page.getByRole('region', { name: 'Monthly calendar grid' });
+    await expect.poll(() => calendarRegion.evaluate((element) => element.scrollWidth > element.clientWidth)).toBe(true);
+    await expect.poll(() => calendarRegion.evaluate((element) => getComputedStyle(element).scrollbarWidth)).toBe('none');
+
+    await mobileMenu.locator('summary').click();
+    await mobileMenu.getByRole('link', { name: 'Billing', exact: true }).click();
     await expect(page.getByTestId('billing-page')).toBeVisible();
     await expect(page.getByTestId('billing-status')).toContainText('Subscription active');
   });

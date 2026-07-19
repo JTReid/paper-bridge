@@ -47,6 +47,11 @@ test('active product surfaces pass axe checks', async ({ page }) => {
   await expect(page.getByRole('heading', { name: 'Good to see you.' })).toBeVisible();
   await expectAccessible(page);
 
+  await page.getByTestId('nav-calendar').click();
+  await expect(page.getByRole('heading', { name: 'Calendar', exact: true })).toBeVisible();
+  await expectAccessible(page);
+
+  await page.goto('/dashboard');
   await page.getByRole('link', { name: /Emma Greenfield/ }).first().click();
   await expect(page.getByRole('heading', { name: 'Emma Greenfield' })).toBeVisible();
   await expectAccessible(page);

@@ -18,6 +18,7 @@ This verifies that required agent-facing docs exist and that Markdown files in
 ruby scripts/paper_bridge_harness.rb static
 ruby scripts/paper_bridge_harness.rb assets
 ruby scripts/paper_bridge_harness.rb foundation
+ruby scripts/paper_bridge_harness.rb calendar
 ruby scripts/paper_bridge_harness.rb document-ui
 ruby scripts/paper_bridge_harness.rb access
 ruby scripts/paper_bridge_harness.rb sharing
@@ -28,15 +29,18 @@ ruby scripts/paper_bridge_harness.rb review
 
 This product-level harness covers behavior implemented in the Rails app today:
 public/auth entry points, registration-created accounts, dashboard and
-dependent workspace navigation, dependent profile access, document listing,
+dependent workspace navigation, dependent profile access, appointment creation,
+read-only calendar details, appointment-detail email delivery,
+upcoming-appointment display, document listing,
 filename-search/category-filter/upload-form behavior, family-facing document
 status and AI language, care team invitations, category permissions,
 search-access mapping, email-attachment document sharing, and the Stripe billing
 foundation.
 
-Future product requirements that are not implemented yet, such as calendar
-persistence, in-app notifications, audit-log exports, tokenized sharing links,
-document version history, multi-plan billing entitlements beyond
+Future product requirements that are not implemented yet, such as appointment
+editing, deletion, reminders, recurrence, and external calendar integrations;
+in-app notifications; audit-log exports; tokenized sharing links; document
+version history; multi-plan billing entitlements beyond
 `stripe.standard_price`, invoice history screens, and mobile behavior, are
 intentionally not product harness contracts yet.
 
@@ -81,7 +85,8 @@ mobile, or broader negative workflows.
 The intended Phase 3 workflow selector is
 `ruby scripts/paper_bridge_qa_harness.rb workflow MODE`. Use it for named,
 deterministic product scenarios such as `billing`, `sharing`, `documents`,
-`care-team`, `ai`, or `all`. Workflow modes sit between `smoke` and `browser`:
+`care-team`, `ai`, `calendar`, or `all`. Workflow modes sit between `smoke` and
+`browser`:
 they submit real browser workflows in `RAILS_ENV=test`, but they do not imply
 the full Chromium suite, Mailpit SMTP capture, bughunt artifacts, live Stripe,
 live AI, document ingestion, seeded edge-state scenarios, or the complete
@@ -160,6 +165,7 @@ ruby scripts/agentic_pipeline_harness.rb doctor
 ruby scripts/agentic_pipeline_harness.rb tests
 ruby scripts/agentic_pipeline_harness.rb documents
 ruby scripts/agentic_pipeline_harness.rb pdf-tools
+ruby scripts/agentic_pipeline_harness.rb image-tools
 ruby scripts/agentic_pipeline_harness.rb queue
 ruby scripts/agentic_pipeline_harness.rb rubocop
 ruby scripts/agentic_pipeline_harness.rb review
@@ -169,18 +175,27 @@ This is a framework harness for agentic pipeline execution, provider wiring,
 logging, telemetry, database-backed model/prompt/schema configuration, and
 deterministic Minitest coverage. The `documents` command covers the current
 document upload-to-ingestion lifecycle, timeline extraction, and the vector
-search lifecycle, including callback enqueueing, job execution, PDF preparation,
-page OCR/image artifacts, page-aware chunk creation, pgvector embedding
-persistence, chunk-sourced timeline event persistence, account-scoped and
+search lifecycle, including callback routing, PDF/text and image job execution,
+PDF preparation, page OCR/image artifacts, page-aware PDF chunk creation,
+GPT-backed image text extraction and classification, pgvector embedding
+persistence, PDF/text timeline-event persistence, account-scoped and
 label-scoped retrieval, structured answer synthesis with citations, pipeline
-records, and telemetry with fake PDF tooling and fake LLM/embedding calls. The
-`pdf-tools` command checks local Poppler/Tesseract
-availability for live PDF preparation; it is optional and not part of default
-CI. The `queue` command checks the development Solid Queue adapter, queue
-tables, and a throwaway enqueue path.
+records, and telemetry with fake PDF tooling and fake LLM/embedding calls.
+Image ingestion intentionally stops after extraction, classification, chunk
+creation, and embedding; it does not create timeline events or structured
+prescription fields. The `pdf-tools` command checks local Poppler/Tesseract
+availability for live PDF preparation. The `image-tools` command checks that
+libvips can load JPEG, PNG, WebP, HEIC/HEIF, and TIFF and save normalized JPEG
+output. Both tooling checks are optional and are not part of default CI. The
+`queue` command checks the development Solid Queue adapter, queue tables, and a
+throwaway enqueue path.
 
 PDF ingestion coverage asserts the chunker sends extracted page text and
 rendered page screenshots together in one multimodal OpenAI payload per page.
+Image ingestion coverage asserts one image becomes one document, HEIC/HEIF and
+TIFF inputs are converted before Active Storage attachment, and the dedicated
+extractor sends the normalized image in a structured multimodal GPT request
+before embedding its search chunks.
 
 Live LLM checks are explicit opt-in checks:
 

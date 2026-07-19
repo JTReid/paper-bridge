@@ -1,4 +1,6 @@
 require "test_helper"
+require "tempfile"
+require "vips"
 
 class DocumentsControllerTest < ActionDispatch::IntegrationTest
   test "requires authentication" do
@@ -226,6 +228,8 @@ class DocumentsControllerTest < ActionDispatch::IntegrationTest
     assert_includes response.body, "data-file-dropzone-category-options-value"
     assert_includes response.body, "name=\"document[files][]\""
     assert_includes response.body, "multiple=\"multiple\""
+    assert_select "input[type='file'][accept*='.heic'][accept*='.heif'][accept*='.tif'][accept*='.tiff']"
+    assert_select "input[type='file'][accept*='image/jpeg'][accept*='image/png'][accept*='image/webp']"
   end
 
   test "preselects a valid category passed to the upload form" do
@@ -349,6 +353,55 @@ class DocumentsControllerTest < ActionDispatch::IntegrationTest
     document = Document.order(:created_at).last
     assert_equal "partial-valid", document.title
     assert_equal "partial-valid.txt", document.original_filename
+  end
+
+  test "converts a TIFF image to JPEG before attaching it" do
+    dependent = dependents(:emma)
+    sign_in users(:family_admin)
+
+    with_uploaded_files(
+      { bytes: test_image.write_to_buffer(".tiff"), filename: "handwritten-prescription.tiff", content_type: "image/tiff" }
+    ) do |files|
+      assert_difference -> { Document.count }, 1 do
+        post dependent_documents_path(dependent), params: {
+          document: {
+            category: "prescriptions",
+            files: files
+          }
+        }
+      end
+    end
+
+    document = Document.order(:created_at).last
+    assert_redirected_to document_path(document)
+    assert_equal "handwritten-prescription", document.title
+    assert_equal "handwritten-prescription.jpg", document.original_filename
+    assert_equal "image/jpeg", document.content_type
+    assert_equal [ 0xff, 0xd8, 0xff ], document.file.download.bytes.first(3)
+  end
+
+  test "image validation participates in multi-file partial failure handling" do
+    dependent = dependents(:emma)
+    sign_in users(:family_admin)
+
+    with_uploaded_files(
+      { bytes: "valid notes", filename: "valid-notes.txt", content_type: "text/plain" },
+      { bytes: '<svg xmlns="http://www.w3.org/2000/svg"></svg>', filename: "unsupported.svg", content_type: "image/svg+xml" }
+    ) do |files|
+      assert_difference -> { Document.count }, 1 do
+        post dependent_documents_path(dependent), params: {
+          document: {
+            category: "general",
+            files: files
+          }
+        }
+      end
+    end
+
+    assert_redirected_to dependent_documents_path(dependent)
+    assert_equal "1 document uploaded and being prepared.", flash[:notice]
+    assert_equal "1 file could not be uploaded: unsupported.svg.", flash[:alert]
+    assert_equal "valid-notes.txt", Document.order(:created_at).last.original_filename
   end
 
   test "failed scoped upload preserves dependent workspace" do
@@ -511,5 +564,31 @@ class DocumentsControllerTest < ActionDispatch::IntegrationTest
         )
         document.save!
       end
+    end
+
+    def test_image
+      @test_image ||= Vips::Image.black(12, 8, bands: 3) + [ 35, 90, 140 ]
+    end
+
+    def with_uploaded_files(*specifications)
+      source_files = specifications.map do |specification|
+        Tempfile.new([ "paper-bridge-controller-upload-", File.extname(specification.fetch(:filename)) ]).tap do |file|
+          file.binmode
+          file.write(specification.fetch(:bytes))
+          file.rewind
+        end
+      end
+      uploads = source_files.zip(specifications).map do |file, specification|
+        Rack::Test::UploadedFile.new(
+          file.path,
+          specification.fetch(:content_type),
+          original_filename: specification.fetch(:filename)
+        )
+      end
+
+      yield uploads
+    ensure
+      uploads&.each(&:close)
+      source_files&.each(&:close!)
     end
 end

@@ -5,6 +5,7 @@ class Account < ApplicationRecord
   has_many :document_pages, dependent: :destroy
   has_many :document_chunks, dependent: :destroy
   has_many :dependents, dependent: :destroy
+  has_many :appointments, through: :dependents
   has_many :care_team_memberships, dependent: :destroy
   has_many :share_events, dependent: :destroy
   has_many :timeline_events, through: :document_chunks

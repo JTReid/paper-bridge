@@ -35,7 +35,8 @@ WORKFLOW_SPECS = {
   "sharing" => [ "tests/e2e/product/document_sharing.spec.js" ].freeze,
   "documents" => [ "tests/e2e/product/document_management.spec.js" ].freeze,
   "care-team" => [ "tests/e2e/product/care_team.spec.js" ].freeze,
-  "ai" => [ "tests/e2e/product/ai_assistant.spec.js" ].freeze
+  "ai" => [ "tests/e2e/product/ai_assistant.spec.js" ].freeze,
+  "calendar" => [ "tests/e2e/product/calendar.spec.js" ].freeze
 }.freeze
 WORKFLOW_ALL_PATHS = WORKFLOW_SPECS.values.flatten.freeze
 WORKFLOW_MODES = [ *WORKFLOW_SPECS.keys, "all" ].freeze
@@ -108,6 +109,7 @@ STATIC_FILES = %w[
   tests/e2e/product/document_sharing_mailpit.spec.js
   tests/e2e/product/billing.spec.js
   tests/e2e/product/document_management.spec.js
+  tests/e2e/product/calendar.spec.js
   tests/e2e/product/document_negative.spec.js
   tests/e2e/product/care_team.spec.js
   tests/e2e/product/care_team_negative.spec.js
@@ -143,6 +145,7 @@ def usage
 
     Examples:
       ruby scripts/paper_bridge_qa_harness.rb workflow documents
+      ruby scripts/paper_bridge_qa_harness.rb workflow calendar
       ruby scripts/paper_bridge_qa_harness.rb workflow all
       ruby scripts/paper_bridge_qa_harness.rb negative documents
       ruby scripts/paper_bridge_qa_harness.rb negative care-team
@@ -172,6 +175,7 @@ def workflow_usage
       documents  Run document upload and metadata workflow checks
       care-team  Run care team invitation and permissions workflow checks
       ai         Run AI assistant page workflow checks without live model calls
+      calendar   Run calendar appointment and month navigation workflow checks
       all        Run all workflow modes above
   USAGE
 end

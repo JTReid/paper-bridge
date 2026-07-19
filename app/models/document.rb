@@ -103,7 +103,7 @@ class Document < ApplicationRecord
     end
 
     def broadcast_processing_update_for_change
-      broadcast_processing_update
+      self.class.find(id).broadcast_processing_update
     end
 
     def processing_broadcastable_change?
@@ -139,7 +139,13 @@ class Document < ApplicationRecord
 
     def enqueue_processing_pipeline
       queued!
-      ProcessDocumentJob.perform_later(self)
+      processing_job_class.perform_later(self)
+    end
+
+    def processing_job_class
+      return ProcessImageDocumentJob if file.blob.content_type.to_s.start_with?("image/")
+
+      ProcessDocumentJob
     end
 
     def account_matches_user

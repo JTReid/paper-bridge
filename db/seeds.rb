@@ -49,6 +49,11 @@ openai_embeddings.update!(provider_class: "Agentic::Providers::Openai")
     "Embed PaperBridge document chunks for vector search indexing."
   ],
   [
+    "image_document_extractor",
+    openai_mini,
+    "Read uploaded image documents using vision, including printed and handwritten text. Preserve uncertainty instead of guessing, classify the document, summarize only visible evidence, and create useful search chunks. Return only fields allowed by the configured schema."
+  ],
+  [
     "query_embedder",
     openai_embeddings,
     "Embed user search queries for account-scoped PaperBridge vector retrieval."
@@ -131,6 +136,40 @@ document_chunks_schema = {
     }
   },
   required: %w[chunks]
+}
+
+image_document_extraction_schema = {
+  type: "object",
+  additionalProperties: false,
+  properties: {
+    extracted_text: { type: "string", minLength: 1 },
+    category: {
+      type: "string",
+      enum: Document.categories.keys
+    },
+    summary: { type: "string", minLength: 1 },
+    key_points: {
+      type: "array",
+      items: { type: "string" }
+    },
+    search_chunks: {
+      type: "array",
+      minItems: 1,
+      items: {
+        type: "object",
+        additionalProperties: false,
+        properties: {
+          content: { type: "string", minLength: 1 },
+          label: {
+            type: "string",
+            enum: DocumentChunk::LABELS
+          }
+        },
+        required: %w[content label]
+      }
+    }
+  },
+  required: %w[extracted_text category summary key_points search_chunks]
 }
 
 search_answer_schema = {
@@ -216,6 +255,7 @@ timeline_events_schema = {
   "document_summary" => summary_schema,
   "structured_validation" => validation_schema,
   "document_chunks" => document_chunks_schema,
+  "image_document_extraction" => image_document_extraction_schema,
   "search_answer" => search_answer_schema,
   "timeline_events" => timeline_events_schema
 }.each do |name, schema|

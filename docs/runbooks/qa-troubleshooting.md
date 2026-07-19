@@ -87,7 +87,7 @@ route, authenticate, or render the implemented signed-in workspace:
 - The public home page renders the PaperBridge entry surface, including primary
   and secondary entry actions, the hero action, key copy, and an axe check.
 - A fixture admin can sign in and reach the dashboard, including the current
-  calendar empty state and an axe check.
+  upcoming-appointments calendar summary and an axe check.
 - An invalid sign-in stays on the sign-in page and shows the Devise alert.
 - An active account can reach the dashboard, dependent workspace, documents
   index, document detail, document upload form, document share modal, care-team
@@ -100,11 +100,12 @@ route, authenticate, or render the implemented signed-in workspace:
 Hard boundaries:
 
 - Deeper workflow coverage belongs to the product-shape harness
-  (`ruby scripts/paper_bridge_harness.rb foundation`, `access`, `sharing`,
-  `billing`, or `product`) and to the richer Playwright product specs run by
-  `browser`. Smoke should not prove dependent CRUD, document create/update/delete,
-  document sharing delivery, care-team invitation persistence, billing status
-  transitions, AI answer generation, or seeded edge-state workflows.
+  (`ruby scripts/paper_bridge_harness.rb foundation`, `calendar`, `access`,
+  `sharing`, `billing`, or `product`) and to the richer Playwright product specs
+  run by `browser`. Smoke should not prove dependent CRUD, appointment creation,
+  document create/update/delete, document sharing delivery, care-team invitation
+  persistence, billing status transitions, AI answer generation, or seeded
+  edge-state workflows.
 - Negative and error-state probes belong in focused product, Mailpit, or
   regression specs. Smoke may keep the shallow invalid sign-in sentinel, but it
   should not become the matrix for blank forms, malformed recipients, duplicate
@@ -156,6 +157,7 @@ Named workflow modes:
 | `documents` | Exercises original-filename search, category-card and chip filtering, filter-aware upload defaults, successful multi-document upload, and document metadata editing. Required-file and blank-title validation live in `negative documents`. |
 | `care-team` | Verifies the care-team list, active member permissions, invite form, and successful invite creation with category permissions. |
 | `ai` | Opens the dependent-scoped AI assistant and verifies the current static page state without submitting a query. |
+| `calendar` | Opens the account calendar, creates a profile-owned appointment in Central Time, verifies its calendar date and read-only details, and exercises previous/next month navigation. |
 
 Boundaries:
 

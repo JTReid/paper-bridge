@@ -8,7 +8,8 @@ test('fixture admin signs in to the dashboard', async ({ page }) => {
 
   await expect(page.getByRole('heading', { name: 'Good to see you.' })).toBeVisible();
   await expect(page.getByText('Family Calendar')).toBeVisible();
-  await expect(page.getByText('No upcoming events')).toBeVisible();
+  await expect(page.getByTestId('dashboard-upcoming-appointments')).toBeVisible();
+  await expect(page.getByText('Speech therapy appointment')).toBeVisible();
   await expectAccessible(page);
 });
 

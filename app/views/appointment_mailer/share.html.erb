@@ -1,0 +1,14 @@
+<h1>Appointment details</h1>
+
+<p>
+  <strong>Who it&rsquo;s for</strong><br>
+  <%= @appointment.dependent.name %>
+</p>
+
+<p>
+  <strong>When</strong><br>
+  <%= @scheduled_at.strftime("%A, %B %-d, %Y at %-I:%M %p %Z") %>
+</p>
+
+<p><strong>Description</strong></p>
+<%= simple_format(@appointment.description) %>

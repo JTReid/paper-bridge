@@ -125,19 +125,27 @@ class DocumentsController < ApplicationController
 
       files.each_with_index do |file, index|
         document = build_document(upload_params, file_count: file_count, file_index: index)
+        normalized_upload = nil
 
         begin
-          document.file.attach(file)
+          normalized_upload = Documents::UploadNormalizer.call(file)
+          document.file.attach(normalized_upload.attachable)
 
           if document.save
             uploaded_documents << document
           else
             failed_uploads << failed_upload_for(file, document)
           end
+        rescue Documents::UploadNormalizer::Error => error
+          Rails.logger.warn("document_upload_rejected error_class=#{error.class.name} error_message=#{error.message.to_s.squish}")
+          document.errors.add(:file, error.message)
+          failed_uploads << failed_upload_for(file, document)
         rescue ActiveSupport::MessageVerifier::InvalidSignature, ArgumentError => error
           Rails.logger.warn("document_upload_rejected error_class=#{error.class.name} error_message=#{error.message.to_s.squish}")
           document.errors.add(:file, "could not be attached. Please choose the file again.")
           failed_uploads << failed_upload_for(file, document)
+        ensure
+          normalized_upload&.close
         end
       end
 

@@ -50,7 +50,7 @@ ruby scripts/paper_bridge_harness.rb product
 
 Use that command when changing public/auth entry points, registration-created
 accounts, dashboard or dependent workspace navigation, dependent profile
-workflows, care team invitations, care team category permissions,
+workflows, account calendar appointments, care team invitations, care team category permissions,
 search-access mapping, document listing and filename/category filters,
 upload-form defaults, document sharing, or mailers. Use the focused document UI
 command while iterating:
@@ -67,6 +67,15 @@ interactions:
 ruby scripts/paper_bridge_qa_harness.rb workflow documents
 ```
 
+For appointment persistence, account-wide month rendering, creation, detail
+email delivery, dashboard summaries, or calendar navigation, use the focused
+calendar checks:
+
+```bash
+ruby scripts/paper_bridge_harness.rb calendar
+ruby scripts/paper_bridge_qa_harness.rb workflow calendar
+```
+
 The document ingestion pipeline remains encoded in the agentic harness as a
 feature-specific command:
 
@@ -74,8 +83,10 @@ feature-specific command:
 ruby scripts/agentic_pipeline_harness.rb documents
 ```
 
-Use that command when changing document upload callbacks, `ProcessDocumentJob`,
-`Agentic::DocumentIngestionPipeline`, `Agents::DocumentChunker`,
+Use that command when changing document upload normalization or callbacks,
+`ProcessDocumentJob`, `ProcessImageDocumentJob`,
+`Agentic::DocumentIngestionPipeline`, `Agentic::ImageDocumentIngestionPipeline`,
+`Agents::DocumentChunker`, `Agents::ImageDocumentExtractor`,
 `Agents::DocumentEmbedder`, `Agents::TimelineEventExtractor`, prompt/schema
 seeds, chunk persistence, embedding persistence, or chunk-sourced timeline event
 persistence. The same command also covers the dependent-scoped AI assistant:

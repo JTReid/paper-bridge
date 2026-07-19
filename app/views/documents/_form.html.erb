@@ -45,7 +45,7 @@
     <div>
       <%= form.label :files, "Files", class: "block text-sm font-medium text-slate-700" %>
       <div class="relative mt-2 rounded-lg border border-dashed border-slate-300 bg-slate-50/70 p-6 text-center transition-colors hover:border-emerald-500 hover:bg-emerald-50/70" data-file-dropzone-target="dropzone" data-action="dragover->file-dropzone#dragOver dragleave->file-dropzone#dragLeave drop->file-dropzone#drop">
-        <%= form.file_field :files, multiple: true, required: true, class: "absolute inset-0 h-full w-full cursor-pointer opacity-0", data: { testid: "document-file-field", file_dropzone_target: "input", action: "change->file-dropzone#changed" }, aria: { describedby: "document-files-summary" } %>
+        <%= form.file_field :files, multiple: true, required: true, accept: Documents::UploadNormalizer::ACCEPT_ATTRIBUTE, class: "absolute inset-0 h-full w-full cursor-pointer opacity-0", data: { testid: "document-file-field", file_dropzone_target: "input", action: "change->file-dropzone#changed" }, aria: { describedby: "document-files-summary" } %>
         <div class="pointer-events-none flex flex-col items-center gap-3">
           <span class="flex h-12 w-12 items-center justify-center rounded-full border border-emerald-100 bg-white text-emerald-700 shadow-sm">
             <%= pb_icon("upload", class_name: "h-5 w-5") %>

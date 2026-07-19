@@ -1,6 +1,9 @@
 Rails.application.routes.draw do
   devise_for :users
   get "dashboard" => "dashboard#index"
+  resource :calendar, only: :show, controller: :calendar
+  resources :appointments, only: :create
+  resources :appointment_emails, only: :create, path: "appointment-emails"
   resources :dependents do
     get :avatar, on: :member
   end

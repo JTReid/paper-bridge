@@ -2,8 +2,8 @@
 
 PaperBridge is currently a Rails 8.1 greenfield application. The first
 foundation includes Devise authentication, account memberships, dependent-owned
-documents, PDF preparation, and the shared agentic pipeline framework ported
-from Scoutspace.
+documents, PDF and image ingestion, and the shared agentic pipeline framework
+ported from Scoutspace.
 
 ## Application Shape
 
@@ -14,11 +14,18 @@ from Scoutspace.
 - `Dependent` is the person whose care records are being managed. Dependents
   belong to an account, own documents plus care team access, and may have one
   validated Active Storage avatar.
+- `Appointment` belongs to one dependent and stores the scheduled time plus a
+  family-facing description. Account calendar access is derived through the
+  dependent so appointment queries stay inside the account tenant boundary.
+- `AppointmentEmailsController` account-scopes the selected appointment,
+  validates the recipient address, and sends its profile, Central Time, and
+  description details through `AppointmentMailer` without creating sharing
+  history or changing the appointment.
 - `CareTeamMembership` links a login user to one dependent, records the care
   team role, tracks invite status, and stores document category permissions.
 - `Document` is the first-class upload record. It owns processing state,
-  category, dependent ownership, preparation state, prepared payload JSON, and one Active
-  Storage file attachment.
+  category, dependent ownership, preparation state, prepared payload JSON, and
+  one Active Storage file attachment.
 - `ShareEvent` records current email-based document sharing attempts, including
   sender, recipient email, message metadata, status, sent timestamp, and errors.
 - `SharedDocument` joins shared documents to a share event and enforces account
@@ -48,8 +55,11 @@ from Scoutspace.
   retrieval with an optional dependent scope and returns chunks with document,
   page, distance, and similarity metadata.
 - `Documents::Prepare` is the single entry point for deterministic document
-  preparation. It routes text uploads to `Documents::PrepareText` and PDFs to
-  `Documents::PreparePdf`.
+  preparation of text and PDF documents. It routes text uploads to
+  `Documents::PrepareText` and PDFs to `Documents::PreparePdf`.
+- `Documents::UploadNormalizer` validates image uploads and converts HEIC,
+  HEIF, and TIFF sources to JPEG before they are attached to Active Storage.
+  JPEG, PNG, and WebP uploads retain their browser-safe source formats.
 - `Agentic::Pipeline` orchestrates ordered agent execution, shared pipeline
   context, validator pass-through behavior, progress tracking, and durable
   `PipelineRun` instrumentation.
@@ -64,9 +74,10 @@ from Scoutspace.
 ## Current Boundaries
 
 - Public entry, authentication, account registration, accounts, dependents,
-  account memberships, document uploads, document categories, care team
-  memberships, current email-attachment document sharing, and document pages are
-  real.
+  account memberships, appointment creation, read-only calendar display and
+  on-demand detail emails, document uploads, document categories, care team
+  memberships, current email-attachment document sharing, and document pages
+  are real.
 - Admin/member authorization lives on `AccountMembership`. Care team document
   search authorization is derived from dependent-scoped `CareTeamMembership`
   category permissions.
@@ -82,6 +93,13 @@ from Scoutspace.
   `text-embedding-3-large` embeddings in Postgres through pgvector. The same
   ingestion pipeline extracts chunk-sourced timeline events with
   `gpt-5.4-mini`.
+- `ProcessImageDocumentJob` handles one JPEG, PNG, WebP, HEIC/HEIF, or TIFF
+  upload as one document. It runs the separate
+  `Agentic::ImageDocumentIngestionPipeline`: `Agents::ImageDocumentExtractor`
+  makes one structured multimodal GPT request for extracted text, category,
+  summary, key points, and search chunks, then `Agents::DocumentEmbedder`
+  persists pgvector embeddings for those chunks. This first image path does not
+  run the PDF preparation, document summarizer, or timeline-event extractor.
 - `GET /dependents/:dependent_id/ai-assistant` creates a `PipelineRun` for
   nonblank queries, runs `Agentic::DocumentSearchPipeline`, embeds the user
   query with `text-embedding-3-large`, retrieves matching chunks through

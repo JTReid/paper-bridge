@@ -70,27 +70,37 @@
             <h2 class="text-base font-semibold text-foreground">Family Calendar</h2>
           </div>
         </div>
-        <button type="button" disabled class="inline-flex h-8 cursor-not-allowed items-center rounded-full bg-primary/40 px-3 text-xs font-medium text-white">
-          <%= pb_icon("plus", class_name: "mr-1 h-3.5 w-3.5") %>
-          Add
-        </button>
+        <%= link_to calendar_path, class: "flex items-center gap-1 text-xs font-medium text-primary transition-opacity hover:opacity-70", data: { testid: "dashboard-calendar-link" } do %>
+          View calendar
+          <%= pb_icon("arrow-right", class_name: "h-3 w-3") %>
+        <% end %>
       </div>
 
-      <div class="py-8 text-center">
-        <%= pb_icon("calendar-days", class_name: "mx-auto mb-2 h-8 w-8 text-muted-foreground/40") %>
-        <p class="text-sm text-muted-foreground">No upcoming events</p>
-        <p class="mt-1 text-xs text-muted-foreground">Calendar tools are coming soon.</p>
-      </div>
-
-      <% if @dependents.any? %>
-        <div class="mt-4 flex flex-wrap gap-2 border-t border-border/50 pt-4">
-          <% @dependents.each_with_index do |dependent, index| %>
-            <% colors = ["bg-blue-500", "bg-violet-500", "bg-amber-500", "bg-teal-500", "bg-rose-500"] %>
-            <%= link_to dependent_path(dependent), class: "flex items-center gap-1.5 rounded-full bg-muted/50 px-2.5 py-1 transition-colors hover:bg-muted" do %>
-              <span class="h-2 w-2 rounded-full <%= colors[index % colors.length] %>"></span>
-              <span class="text-[11px] font-medium text-foreground"><%= dependent.name %></span>
+      <% if @upcoming_appointments.any? %>
+        <div class="divide-y divide-border/40" data-testid="dashboard-upcoming-appointments">
+          <% @upcoming_appointments.each do |appointment| %>
+            <%= link_to calendar_path(month: appointment.scheduled_at.in_time_zone.strftime("%Y-%m")), class: "group flex items-center gap-4 py-3 first:pt-0 last:pb-0", data: { testid: "dashboard-appointment-#{appointment.id}" } do %>
+              <time datetime="<%= appointment.scheduled_at.iso8601 %>" class="flex w-14 shrink-0 flex-col items-center rounded-xl bg-primary/5 px-2 py-2 text-primary">
+                <span class="text-[10px] font-medium uppercase tracking-wide"><%= l appointment.scheduled_at, format: "%b" %></span>
+                <span class="text-lg font-bold leading-tight"><%= appointment.scheduled_at.day %></span>
+              </time>
+              <div class="min-w-0 flex-1">
+                <p class="truncate text-sm font-semibold text-foreground group-hover:text-primary"><%= appointment.description %></p>
+                <p class="mt-0.5 text-xs text-muted-foreground">
+                  <%= l appointment.scheduled_at, format: "%l:%M %p" %>
+                  <span aria-hidden="true">&middot;</span>
+                  <%= appointment.dependent.name %>
+                </p>
+              </div>
+              <%= pb_icon("arrow-right", class_name: "h-4 w-4 shrink-0 text-muted-foreground transition-colors group-hover:text-primary") %>
             <% end %>
           <% end %>
+        </div>
+      <% else %>
+        <div class="py-8 text-center" data-testid="dashboard-calendar-empty-state">
+          <%= pb_icon("calendar-days", class_name: "mx-auto mb-2 h-8 w-8 text-muted-foreground/40") %>
+          <p class="text-sm text-muted-foreground">No upcoming appointments</p>
+          <p class="mt-1 text-xs text-muted-foreground">Appointments added to the calendar will appear here.</p>
         </div>
       <% end %>
     </section>

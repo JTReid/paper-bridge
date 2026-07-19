@@ -47,6 +47,7 @@ AGENTIC_CORE_FILES = %w[
 DOCUMENT_PIPELINE_FILES = %w[
   app/controllers/ai_assistant_controller.rb
   app/helpers/ai_assistant_helper.rb
+  app/jobs/process_image_document_job.rb
   app/jobs/process_document_job.rb
   app/models/document.rb
   app/models/document_chunk.rb
@@ -57,9 +58,11 @@ DOCUMENT_PIPELINE_FILES = %w[
   config/environments/development.rb
   app/services/agentic/document_ingestion_pipeline.rb
   app/services/agentic/document_search_pipeline.rb
+  app/services/agentic/image_document_ingestion_pipeline.rb
   app/services/agents/document_chunker.rb
   app/services/agents/document_embedder.rb
   app/services/agents/document_summarizer.rb
+  app/services/agents/image_document_extractor.rb
   app/services/agents/query_embedder.rb
   app/services/agents/search_answer_generator.rb
   app/services/agents/timeline_event_extractor.rb
@@ -70,6 +73,7 @@ DOCUMENT_PIPELINE_FILES = %w[
   app/services/documents/prepare_text.rb
   app/services/documents/search_access_profile.rb
   app/services/documents/search_answer_citation_normalizer.rb
+  app/services/documents/upload_normalizer.rb
   app/services/documents/vector_search.rb
   docs/runbooks/document-ingestion.md
   docs/runbooks/ai-assistant-search.md
@@ -84,6 +88,7 @@ DOCUMENT_PIPELINE_FILES = %w[
   test/controllers/ai_assistant_controller_test.rb
   test/helpers/ai_assistant_helper_test.rb
   test/jobs/process_document_job_test.rb
+  test/jobs/process_image_document_job_test.rb
   test/models/document_chunk_test.rb
   test/models/document_embedding_test.rb
   test/models/document_page_test.rb
@@ -93,6 +98,7 @@ DOCUMENT_PIPELINE_FILES = %w[
   test/services/documents/prepare_text_test.rb
   test/services/documents/search_access_profile_test.rb
   test/services/documents/search_answer_citation_normalizer_test.rb
+  test/services/documents/upload_normalizer_test.rb
   test/services/documents/vector_search_test.rb
   test/services/agents/search_answer_generator_test.rb
 ].freeze
@@ -119,11 +125,12 @@ DOCTOR_RUNNER = <<~"RUBY"
     errors << "AgentType \#{agent_type.name} has no llm" if agent_type.llm.blank?
     errors << "AgentType \#{agent_type.name} has no active prompt" if agent_type.prompts.active.empty?
   end
-  required_agent_types = %w[structured_text_summarizer structured_text_validator document_chunker document_summarizer document_embedder query_embedder search_answer_generator timeline_event_extractor]
+  required_agent_types = %w[structured_text_summarizer structured_text_validator document_chunker document_summarizer document_embedder image_document_extractor query_embedder search_answer_generator timeline_event_extractor]
   missing_agent_types = required_agent_types - AgentType.pluck(:name)
   errors.concat(missing_agent_types.map { |name| "Required AgentType \#{name} is missing" })
   errors << "openai_document_summary JsonSchema is missing" unless JsonSchema.exists?(name: "openai_document_summary")
   errors << "openai_document_chunks JsonSchema is missing" unless JsonSchema.exists?(name: "openai_document_chunks")
+  errors << "openai_image_document_extraction JsonSchema is missing" unless JsonSchema.exists?(name: "openai_image_document_extraction")
   errors << "openai_search_answer JsonSchema is missing" unless JsonSchema.exists?(name: "openai_search_answer")
   errors << "openai_timeline_events JsonSchema is missing" unless JsonSchema.exists?(name: "openai_timeline_events")
   puts "Agentic provider classes in test DB: \#{provider_classes.any? ? provider_classes.join(", ") : "none"}"
@@ -211,6 +218,24 @@ PDF_TOOLS_RUNNER = <<~"RUBY"
   puts "PDF preparation tools present: \#{required.join(", ")}"
 RUBY
 
+IMAGE_TOOLS_RUNNER = <<~"RUBY"
+  require "open3"
+
+  vips = ENV.fetch("PATH", "").split(File::PATH_SEPARATOR).filter_map do |directory|
+    candidate = File.join(directory, "vips")
+    candidate if File.executable?(candidate)
+  end.first
+  abort("Missing image preparation tool: vips") unless vips
+
+  output, error, status = Open3.capture3(vips, "list", "classes")
+  abort("Unable to inspect libvips codecs: \#{error.presence || output}") unless status.success?
+
+  required_operations = %w[jpegload pngload webpload heifload tiffload jpegsave]
+  missing = required_operations.reject { |operation| output.include?(operation) }
+  abort("Missing libvips image codec operations: \#{missing.join(", ")}") if missing.any?
+  puts "Image preparation codecs present: JPEG, PNG, WebP, HEIC/HEIF, TIFF; JPEG output"
+RUBY
+
 QUEUE_RUNNER = <<~"RUBY"
   errors = []
   errors << "Development Active Job adapter is not Solid Queue" unless ActiveJob::Base.queue_adapter.is_a?(ActiveJob::QueueAdapters::SolidQueueAdapter)
@@ -269,16 +294,21 @@ COMMANDS = {
       "test/controllers/ai_assistant_controller_test.rb",
       "test/helpers/ai_assistant_helper_test.rb",
       "test/jobs/process_document_job_test.rb",
+      "test/jobs/process_image_document_job_test.rb",
       "test/services/documents/prepare_text_test.rb",
       "test/services/documents/prepare_pdf_test.rb",
       "test/services/documents/search_access_profile_test.rb",
       "test/services/documents/search_answer_citation_normalizer_test.rb",
+      "test/services/documents/upload_normalizer_test.rb",
       "test/services/agents/search_answer_generator_test.rb",
       "test/services/documents/vector_search_test.rb"
     ]
   ],
   "pdf-tools" => [
     [ "bin/rails", "runner", PDF_TOOLS_RUNNER ]
+  ],
+  "image-tools" => [
+    [ "bin/rails", "runner", IMAGE_TOOLS_RUNNER ]
   ],
   "queue" => [
     [ "bin/rails", "runner", QUEUE_RUNNER ]
@@ -341,6 +371,7 @@ def usage
       tests     Run deterministic generic pipeline Minitest coverage
       documents Run deterministic document upload, ingestion, timeline, and search lifecycle coverage
       pdf-tools Check local Poppler/Tesseract binaries for live PDF preparation
+      image-tools Check libvips JPEG, PNG, WebP, HEIC/HEIF, and TIFF codec support
       queue     Check development Solid Queue adapter/tables/enqueue path
       rubocop   Run RuboCop on generic pipeline files and this harness
       live      Run an explicit live provider smoke using AGENTIC_LIVE_* env vars

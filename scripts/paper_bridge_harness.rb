@@ -7,7 +7,10 @@ ROOT = Pathname.new(__dir__).join("..").realpath
 
 CURRENT_PRODUCT_FILES = %w[
   AGENTS.md
+  config/application.rb
   config/routes.rb
+  db/schema.rb
+  db/migrate/20260719000100_create_appointments.rb
   docs/runbooks/current-product-shape.md
   docs/runbooks/care-team-access.md
   docs/runbooks/billing.md
@@ -18,6 +21,9 @@ CURRENT_PRODUCT_FILES = %w[
   app/controllers/application_controller.rb
   app/controllers/home_controller.rb
   app/controllers/dashboard_controller.rb
+  app/controllers/calendar_controller.rb
+  app/controllers/appointments_controller.rb
+  app/controllers/appointment_emails_controller.rb
   app/controllers/dependents_controller.rb
   app/controllers/documents_controller.rb
   app/controllers/care_team_memberships_controller.rb
@@ -32,10 +38,12 @@ CURRENT_PRODUCT_FILES = %w[
   app/helpers/documents_helper.rb
   app/helpers/ai_assistant_helper.rb
   app/javascript/controllers/document_search_controller.js
+  app/javascript/controllers/appointment_dialog_controller.js
   app/models/account.rb
   app/models/account_membership.rb
   app/models/user.rb
   app/models/dependent.rb
+  app/models/appointment.rb
   app/models/document.rb
   app/models/care_team_membership.rb
   app/models/share_event.rb
@@ -44,7 +52,13 @@ CURRENT_PRODUCT_FILES = %w[
   app/services/billing/stripe_config.rb
   app/services/billing/stripe_webhook_handler.rb
   app/mailers/document_share_mailer.rb
+  app/mailers/appointment_mailer.rb
   app/views/care_team_memberships/index.html.erb
+  app/views/calendar/show.html.erb
+  app/views/appointment_mailer/share.html.erb
+  app/views/appointment_mailer/share.text.erb
+  app/views/dashboard/index.html.erb
+  app/views/shared/_app_shell.html.erb
   app/views/dependents/show.html.erb
   app/views/documents/_form.html.erb
   app/views/documents/index.html.erb
@@ -52,6 +66,9 @@ CURRENT_PRODUCT_FILES = %w[
   test/controllers/devise_registrations_controller_test.rb
   test/controllers/devise_sessions_controller_test.rb
   test/controllers/dashboard_controller_test.rb
+  test/controllers/calendar_controller_test.rb
+  test/controllers/appointments_controller_test.rb
+  test/controllers/appointment_emails_controller_test.rb
   test/controllers/dependents_controller_test.rb
   test/controllers/documents_controller_test.rb
   test/controllers/care_team_memberships_controller_test.rb
@@ -62,9 +79,11 @@ CURRENT_PRODUCT_FILES = %w[
   test/controllers/admin_accounts_controller_test.rb
   test/controllers/stripe_webhooks_controller_test.rb
   test/fixtures/billing_subscriptions.yml
+  test/fixtures/appointments.yml
   test/models/account_test.rb
   test/models/user_test.rb
   test/models/dependent_test.rb
+  test/models/appointment_test.rb
   test/models/care_team_membership_test.rb
   test/models/share_event_test.rb
   test/models/shared_document_test.rb
@@ -72,11 +91,13 @@ CURRENT_PRODUCT_FILES = %w[
   test/services/billing/stripe_config_test.rb
   test/services/billing/stripe_webhook_handler_test.rb
   test/mailers/document_share_mailer_test.rb
+  test/mailers/appointment_mailer_test.rb
   test/mailers/previews/document_share_mailer_preview_test.rb
   test/helpers/application_helper_test.rb
   test/helpers/documents_helper_test.rb
   test/helpers/ai_assistant_helper_test.rb
   tests/e2e/product/document_management.spec.js
+  tests/e2e/product/calendar.spec.js
 ].freeze
 
 FOUNDATION_TESTS = %w[
@@ -122,12 +143,28 @@ BILLING_TESTS = %w[
   test/services/billing/stripe_webhook_handler_test.rb
 ].freeze
 
+CALENDAR_TESTS = %w[
+  test/models/appointment_test.rb
+  test/controllers/calendar_controller_test.rb
+  test/controllers/appointments_controller_test.rb
+  test/controllers/appointment_emails_controller_test.rb
+  test/mailers/appointment_mailer_test.rb
+  test/controllers/dashboard_controller_test.rb
+  test/controllers/dependents_controller_test.rb
+].freeze
+
 RUBOCOP_PATHS = %w[
   Gemfile
+  config/application.rb
+  config/routes.rb
+  db/migrate/20260719000100_create_appointments.rb
   app/controllers/application_controller.rb
   app/controllers/concerns/subscription_gate.rb
   app/controllers/home_controller.rb
   app/controllers/dashboard_controller.rb
+  app/controllers/calendar_controller.rb
+  app/controllers/appointments_controller.rb
+  app/controllers/appointment_emails_controller.rb
   app/controllers/dependents_controller.rb
   app/controllers/documents_controller.rb
   app/controllers/care_team_memberships_controller.rb
@@ -145,6 +182,7 @@ RUBOCOP_PATHS = %w[
   app/models/account_membership.rb
   app/models/user.rb
   app/models/dependent.rb
+  app/models/appointment.rb
   app/models/document.rb
   app/models/care_team_membership.rb
   app/models/share_event.rb
@@ -154,11 +192,15 @@ RUBOCOP_PATHS = %w[
   app/services/billing/stripe_webhook_handler.rb
   config/initializers/stripe.rb
   app/mailers/document_share_mailer.rb
+  app/mailers/appointment_mailer.rb
   test/test_helper.rb
   test/controllers/home_controller_test.rb
   test/controllers/devise_registrations_controller_test.rb
   test/controllers/devise_sessions_controller_test.rb
   test/controllers/dashboard_controller_test.rb
+  test/controllers/calendar_controller_test.rb
+  test/controllers/appointments_controller_test.rb
+  test/controllers/appointment_emails_controller_test.rb
   test/controllers/dependents_controller_test.rb
   test/controllers/documents_controller_test.rb
   test/controllers/care_team_memberships_controller_test.rb
@@ -171,6 +213,7 @@ RUBOCOP_PATHS = %w[
   test/models/account_test.rb
   test/models/user_test.rb
   test/models/dependent_test.rb
+  test/models/appointment_test.rb
   test/models/care_team_membership_test.rb
   test/models/share_event_test.rb
   test/models/shared_document_test.rb
@@ -178,6 +221,7 @@ RUBOCOP_PATHS = %w[
   test/services/billing/stripe_config_test.rb
   test/services/billing/stripe_webhook_handler_test.rb
   test/mailers/document_share_mailer_test.rb
+  test/mailers/appointment_mailer_test.rb
   test/mailers/previews/document_share_mailer_preview_test.rb
   test/helpers/application_helper_test.rb
   test/helpers/documents_helper_test.rb
@@ -207,6 +251,9 @@ COMMANDS = {
   "billing" => [
     [ "bin/rails", "test", *BILLING_TESTS ]
   ],
+  "calendar" => [
+    [ "bin/rails", "test", *CALENDAR_TESTS ]
+  ],
   "documents" => [
     [ "ruby", "scripts/agentic_pipeline_harness.rb", "documents" ]
   ],
@@ -233,9 +280,10 @@ def usage
       access      Run care team and search-access permission tests
       sharing     Run current document sharing and mailer tests
       billing     Run Stripe billing foundation tests
+      calendar    Run appointment persistence, calendar, email delivery, creation, and dashboard tests
       documents   Delegate document ingestion/search checks to the agentic harness
       agentic     Run agentic static, framework, and document lifecycle checks
-      product     Run foundation, document UI, access, sharing, and billing checks
+      product     Run foundation, calendar, document UI, access, sharing, and billing checks
       rubocop     Run RuboCop on current product-shape files
       review      Run docs, static, product, agentic, and rubocop checks
   USAGE
@@ -262,7 +310,7 @@ def static_check_passed?
   end
 
   puts "Expected current product-shape files exist."
-  puts "Product workflows covered: foundation, document UI, access, sharing, billing."
+  puts "Product workflows covered: foundation, calendar, document UI, access, sharing, billing."
   puts "Agentic document workflows remain delegated to scripts/agentic_pipeline_harness.rb."
   true
 end
@@ -272,10 +320,10 @@ def run_named_command(name)
   when "static"
     static_check_passed?
   when "product"
-    run_command_group("assets") && %w[foundation document-ui access sharing billing].all? { |command| run_command_group(command) }
+    run_command_group("assets") && %w[foundation calendar document-ui access sharing billing].all? { |command| run_command_group(command) }
   when "review"
     %w[docs static product agentic rubocop].all? { |command| run_named_command(command) }
-  when "foundation", "document-ui", "access", "sharing", "billing"
+  when "foundation", "calendar", "document-ui", "access", "sharing", "billing"
     run_command_group("assets") && run_command_group(name)
   else
     run_command_group(name)
