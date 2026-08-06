@@ -23,9 +23,10 @@ class HomeControllerTest < ActionDispatch::IntegrationTest
     get root_path
 
     assert_response :success
-    assert_includes response.body, "Open dashboard"
+    assert_not_includes response.body, "Open dashboard"
     assert_includes response.body, "Dashboard"
     assert_includes response.body, "preserves the complete narrative"
+    assert_select "[data-testid='home-hero-primary']", count: 0
     assert_select "[data-testid='home-nav-secondary']", count: 0
     assert_select "[data-testid='home-mobile-secondary']", count: 0
   end
