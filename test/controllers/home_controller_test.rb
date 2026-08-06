@@ -12,7 +12,14 @@ class HomeControllerTest < ActionDispatch::IntegrationTest
     assert_includes response.body, "All in one place"
     assert_includes response.body, "advocacy platform that securely organizes"
     assert_includes response.body, "Organize. Empower. Advocate."
+    assert_includes response.body, "Citation analysis"
+    assert_includes response.body, "Complete Story"
+    assert_includes response.body, "Know What Comes Next"
+    assert_includes response.body, "AI-tailored summaries"
+    assert_includes response.body, "Share by Email"
+    assert_includes response.body, "Advocacy Copilot"
     assert_not_includes response.body, "AI-Powered Care Advocacy"
+    assert_select "#features article", count: 5
     assert_select "[data-testid='home-nav-secondary']", count: 1
     assert_select "[data-controller='reveal']"
   end
