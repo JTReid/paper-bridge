@@ -9,6 +9,6 @@ test('public home exposes entry actions', async ({ page }) => {
   await expect(page.getByTestId('home-nav-secondary')).toBeVisible();
   await expect(page.getByTestId('home-nav-primary')).toBeVisible();
   await expect(page.getByTestId('home-hero-primary')).toBeVisible();
-  await expect(page.getByText('Turn overwhelming paperwork into')).toBeVisible();
+  await expect(page.getByRole('heading', { name: "Your child's story. All in one place." })).toBeVisible();
   await expectAccessible(page);
 });

@@ -4,8 +4,6 @@
   primary_path = user_signed_in? ? dashboard_path : new_user_registration_path
   primary_label = user_signed_in? ? "Open dashboard" : "Get Started"
   nav_primary_label = user_signed_in? ? "Dashboard" : "Get Started"
-  secondary_path = user_signed_in? ? dashboard_path : new_user_session_path
-  secondary_label = user_signed_in? ? "Dashboard" : "Sign In"
 
   problems = [
     {
@@ -39,14 +37,14 @@
     },
     {
       icon: "brain",
-      title: "Understand",
-      description: "AI turns complex reports into clear summaries and key takeaways.",
+      title: "Advocate",
+      description: "PaperBridge turns complex reports into clear summaries and key takeaways.",
       color: "bg-accent/30 text-accent-foreground"
     },
     {
       icon: "share-2",
       title: "Share",
-      description: "Give teachers, therapists, doctors, or family members controlled read-only access.",
+      description: "Provide meaningful insights - not just documents - with your child's care team.",
       color: "bg-primary/10 text-primary"
     }
   ]
@@ -63,7 +61,7 @@
       ]
     },
     {
-      title: "AI Summaries",
+      title: "PaperBridge Summaries",
       subtitle: "Complex reports made simple.",
       items: [
         ["brain", "Summaries prepared for you"],
@@ -73,7 +71,7 @@
       ]
     },
     {
-      title: "Care Team Access",
+      title: "Care Team",
       subtitle: "The right people see the right information.",
       items: [
         ["users", "Invite teachers, therapists, doctors"],
@@ -204,7 +202,9 @@
       </div>
 
       <div class="hidden items-center gap-3 md:flex">
-        <%= link_to secondary_label, secondary_path, class: "inline-flex h-9 items-center justify-center rounded-md px-4 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground", data: { testid: "home-nav-secondary" } %>
+        <% unless user_signed_in? %>
+          <%= link_to "Sign In", new_user_session_path, class: "inline-flex h-9 items-center justify-center rounded-md px-4 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground", data: { testid: "home-nav-secondary" } %>
+        <% end %>
         <%= link_to nav_primary_label, primary_path, class: "inline-flex h-9 items-center justify-center rounded-full bg-primary px-5 py-2 text-sm font-medium text-primary-foreground shadow transition-colors hover:bg-primary/90", data: { testid: "home-nav-primary" } %>
       </div>
 
@@ -219,7 +219,9 @@
             <a href="#care-team" class="block text-sm text-muted-foreground">Care Team</a>
             <a href="#privacy" class="block text-sm text-muted-foreground">Privacy</a>
             <div class="space-y-2 border-t border-border pt-3">
-              <%= link_to secondary_label, secondary_path, class: "block rounded-md px-3 py-2 text-sm font-medium text-foreground hover:bg-muted", data: { testid: "home-mobile-secondary" } %>
+              <% unless user_signed_in? %>
+                <%= link_to "Sign In", new_user_session_path, class: "block rounded-md px-3 py-2 text-sm font-medium text-foreground hover:bg-muted", data: { testid: "home-mobile-secondary" } %>
+              <% end %>
               <%= link_to nav_primary_label, primary_path, class: "block rounded-full bg-primary px-4 py-2 text-center text-sm font-medium text-primary-foreground", data: { testid: "home-mobile-primary" } %>
             </div>
           </div>
@@ -233,21 +235,16 @@
 
     <div class="relative mx-auto max-w-7xl px-6">
       <div class="mx-auto mb-16 max-w-3xl text-center" data-controller="reveal">
-        <div class="mb-6 inline-flex items-center gap-2 rounded-full bg-primary/5 px-3 py-1.5">
-          <div class="h-1.5 w-1.5 animate-pulse rounded-full bg-accent"></div>
-          <span class="text-xs font-medium text-primary">AI-Powered Care Advocacy</span>
-        </div>
-
         <h1 class="mb-6 text-4xl font-bold leading-[1.08] tracking-tight text-foreground md:text-6xl lg:text-7xl">
-          Turn overwhelming paperwork into <span class="text-primary">clarity.</span>
+          Your child's <span class="text-primary">story</span>. All in one place.
         </h1>
 
         <p class="mx-auto mb-3 max-w-2xl text-lg leading-relaxed text-muted-foreground md:text-xl">
-          PaperBridge is an AI-powered platform that helps families organize, understand, and share everything related to their child's care in one place.
+          PaperBridge is the advocacy platform that securely organizes medical, therapy, education, and insurance records&mdash;helping you understand every report, prepare for every appointment, and advocate with confidence.
         </p>
 
         <p class="mb-8 text-sm text-muted-foreground">
-          Spend less time searching through documents and more time focusing on your child.
+          PaperBridge isn't just storing files&mdash;it preserves the complete narrative of your child's care.
         </p>
 
         <div class="flex flex-col items-center justify-center gap-3 sm:flex-row">
@@ -380,7 +377,7 @@
       <div class="mx-auto mb-16 max-w-2xl text-center" data-controller="reveal">
         <p class="mb-4 text-xs font-semibold uppercase tracking-widest text-primary">The Solution</p>
         <h2 class="text-3xl font-bold leading-tight tracking-tight text-foreground md:text-5xl">
-          Everything organized. <span class="text-primary">Everything understood.</span>
+          Everything Organized. <span class="text-primary">Ready to Advocate.</span>
         </h2>
       </div>
 
@@ -406,7 +403,7 @@
       <div class="mx-auto mb-16 max-w-2xl text-center" data-controller="reveal">
         <p class="mb-4 text-xs font-semibold uppercase tracking-widest text-primary">Features</p>
         <h2 class="text-3xl font-bold leading-tight tracking-tight text-foreground md:text-5xl">
-          Everything you need, <span class="text-primary">nothing you don't.</span>
+          Everything you need to <span class="text-primary">advocate with confidence.</span>
         </h2>
       </div>
 
@@ -481,7 +478,7 @@
             Share the right information with the <span class="text-primary">right people.</span>
           </h2>
           <p class="mb-8 text-base leading-relaxed text-muted-foreground">
-            Parents control who sees what. Invite care team members and grant category-based, read-only access to documents and summaries.
+            Parents control who sees what. Give your child's care team the information they need to provide better care.
           </p>
 
           <div class="grid grid-cols-2 gap-3 sm:grid-cols-3">
@@ -527,9 +524,9 @@
   <section class="bg-muted/30 py-24 md:py-32">
     <div class="mx-auto max-w-7xl px-6">
       <div class="mx-auto mb-16 max-w-2xl text-center" data-controller="reveal">
-        <p class="mb-4 text-xs font-semibold uppercase tracking-widest text-primary">Advocacy Copilot</p>
+        <p class="mb-4 text-xs font-semibold uppercase tracking-widest text-primary">Advocacy</p>
         <h2 class="mb-5 text-3xl font-bold leading-tight tracking-tight text-foreground md:text-5xl">
-          From paperwork to <span class="text-primary">action.</span>
+          Turn information into <span class="text-primary">action.</span>
         </h2>
         <p class="text-base leading-relaxed text-muted-foreground">
           PaperBridge does more than store documents. It helps parents prepare for meetings and understand what to do next.
@@ -580,9 +577,9 @@
 
   <section class="relative overflow-hidden bg-primary py-24 md:py-32">
     <div class="relative mx-auto max-w-3xl px-6 text-center" data-controller="reveal">
-      <h2 class="mb-5 text-3xl font-bold leading-tight tracking-tight text-white md:text-5xl">Organize. Understand. Advocate.</h2>
+      <h2 class="mb-5 text-3xl font-bold leading-tight tracking-tight text-white md:text-5xl">Organize. Empower. Advocate.</h2>
       <p class="mx-auto mb-8 max-w-xl text-lg leading-relaxed text-white/70">
-        PaperBridge gives families one place to manage documents, understand care information, and advocate with confidence.
+        Your Child. Your Story. Your Advocate.
       </p>
       <%= link_to primary_path, class: "inline-flex h-12 items-center justify-center rounded-full bg-white px-8 text-sm font-semibold text-primary shadow-lg transition-colors hover:bg-white/90" do %>
         Start with PaperBridge
