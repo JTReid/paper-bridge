@@ -6,6 +6,7 @@ class DeviseRegistrationsControllerTest < ActionDispatch::IntegrationTest
 
     assert_response :success
     assert_select "h1", "Create account"
+    assert_not_includes response.body, "AI-Powered Care Advocacy"
     assert_select "form[action='#{user_registration_path}']" do
       assert_select "input[name='user[account_name]']"
       assert_select "input[name='user[name]']"
