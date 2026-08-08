@@ -14,7 +14,11 @@ class AiAssistantController < ApplicationController
 
     return if @query.blank?
 
-    pipeline_run = PipelineRun.create!(subject: current_account, user: current_user)
+    pipeline_run = PipelineRun.create!(
+      subject: current_account,
+      user: current_user,
+      context: { query: @query }
+    )
     pipeline = Agentic::DocumentSearchPipeline.new(
       context: pipeline_context(pipeline_run),
       connection: llm_connection,

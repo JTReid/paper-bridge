@@ -9,7 +9,8 @@ lifecycle.
 - Blank search queries render without creating a `PipelineRun` or calling an LLM
   provider.
 - Nonblank search queries create a `PipelineRun` for the current account and
-  selected dependent.
+  selected dependent, with the stripped user query stored in
+  `PipelineRun.context["query"]` for later reproduction and diagnosis.
 - `Agentic::DocumentSearchPipeline` can run retrieval-only for debugging, or
   retrieval plus answer synthesis for the product UI.
 - In answer mode, it executes `Agents::QueryEmbedder`,

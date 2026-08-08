@@ -51,6 +51,27 @@ class AiAssistantControllerTest < ActionDispatch::IntegrationTest
     assert_includes response.body, "Care Team"
   end
 
+  test "stores the stripped question on the pipeline run" do
+    dependent = dependents(:emma)
+    pipeline = Class.new do
+      def execute; end
+
+      def to_response
+        { results: [], result_count: 0, answer: nil }
+      end
+    end.new
+    sign_in users(:family_admin)
+
+    with_stubbed_singleton_method(Agentic::DocumentSearchPipeline, :new, ->(*_args) { pipeline }) do
+      assert_difference -> { PipelineRun.count }, 1 do
+        get dependent_ai_assistant_path(dependent, q: "  What changed?  ")
+      end
+    end
+
+    assert_response :success
+    assert_equal({ "query" => "What changed?" }, PipelineRun.order(:id).last.context)
+  end
+
   test "renders validated inline citations and source cards that open the cited PDF page" do
     dependent = dependents(:emma)
     document = documents(:advance_directive)
