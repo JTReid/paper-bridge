@@ -67,5 +67,9 @@ class AiAssistantQuery < ApplicationRecord
         partial: "ai_assistant/query_result",
         locals: { ai_assistant_query: self }
       )
+    rescue StandardError => e
+      Rails.logger.warn(
+        "ai_assistant_broadcast_failed query_id=#{id} error_class=#{e.class.name}"
+      )
     end
 end

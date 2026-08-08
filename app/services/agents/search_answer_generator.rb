@@ -20,7 +20,7 @@ module Agents
     end
 
     def requirements
-      {
+      requirements = {
         model: llm.name,
         system: prompt.system_directive,
         prompt: answer_prompt,
@@ -28,6 +28,8 @@ module Agents
         response_format: "structured_json",
         schema_name: "search_answer"
       }
+      requirements[:on_content_delta] = method(:handle_content_delta) if answer_stream_callback
+      requirements
     end
 
     def step_started
@@ -41,6 +43,8 @@ module Agents
     def setup_content
       @query = data.dig(:context, :query).to_s.strip
       @search_results = Array(data.dig(:context, :search_results))
+      @answer_stream_callback = data.dig(:context, :answer_stream_callback)
+      @answer_stream_extractor = Documents::StreamingAnswerExtractor.new if answer_stream_callback
       @content = evidence_text.presence || "No evidence chunks were retrieved."
 
       raise Agentic::Errors::ConfigurationError, "context[:query] is required" if query.blank?
@@ -67,7 +71,22 @@ module Agents
 
     private
 
-      attr_reader :query, :search_results
+      attr_reader :query, :search_results, :answer_stream_callback, :answer_stream_extractor
+
+      def handle_content_delta(content_delta)
+        return unless answer_stream_callback && answer_stream_extractor
+
+        draft_answer = answer_stream_extractor.feed(content_delta)
+        answer_stream_callback.call(draft_answer) if draft_answer.present?
+      rescue StandardError => e
+        log_event(
+          "Answer draft delivery disabled",
+          { error_class: e.class.name },
+          event_type: "stream_delivery"
+        )
+        @answer_stream_callback = nil
+        @answer_stream_extractor = nil
+      end
 
       def set_empty_response
         @response = {

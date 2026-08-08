@@ -26,6 +26,7 @@ AGENTIC_CORE_FILES = %w[
   app/services/agentic/providers/anthropic.rb
   app/services/agentic/providers/llm_call_telemetry.rb
   app/services/agentic/providers/openai.rb
+  app/services/agentic/providers/sse_parser.rb
   app/services/agentic/telemetry/elapsed_time_summary.rb
   app/services/agentic/telemetry/log_entries.rb
   app/services/agentic/telemetry/pricing_summary.rb
@@ -41,6 +42,7 @@ AGENTIC_CORE_FILES = %w[
   test/services/agentic/pipeline_test.rb
   test/services/agentic/providers/anthropic_test.rb
   test/services/agentic/providers/openai_test.rb
+  test/services/agentic/providers/sse_parser_test.rb
   test/services/agentic/telemetry/summary_test.rb
 ].freeze
 
@@ -75,6 +77,7 @@ DOCUMENT_PIPELINE_FILES = %w[
   app/services/documents/prepare_text.rb
   app/services/documents/search_access_profile.rb
   app/services/documents/search_answer_citation_normalizer.rb
+  app/services/documents/streaming_answer_extractor.rb
   app/services/documents/upload_normalizer.rb
   app/services/documents/vector_search.rb
   docs/runbooks/document-ingestion.md
@@ -105,6 +108,7 @@ DOCUMENT_PIPELINE_FILES = %w[
   test/services/documents/prepare_text_test.rb
   test/services/documents/search_access_profile_test.rb
   test/services/documents/search_answer_citation_normalizer_test.rb
+  test/services/documents/streaming_answer_extractor_test.rb
   test/services/documents/upload_normalizer_test.rb
   test/services/documents/vector_search_test.rb
   test/services/agents/search_answer_generator_test.rb
@@ -283,6 +287,7 @@ COMMANDS = {
       "bin/rails", "test",
       "test/services/agentic/pipeline_test.rb",
       "test/services/agentic/providers/openai_test.rb",
+      "test/services/agentic/providers/sse_parser_test.rb",
       "test/services/agentic/providers/anthropic_test.rb",
       "test/services/agentic/telemetry/summary_test.rb",
       "test/models/user_test.rb"
@@ -308,6 +313,7 @@ COMMANDS = {
       "test/services/documents/prepare_pdf_test.rb",
       "test/services/documents/search_access_profile_test.rb",
       "test/services/documents/search_answer_citation_normalizer_test.rb",
+      "test/services/documents/streaming_answer_extractor_test.rb",
       "test/services/documents/upload_normalizer_test.rb",
       "test/services/agents/search_answer_generator_test.rb",
       "test/services/documents/vector_search_test.rb"

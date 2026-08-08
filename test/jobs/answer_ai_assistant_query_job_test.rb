@@ -8,9 +8,13 @@ class AnswerAiAssistantQueryJobTest < ActiveJob::TestCase
 
     def initialize(**initialization)
       self.class.initialization = initialization
+      @context = initialization.fetch(:context)
     end
 
-    def execute; end
+    def execute
+      @context.fetch(:answer_stream_callback).call("This draft is long enough to publish.")
+      @context.fetch(:answer_stream_callback).call("A throttled draft should not be published yet.")
+    end
 
     def to_response
       {
@@ -34,9 +38,12 @@ class AnswerAiAssistantQueryJobTest < ActiveJob::TestCase
   end
 
   class ExecutionFailurePipeline
-    def initialize(**); end
+    def initialize(context:, **)
+      @context = context
+    end
 
     def execute
+      @context.fetch(:answer_stream_callback).call("This retry draft is long enough to publish.")
       raise Agentic::Errors::ExecutionError, "Temporary provider failure"
     end
   end
@@ -65,9 +72,12 @@ class AnswerAiAssistantQueryJobTest < ActiveJob::TestCase
     assert_equal query.id, pipeline_run.context["ai_assistant_query_id"]
     assert_equal pipeline_run.to_global_id.to_s, SuccessfulPipeline.initialization.dig(:context, :pipeline_run_gid)
     assert_equal true, SuccessfulPipeline.initialization[:synthesize_answer]
-    assert_equal 2, broadcasts.size
+    assert_equal 3, broadcasts.size
+    assert_includes broadcasts.second.to_html, "This draft is long enough to publish."
+    assert_not_includes broadcasts.second.to_html, "A throttled draft should not be published yet."
     assert_equal "replace", broadcasts.last["action"]
     assert_includes broadcasts.last.to_html, "PaperBridge Answer"
+    assert_nil query.draft_answer
   end
 
   test "returns a retryable provider failure to queued and schedules another attempt" do
@@ -79,6 +89,7 @@ class AnswerAiAssistantQueryJobTest < ActiveJob::TestCase
 
     assert_predicate query.reload, :queued?
     assert_nil query.failed_at
+    assert_nil query.draft_answer
   end
 
   test "does not run an already completed query twice" do
@@ -137,8 +148,10 @@ class AnswerAiAssistantQueryJobTest < ActiveJob::TestCase
 
     def configured_job_class(pipeline_class)
       Class.new(AnswerAiAssistantQueryJob).tap do |job_class|
+        clock_values = [ 0.0, 0.01, 0.02 ]
         job_class.pipeline_class = pipeline_class
         job_class.llm_connection = Object.new
+        job_class.monotonic_clock = -> { clock_values.shift || clock_values.last || 0.02 }
       end
     end
 end

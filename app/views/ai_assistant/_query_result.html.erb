@@ -5,17 +5,30 @@
   </section>
 
   <% if ai_assistant_query.active? %>
-    <section class="rounded-2xl border border-primary/15 bg-primary/5 p-6">
-      <div class="flex items-start gap-3">
-        <%= pb_icon("brain", class_name: "mt-0.5 h-5 w-5 text-primary") %>
-        <div>
-          <p class="text-sm font-semibold text-primary">
-            <%= ai_assistant_query.processing? ? "PaperBridge is reading the records" : "Your question is in line" %>
-          </p>
-          <p class="mt-1 text-sm text-muted-foreground">You can stay on this page while the answer is prepared.</p>
+    <% if ai_assistant_query.draft_answer.present? %>
+      <section class="rounded-2xl border border-primary/10 bg-white p-6" data-testid="ai-assistant-draft">
+        <div class="flex items-center gap-2">
+          <%= pb_icon("brain", class_name: "h-4 w-4 text-primary") %>
+          <h2 class="text-sm font-semibold text-primary">Draft answer</h2>
         </div>
-      </div>
-    </section>
+        <p class="mt-4 whitespace-pre-wrap break-words text-sm leading-relaxed text-foreground"><%= ai_assistant_query.draft_answer %></p>
+        <p class="mt-4 text-xs text-muted-foreground">
+          PaperBridge is checking the sources. The final answer may change.
+        </p>
+      </section>
+    <% else %>
+      <section class="rounded-2xl border border-primary/15 bg-primary/5 p-6">
+        <div class="flex items-start gap-3">
+          <%= pb_icon("brain", class_name: "mt-0.5 h-5 w-5 text-primary") %>
+          <div>
+            <p class="text-sm font-semibold text-primary">
+              <%= ai_assistant_query.processing? ? "PaperBridge is reading the records" : "Your question is in line" %>
+            </p>
+            <p class="mt-1 text-sm text-muted-foreground">You can stay on this page while the answer is prepared.</p>
+          </div>
+        </div>
+      </section>
+    <% end %>
   <% elsif ai_assistant_query.failed? %>
     <section class="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-900">
       <p class="font-semibold">We couldn’t answer that right now</p>

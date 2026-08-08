@@ -177,6 +177,23 @@ class AiAssistantControllerTest < ActionDispatch::IntegrationTest
     assert_no_match(/PaperBridge Answer/, response.body)
   end
 
+  test "renders a streamed draft as escaped plain text" do
+    create_query(
+      state: :processing,
+      started_at: Time.current,
+      draft_answer: "Draft <script>alert('draft')</script>"
+    )
+    sign_in users(:family_admin)
+
+    get dependent_ai_assistant_path(dependents(:emma))
+
+    assert_response :success
+    assert_select "[data-testid='ai-assistant-draft']"
+    assert_includes Nokogiri::HTML(response.body).text, "Draft <script>alert('draft')</script>"
+    assert_not_includes response.body, "Draft <script>alert('draft')</script>"
+    assert_includes response.body, "PaperBridge is checking the sources"
+  end
+
   private
 
     def create_query(attributes = {})

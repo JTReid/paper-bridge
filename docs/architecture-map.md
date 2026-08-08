@@ -110,8 +110,9 @@ ported from Scoutspace.
 - `GET /dependents/:dependent_id/ai-assistant` is read-only. `POST` saves a
   queued query and enqueues `AnswerAiAssistantQueryJob`, which rechecks access,
   creates a `PipelineRun` with the query as its subject, runs
-  `Agentic::DocumentSearchPipeline`, and broadcasts state and the final answer
-  back to the dependent page through Turbo.
+  `Agentic::DocumentSearchPipeline`, streams escaped answer drafts, and
+  broadcasts state and the normalized final answer back to the dependent page
+  through Turbo.
 - The search pipeline embeds the user query with `text-embedding-3-large`,
   retrieves matching chunks through pgvector, and synthesizes a structured
   answer with citations using the configured search-answer LLM.

@@ -52,7 +52,7 @@
       <% end %>
     </section>
 
-    <div id="ai_assistant_result" aria-live="polite">
+    <div id="ai_assistant_result">
       <% if @ai_assistant_query.present? %>
         <%= render "ai_assistant/query_result", ai_assistant_query: @ai_assistant_query %>
       <% else %>

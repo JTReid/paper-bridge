@@ -44,6 +44,23 @@ class AiAssistantQueryTest < ActiveSupport::TestCase
     assert_empty query.source_documents_by_id
   end
 
+  test "keeps a completed answer when Turbo delivery fails" do
+    query = build_query
+    query.save!
+    query.define_singleton_method(:broadcast_replace_to) do |*, **|
+      raise "Cable is unavailable"
+    end
+
+    query.update!(
+      state: :completed,
+      answer: { answer: "A paid final answer.", citations: [], limitations: [] },
+      completed_at: Time.current
+    )
+
+    assert_predicate query.reload, :completed?
+    assert_equal "A paid final answer.", query.answer_payload[:answer]
+  end
+
   private
 
     def build_query(attributes = {})

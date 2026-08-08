@@ -1,9 +1,13 @@
 # frozen_string_literal: true
 
 class AnswerAiAssistantQueryJob < ApplicationJob
+  DRAFT_BROADCAST_INTERVAL = 0.2
+  MIN_INITIAL_DRAFT_LENGTH = 24
+
   queue_as :ai_assistant
 
   class_attribute :llm_connection, default: RestClient
+  class_attribute :monotonic_clock, default: -> { Process.clock_gettime(Process::CLOCK_MONOTONIC) }
   class_attribute :pipeline_class, default: Agentic::DocumentSearchPipeline
 
   limits_concurrency key: ->(query) { query }, duration: 10.minutes
@@ -21,7 +25,8 @@ class AnswerAiAssistantQueryJob < ApplicationJob
       started_at: ai_assistant_query.started_at || Time.current,
       completed_at: nil,
       failed_at: nil,
-      error_message: nil
+      error_message: nil,
+      draft_answer: nil
     )
 
     pipeline_run = PipelineRun.create!(
@@ -44,7 +49,8 @@ class AnswerAiAssistantQueryJob < ApplicationJob
       result_count: response[:result_count].to_i,
       completed_at: Time.current,
       failed_at: nil,
-      error_message: nil
+      error_message: nil,
+      draft_answer: nil
     )
   rescue Agentic::Errors::ConfigurationError => e
     Rails.logger.error(
@@ -92,8 +98,25 @@ class AnswerAiAssistantQueryJob < ApplicationJob
           account: ai_assistant_query.account,
           dependent: ai_assistant_query.dependent
         ),
+        answer_stream_callback: answer_stream_callback(ai_assistant_query),
         limit: 10
       }
+    end
+
+    def answer_stream_callback(ai_assistant_query)
+      last_published_at = monotonic_clock.call
+
+      lambda do |draft_answer|
+        now = monotonic_clock.call
+        first_draft = ai_assistant_query.draft_answer.blank?
+        enough_for_first_draft = draft_answer.length >= MIN_INITIAL_DRAFT_LENGTH
+        interval_elapsed = now - last_published_at >= DRAFT_BROADCAST_INTERVAL
+        next if first_draft && !enough_for_first_draft
+        next unless first_draft || interval_elapsed
+
+        ai_assistant_query.update!(draft_answer: draft_answer)
+        last_published_at = now
+      end
     end
 
     def mark_failed(ai_assistant_query)
@@ -102,6 +125,7 @@ class AnswerAiAssistantQueryJob < ApplicationJob
       ai_assistant_query.assign_attributes(
         state: :failed,
         answer: {},
+        draft_answer: nil,
         failed_at: Time.current,
         completed_at: nil,
         error_message: "We couldn’t answer that right now. Please try again in a moment."
@@ -114,6 +138,7 @@ class AnswerAiAssistantQueryJob < ApplicationJob
 
       ai_assistant_query.update!(
         state: :queued,
+        draft_answer: nil,
         completed_at: nil,
         failed_at: nil,
         error_message: nil

@@ -6,6 +6,15 @@ module Agentic
       include Errors
       include LlmCallTelemetry
 
+      class StreamingHttpError < ExecutionError
+        attr_reader :http_code
+
+        def initialize(http_code)
+          @http_code = http_code
+          super("OpenAI streaming request failed with HTTP #{http_code}")
+        end
+      end
+
       ENDPOINTS = {
         chat: "https://api.openai.com/v1/chat/completions",
         embeddings: "https://api.openai.com/v1/embeddings"
@@ -37,6 +46,8 @@ module Agentic
       end
 
       def call
+        return call_stream if streaming?
+
         request_timeout = requirements[:timeout] || 90
         request_payload = payload.to_json
 
@@ -60,6 +71,118 @@ module Agentic
       end
 
       private
+
+      def call_stream
+        request_timeout = requirements[:timeout] || 90
+        request_payload = payload.to_json
+        reset_stream_state
+        parser = SseParser.new { |event| process_stream_event(event) }
+
+        @http_response = measure_api_call do
+          connection::Request.execute(
+            method: :post,
+            url: endpoint_path,
+            payload: request_payload,
+            headers: headers,
+            timeout: request_timeout,
+            read_timeout: request_timeout,
+            block_response: proc { |response| consume_stream_response(response, parser) }
+          )
+        end
+
+        @raw_response = synthetic_stream_response
+        validate_completed_stream!
+        @raw_response
+      end
+
+      def consume_stream_response(response, parser)
+        status = response.code.to_i
+
+        unless status.between?(200, 299)
+          response.read_body { |_chunk| }
+          raise StreamingHttpError.new(status)
+        end
+
+        response.read_body { |chunk| parser.feed(chunk) }
+        parser.finish
+      end
+
+      def process_stream_event(event)
+        if event == "[DONE]"
+          @stream_done = true
+          return
+        end
+
+        payload = JSON.parse(event)
+        raise ExecutionError, "OpenAI streaming API returned an error" if payload["error"]
+
+        @stream_usage = payload["usage"] if payload["usage"].is_a?(Hash)
+        choice = Array(payload["choices"]).first
+        return unless choice
+
+        delta = choice["delta"] || {}
+        append_stream_content(delta["content"])
+        @stream_refusal << delta["refusal"] if delta["refusal"].is_a?(String)
+        @stream_finish_reason = choice["finish_reason"] if choice["finish_reason"].present?
+      rescue JSON::ParserError
+        raise ExecutionError, "OpenAI returned a malformed streaming event"
+      end
+
+      def append_stream_content(content_delta)
+        return unless content_delta.is_a?(String)
+
+        @stream_content << content_delta
+        deliver_content_delta(content_delta)
+      end
+
+      def deliver_content_delta(content_delta)
+        return unless @content_delta_callback
+
+        @content_delta_callback.call(content_delta)
+      rescue StandardError => e
+        Rails.logger.warn("openai_stream_callback_failed error_class=#{e.class.name}")
+        @content_delta_callback = nil
+      end
+
+      def validate_completed_stream!
+        raise ExecutionError, "OpenAI stream ended before completion" unless @stream_done
+        raise ExecutionError, "OpenAI refused the streaming request" if @stream_refusal.present?
+
+        case @stream_finish_reason
+        when "stop"
+          nil
+        when "length"
+          raise ExecutionError, "OpenAI stream reached its output limit"
+        when "content_filter"
+          raise ExecutionError, "OpenAI stream was stopped by a content filter"
+        else
+          raise ExecutionError, "OpenAI stream ended without a successful finish reason"
+        end
+      end
+
+      def synthetic_stream_response
+        {
+          "choices" => [
+            {
+              "message" => {
+                "content" => @stream_content,
+                "refusal" => @stream_refusal.presence
+              },
+              "finish_reason" => @stream_finish_reason
+            }
+          ],
+          "usage" => @stream_usage
+        }
+      end
+
+      def reset_stream_state
+        @content_delta_callback = requirements[:on_content_delta]
+        @stream_content = +""
+        @stream_refusal = +""
+        @stream_usage = {}
+        @stream_finish_reason = nil
+        @stream_done = false
+      end
 
       def provider_name
         "openai"
@@ -112,8 +235,13 @@ module Agentic
 
         attributes.merge!(policy_schema) if requirements[:response_format] == "structured_json"
         attributes.merge!(max_tokens) if requirements[:max_tokens]
+        attributes.merge!(stream: true, stream_options: { include_usage: true }) if streaming?
 
         attributes
+      end
+
+      def streaming?
+        operation_type == :chat && requirements[:on_content_delta].respond_to?(:call)
       end
 
       def policy_schema

@@ -21,8 +21,27 @@ lifecycle.
 - Turbo broadcasts replace the saved query result when its state changes. A
   final answer survives reload, and reloading the page does not run the query
   again.
-- Phase 1 reserves `draft_answer` for streaming work. It broadcasts state and
-  the final persisted answer, not token-by-token output.
+- The product job opts the OpenAI search-answer call into server-sent event
+  streaming. Other agents and retrieval calls keep their existing buffered
+  provider behavior.
+- The stream keeps strict structured JSON enabled and requests the final usage
+  chunk. The provider rebuilds the normal response shape so final parsing,
+  token telemetry, cost tracking, and citation normalization keep using the
+  existing path.
+- Only progressive plain text from the first top-level `answer` field is saved
+  to `draft_answer`. Draft writes and Turbo replacements are batched, escaped as
+  plain text, and never expose raw SSE events or incomplete JSON.
+- The current structured schema orders `answer`, `citations`, and `limitations`.
+  Draft extraction is anchored to that top-level order and fails closed if the
+  contract changes.
+- Drafts do not show source links. The completed update clears the draft and
+  replaces it with the fully parsed answer after citations have been allowlisted
+  and rebuilt from canonical document records.
+- Missing completion markers, refusals, output-limit stops, content-filter
+  stops, malformed events, and non-success HTTP responses cannot become
+  completed answers. Retry and failure paths clear provisional text.
+- Turbo delivery is best-effort. A Cable failure cannot turn a paid, persisted
+  final answer into a failed query.
 - `Agentic::DocumentSearchPipeline` can run retrieval-only for debugging, or
   retrieval plus answer synthesis for the product UI.
 - In answer mode, it executes `Agents::QueryEmbedder`,

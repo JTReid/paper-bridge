@@ -93,7 +93,8 @@ seeds, chunk persistence, embedding persistence, or chunk-sourced timeline event
 persistence. The same command also covers the dependent-scoped AI assistant:
 read-only `GET /dependents/:dependent_id/ai-assistant`, durable POST submission
 through `AiAssistantQuery`, background execution through
-`AnswerAiAssistantQueryJob`, final Turbo delivery,
+`AnswerAiAssistantQueryJob`, OpenAI SSE parsing, progressive plain-text drafts,
+final Turbo delivery,
 `Agentic::DocumentSearchPipeline`, `Agents::QueryEmbedder`,
 `Agents::VectorRetriever`, `Agents::SearchAnswerGenerator`, account- and
 dependent-scoped vector retrieval, role-derived chunk-label filtering, and

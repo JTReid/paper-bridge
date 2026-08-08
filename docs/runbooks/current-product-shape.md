@@ -39,7 +39,7 @@ operational harness checks until matching implementation exists.
   therapy, insurance, and general document categories.
 - Dependent-scoped AI assistant with durable question submission,
   queued/processing/completed/failed states, background execution, final Turbo
-  replacement, and reload-safe answers.
+  replacement, progressive plain-text answer drafts, and reload-safe answers.
 - Account-scoped and category-scoped vector search authorization.
 - Email-based document sharing through `ShareEvent`, `SharedDocument`, and
   `DocumentShareMailer`.
