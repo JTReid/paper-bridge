@@ -6,6 +6,8 @@ module Agents
     include PipelineNotifiable
     include Agentic::Instrumented
 
+    MAX_COMPLETION_TOKENS = 50_000
+
     def execute
       if search_results.empty?
         set_empty_response
@@ -22,7 +24,7 @@ module Agents
         model: llm.name,
         system: prompt.system_directive,
         prompt: answer_prompt,
-        max_tokens: 1_200,
+        max_tokens: MAX_COMPLETION_TOKENS,
         response_format: "structured_json",
         schema_name: "search_answer"
       }
