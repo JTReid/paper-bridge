@@ -36,6 +36,21 @@ class AiAssistantQuery < ApplicationRecord
     queued? || processing?
   end
 
+  def enqueue_answer!
+    with_lock do
+      return false unless queued? && enqueued_at.nil?
+
+      enqueued_job = AnswerAiAssistantQueryJob.perform_later(self)
+      unless enqueued_job
+        raise ActiveJob::EnqueueError, "Ask PaperBridge job could not be enqueued"
+      end
+
+      update!(enqueued_at: Time.current)
+    end
+
+    true
+  end
+
   private
 
     def normalize_question

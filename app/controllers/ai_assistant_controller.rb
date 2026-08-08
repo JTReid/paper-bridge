@@ -24,15 +24,26 @@ class AiAssistantController < ApplicationController
       return
     end
 
-    AnswerAiAssistantQueryJob.perform_later(ai_assistant_query)
     @ai_assistant_query = ai_assistant_query
 
     respond_to do |format|
       format.turbo_stream
       format.html do
+        ai_assistant_query.enqueue_answer!
         redirect_to dependent_ai_assistant_path(@dependent), status: :see_other
       end
     end
+  end
+
+  def start
+    ai_assistant_query = current_user.ai_assistant_queries.find_by!(
+      id: params[:id],
+      account: current_account,
+      dependent: @dependent
+    )
+    started = ai_assistant_query.enqueue_answer!
+
+    render json: { started: started }, status: :accepted
   end
 
   private

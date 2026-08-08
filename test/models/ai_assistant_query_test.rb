@@ -61,6 +61,31 @@ class AiAssistantQueryTest < ActiveSupport::TestCase
     assert_equal "A paid final answer.", query.answer_payload[:answer]
   end
 
+  test "enqueues the answer job only once" do
+    query = build_query
+    query.save!
+
+    assert_enqueued_with(job: AnswerAiAssistantQueryJob, args: [ query ], queue: "ai_assistant") do
+      assert query.enqueue_answer!
+    end
+
+    assert_not_nil query.reload.enqueued_at
+    assert_no_enqueued_jobs do
+      assert_not query.enqueue_answer!
+    end
+  end
+
+  test "allows a start retry when Active Job rejects the enqueue" do
+    query = build_query
+    query.save!
+
+    with_stubbed_singleton_method(AnswerAiAssistantQueryJob, :perform_later, false) do
+      assert_raises(ActiveJob::EnqueueError) { query.enqueue_answer! }
+    end
+
+    assert_nil query.reload.enqueued_at
+  end
+
   private
 
     def build_query(attributes = {})

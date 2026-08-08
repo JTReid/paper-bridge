@@ -8,8 +8,13 @@ lifecycle.
 - `GET /dependents/:dependent_id/ai-assistant` is authenticated and read-only.
   Query-string parameters never start AI work.
 - `POST /dependents/:dependent_id/ai-assistant` strips and saves the question as
-  a queued `AiAssistantQuery` owned by the current account, dependent, and user,
-  then enqueues `AnswerAiAssistantQueryJob`.
+  a queued `AiAssistantQuery` owned by the current account, dependent, and user.
+  For Turbo submissions, the browser installs that durable result first and
+  then calls the query's idempotent start endpoint to enqueue
+  `AnswerAiAssistantQueryJob`. This keeps a fast worker update from arriving
+  before its replaceable result exists. Plain HTML submissions enqueue before
+  redirecting. The start marker is saved only after Active Job accepts the job,
+  so an enqueue rejection remains retryable.
 - The job rechecks that the dependent belongs to the account and that the user
   still belongs to the account before making a provider call.
 - The durable state flow is `queued` to `processing` to `completed`. Retryable
@@ -42,6 +47,20 @@ lifecycle.
   completed answers. Retry and failure paths clear provisional text.
 - Turbo delivery is best-effort. A Cable failure cannot turn a paid, persisted
   final answer into a failed query.
+- The dependent page gives immediate local feedback before the POST returns,
+  then follows the saved query through queued, searching, drafting, completed,
+  or failed UI phases.
+- While one query is active, the composer and suggested-question buttons are
+  locked in that browser tab. A visible timer starts at submission time, gives
+  a short reassurance after ten seconds, and explains after thirty seconds that
+  the user can leave while PaperBridge keeps working.
+- The page says that most answers begin appearing within about 30 seconds. It
+  does not promise a hard deadline.
+- The result itself is not a live region because repeated draft replacements
+  would make screen readers reread the growing answer. A separate polite status
+  announcement reports phase changes and longer waits.
+- Turbo page caching is disabled for this screen, so returning to it reloads the
+  latest durable query instead of restoring a stale in-progress snapshot.
 - `Agentic::DocumentSearchPipeline` can run retrieval-only for debugging, or
   retrieval plus answer synthesis for the product UI.
 - In answer mode, it executes `Agents::QueryEmbedder`,

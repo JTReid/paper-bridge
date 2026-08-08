@@ -190,6 +190,9 @@ OpenAI SSE parsing, safe progressive answer extraction, batched draft delivery,
 safe failure handling, final Turbo result broadcasts, structured answer
 synthesis with citations, pipeline records, and exact final usage telemetry with
 fake PDF tooling and fake LLM/embedding calls.
+The browser `workflow ai` check owns immediate progress, queued-state delivery,
+profile-workspace continuity, duplicate-submit locking, and targeted axe
+coverage without starting a worker or calling a live model.
 Image ingestion intentionally stops after extraction, classification, chunk
 creation, and embedding; it does not create timeline events or structured
 prescription fields. The `pdf-tools` command checks local Poppler/Tesseract

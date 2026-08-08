@@ -49,6 +49,7 @@ AGENTIC_CORE_FILES = %w[
 DOCUMENT_PIPELINE_FILES = %w[
   app/controllers/ai_assistant_controller.rb
   app/helpers/ai_assistant_helper.rb
+  app/javascript/controllers/ai_assistant_query_controller.js
   app/jobs/answer_ai_assistant_query_job.rb
   app/jobs/process_image_document_job.rb
   app/jobs/process_document_job.rb
@@ -85,6 +86,7 @@ DOCUMENT_PIPELINE_FILES = %w[
   app/views/ai_assistant/_query_result.html.erb
   app/views/ai_assistant/create.turbo_stream.erb
   db/migrate/20260808000100_create_ai_assistant_queries.rb
+  db/migrate/20260808000200_add_enqueued_at_to_ai_assistant_queries.rb
   db/migrate/20260614033907_add_summary_to_documents.rb
   db/migrate/20260614040236_create_document_pages.rb
   db/migrate/20260614040243_add_preparation_to_documents.rb
@@ -112,6 +114,7 @@ DOCUMENT_PIPELINE_FILES = %w[
   test/services/documents/upload_normalizer_test.rb
   test/services/documents/vector_search_test.rb
   test/services/agents/search_answer_generator_test.rb
+  tests/e2e/product/ai_assistant.spec.js
 ].freeze
 
 PROVIDER_FILES = %w[

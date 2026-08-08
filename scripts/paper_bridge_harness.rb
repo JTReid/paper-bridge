@@ -12,6 +12,7 @@ CURRENT_PRODUCT_FILES = %w[
   db/schema.rb
   db/migrate/20260719000100_create_appointments.rb
   db/migrate/20260808000100_create_ai_assistant_queries.rb
+  db/migrate/20260808000200_add_enqueued_at_to_ai_assistant_queries.rb
   docs/runbooks/current-product-shape.md
   docs/runbooks/care-team-access.md
   docs/runbooks/billing.md
@@ -41,6 +42,7 @@ CURRENT_PRODUCT_FILES = %w[
   app/helpers/ai_assistant_helper.rb
   app/jobs/answer_ai_assistant_query_job.rb
   app/javascript/controllers/document_search_controller.js
+  app/javascript/controllers/ai_assistant_query_controller.js
   app/javascript/controllers/appointment_dialog_controller.js
   app/javascript/controllers/family_calendar_controller.js
   app/models/account.rb
@@ -176,6 +178,7 @@ RUBOCOP_PATHS = %w[
   config/routes.rb
   db/migrate/20260719000100_create_appointments.rb
   db/migrate/20260808000100_create_ai_assistant_queries.rb
+  db/migrate/20260808000200_add_enqueued_at_to_ai_assistant_queries.rb
   app/controllers/application_controller.rb
   app/controllers/concerns/calendar_workspace.rb
   app/controllers/concerns/subscription_gate.rb

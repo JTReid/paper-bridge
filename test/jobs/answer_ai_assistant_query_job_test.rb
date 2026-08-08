@@ -1,6 +1,9 @@
 require "test_helper"
+require "turbo/broadcastable/test_helper"
 
 class AnswerAiAssistantQueryJobTest < ActiveJob::TestCase
+  include Turbo::Broadcastable::TestHelper
+
   class SuccessfulPipeline
     class << self
       attr_accessor :initialization

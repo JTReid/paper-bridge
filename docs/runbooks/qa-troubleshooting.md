@@ -156,7 +156,7 @@ Named workflow modes:
 | `sharing` | Opens the share modal, selects a care team recipient, submits a document share, and verifies the browser success path without SMTP capture. |
 | `documents` | Exercises original-filename search, category-card and chip filtering, filter-aware upload defaults, successful multi-document upload, and document metadata editing. Required-file and blank-title validation live in `negative documents`. |
 | `care-team` | Verifies the care-team list, active member permissions, invite form, and successful invite creation with category permissions. |
-| `ai` | Opens the dependent-scoped AI assistant and verifies the current static page state without submitting a query. |
+| `ai` | Opens the dependent-scoped AI assistant, submits a synthetic question, verifies immediate and queued states without leaving the profile, and runs an axe check. |
 | `calendar` | Opens a profile edit page, leaves work unfinished, opens the family calendar panel without changing pages, creates and emails a profile-owned appointment, closes the panel, and verifies the unfinished edit remains. It also covers the full-page account calendar, Central Time rendering, read-only details, and previous/next month navigation. |
 
 Boundaries:
@@ -182,9 +182,9 @@ Live-service caveats:
 - Billing workflow coverage uses synthetic subscription records and form
   attributes. It does not call live Stripe Checkout, the Customer Portal,
   Stripe webhooks, or the Stripe CLI.
-- AI assistant workflow coverage only verifies the browser surface loads. It
-  does not submit prompts, call a live LLM, generate embeddings, or prove vector
-  retrieval.
+- AI assistant workflow coverage submits and persists a queued question through
+  the test adapter. It does not run a worker, call a live LLM, generate
+  embeddings, prove vector retrieval, or wait for a final answer.
 - Seeded edge-state workflow coverage is not part of Phase 3 yet. When added,
   it should use synthetic records and avoid live document ingestion, background
   workers, OCR, PDF tooling, embeddings, or summary generation.

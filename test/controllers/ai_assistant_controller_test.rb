@@ -31,8 +31,12 @@ class AiAssistantControllerTest < ActionDispatch::IntegrationTest
     assert_includes response.body, "Ask PaperBridge"
     assert_includes response.body, "Suggested questions"
     assert_includes response.body, "Based on your records"
+    assert_includes response.body, "Most answers begin appearing within about 30 seconds"
     assert_select "form[method='post'][data-testid='ai-assistant-form']"
     assert_select "turbo-cable-stream-source"
+    assert_select "meta[name='turbo-cache-control'][content='no-cache']"
+    assert_select "[data-controller='ai-assistant-query'][data-ai-assistant-query-reassure-after-value='10000'][data-ai-assistant-query-long-wait-after-value='30000']"
+    assert_select "[data-ai-assistant-query-target='announcer'][aria-live='polite']"
 
     visible_text = Nokogiri::HTML(response.body).text.squish
     assert_no_match(/\bchunks?\b|\bembeddings?\b|\bretrieval\b|Run #/i, visible_text)
@@ -67,21 +71,60 @@ class AiAssistantControllerTest < ActionDispatch::IntegrationTest
     assert_equal users(:family_admin), query.user
     assert_equal dependent, query.dependent
     assert_predicate query, :queued?
+    assert_not_nil query.enqueued_at
     assert_equal 0, PipelineRun.where(subject: query).count
   end
 
-  test "turbo post immediately renders the queued query" do
+  test "turbo post installs the queued query before requesting background work" do
     dependent = dependents(:emma)
     sign_in users(:family_admin)
 
-    post dependent_ai_assistant_path(dependent),
-      params: { q: "What changed?" },
-      headers: { "Accept" => "text/vnd.turbo-stream.html" }
+    assert_no_enqueued_jobs do
+      post dependent_ai_assistant_path(dependent),
+        params: { q: "What changed?" },
+        headers: { "Accept" => "text/vnd.turbo-stream.html" }
+    end
 
     assert_response :success
     assert_select "turbo-stream[action='update'][target='ai_assistant_result']"
-    assert_includes response.body, "Your question is in line"
+    assert_includes response.body, "Your question is queued"
     assert_includes response.body, "What changed?"
+    query = AiAssistantQuery.order(:id).last
+    start_path = start_dependent_ai_assistant_query_path(dependent, query)
+    assert_select "[data-ai-assistant-query-target='query'][data-phase='queued'][data-active='true'][data-start-url='#{start_path}']"
+    assert_nil query.enqueued_at
+  end
+
+  test "start enqueues a saved query once" do
+    query = create_query
+    sign_in users(:family_admin)
+
+    assert_enqueued_with(job: AnswerAiAssistantQueryJob, args: [ query ], queue: "ai_assistant") do
+      post start_dependent_ai_assistant_query_path(query.dependent, query)
+    end
+
+    assert_response :accepted
+    assert_equal true, response.parsed_body["started"]
+    assert_not_nil query.reload.enqueued_at
+
+    assert_no_enqueued_jobs do
+      post start_dependent_ai_assistant_query_path(query.dependent, query)
+    end
+
+    assert_response :accepted
+    assert_equal false, response.parsed_body["started"]
+  end
+
+  test "another user cannot start a saved query" do
+    query = create_query
+    sign_in users(:account_member)
+
+    assert_no_enqueued_jobs do
+      post start_dependent_ai_assistant_query_path(query.dependent, query)
+    end
+
+    assert_response :not_found
+    assert_nil query.reload.enqueued_at
   end
 
   test "blank post does not save or enqueue a query" do
@@ -116,7 +159,20 @@ class AiAssistantControllerTest < ActionDispatch::IntegrationTest
 
     assert_response :success
     assert_includes response.body, query.question
-    assert_includes response.body, "Your question is in line"
+    assert_includes response.body, "Your question is queued"
+    start_path = start_dependent_ai_assistant_query_path(query.dependent, query)
+    assert_select "[data-testid='ai-assistant-query-result'][data-phase='queued'][data-active='true'][data-start-url='#{start_path}']"
+  end
+
+  test "get does not restart a query that has already been enqueued" do
+    query = create_query(enqueued_at: Time.current)
+    sign_in users(:family_admin)
+
+    get dependent_ai_assistant_path(query.dependent)
+
+    assert_response :success
+    assert_select "[data-testid='ai-assistant-query-result'][data-phase='queued'][data-active='true']"
+    assert_select "[data-testid='ai-assistant-query-result'][data-start-url]", count: 0
   end
 
   test "renders validated inline citations from a completed query" do
@@ -189,6 +245,7 @@ class AiAssistantControllerTest < ActionDispatch::IntegrationTest
 
     assert_response :success
     assert_select "[data-testid='ai-assistant-draft']"
+    assert_select "[data-testid='ai-assistant-query-result'][data-phase='drafting'][data-active='true']"
     assert_includes Nokogiri::HTML(response.body).text, "Draft <script>alert('draft')</script>"
     assert_not_includes response.body, "Draft <script>alert('draft')</script>"
     assert_includes response.body, "PaperBridge is checking the sources"

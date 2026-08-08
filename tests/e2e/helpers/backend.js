@@ -17,6 +17,26 @@ export function setAccountSubscription(accountName, attributes) {
   );
 }
 
+export function clearAiAssistantQueries(accountName) {
+  runRailsRunner(
+    `
+      account = Account.find_by!(name: ENV.fetch("QA_ACCOUNT_NAME"))
+      AiAssistantQuery.where(account: account).find_each(&:destroy!)
+    `,
+    { QA_ACCOUNT_NAME: accountName },
+  );
+}
+
+export function resetLatestAiAssistantQueryStart(accountName) {
+  runRailsRunner(
+    `
+      account = Account.find_by!(name: ENV.fetch("QA_ACCOUNT_NAME"))
+      account.ai_assistant_queries.order(created_at: :desc).first!.update!(enqueued_at: nil)
+    `,
+    { QA_ACCOUNT_NAME: accountName },
+  );
+}
+
 function runRailsRunner(code, env = {}) {
   execFileSync('bin/rails', ['runner', code], {
     cwd: process.cwd(),

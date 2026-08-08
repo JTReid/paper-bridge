@@ -108,8 +108,10 @@ ported from Scoutspace.
 - `AiAssistantQuery` durably owns one account-, dependent-, and user-scoped
   question, its lifecycle state, and its final answer.
 - `GET /dependents/:dependent_id/ai-assistant` is read-only. `POST` saves a
-  queued query and enqueues `AnswerAiAssistantQueryJob`, which rechecks access,
-  creates a `PipelineRun` with the query as its subject, runs
+  queued query. Turbo installs that result before an idempotent start request
+  enqueues `AnswerAiAssistantQueryJob`, preventing fast worker broadcasts from
+  racing ahead of the page. The job rechecks access, creates a `PipelineRun`
+  with the query as its subject, runs
   `Agentic::DocumentSearchPipeline`, streams escaped answer drafts, and
   broadcasts state and the normalized final answer back to the dependent page
   through Turbo.

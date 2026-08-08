@@ -29,8 +29,8 @@ ruby scripts/paper_bridge_qa_harness.rb negative all
   silently restoring the filename.
 - Mobile QA verifies blank recipient sharing and blank-email care team invites
   on a narrow viewport.
-- Controller coverage verifies AI assistant pipeline failures render the
-  intended fallback UI.
+- Job and controller coverage verifies persisted AI assistant failures render
+  the intended fallback UI without exposing provider errors.
 
 ## Recommendation
 
