@@ -2,3 +2,8 @@ emma_therapy:
   dependent: emma
   scheduled_at: <%= 1.month.from_now.change(hour: 14, min: 30, sec: 0).to_fs(:db) %>
   description: Speech therapy appointment
+
+noah_checkup:
+  dependent: noah
+  scheduled_at: <%= 1.month.from_now.change(hour: 9, min: 0, sec: 0).to_fs(:db) %>
+  description: Dental checkup

@@ -17,6 +17,7 @@ CURRENT_PRODUCT_FILES = %w[
   docs/runbooks/document-sharing.md
   scripts/paper_bridge_harness.rb
   scripts/agentic_pipeline_harness.rb
+  app/controllers/concerns/calendar_workspace.rb
   app/controllers/concerns/subscription_gate.rb
   app/controllers/application_controller.rb
   app/controllers/home_controller.rb
@@ -39,6 +40,7 @@ CURRENT_PRODUCT_FILES = %w[
   app/helpers/ai_assistant_helper.rb
   app/javascript/controllers/document_search_controller.js
   app/javascript/controllers/appointment_dialog_controller.js
+  app/javascript/controllers/family_calendar_controller.js
   app/models/account.rb
   app/models/account_membership.rb
   app/models/user.rb
@@ -55,6 +57,8 @@ CURRENT_PRODUCT_FILES = %w[
   app/mailers/appointment_mailer.rb
   app/views/care_team_memberships/index.html.erb
   app/views/calendar/show.html.erb
+  app/views/calendar/_workspace.html.erb
+  app/views/calendar/_appointment_button.html.erb
   app/views/appointment_mailer/share.html.erb
   app/views/appointment_mailer/share.text.erb
   app/views/dashboard/index.html.erb
@@ -80,6 +84,7 @@ CURRENT_PRODUCT_FILES = %w[
   test/controllers/stripe_webhooks_controller_test.rb
   test/fixtures/billing_subscriptions.yml
   test/fixtures/appointments.yml
+  test/fixtures/dependents.yml
   test/models/account_test.rb
   test/models/user_test.rb
   test/models/dependent_test.rb
@@ -98,6 +103,8 @@ CURRENT_PRODUCT_FILES = %w[
   test/helpers/ai_assistant_helper_test.rb
   tests/e2e/product/document_management.spec.js
   tests/e2e/product/calendar.spec.js
+  tests/e2e/product/accessibility_suite.spec.js
+  tests/e2e/product/mobile_suite.spec.js
 ].freeze
 
 FOUNDATION_TESTS = %w[
@@ -159,6 +166,7 @@ RUBOCOP_PATHS = %w[
   config/routes.rb
   db/migrate/20260719000100_create_appointments.rb
   app/controllers/application_controller.rb
+  app/controllers/concerns/calendar_workspace.rb
   app/controllers/concerns/subscription_gate.rb
   app/controllers/home_controller.rb
   app/controllers/dashboard_controller.rb

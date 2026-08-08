@@ -56,6 +56,28 @@ test('active product surfaces pass axe checks', async ({ page }) => {
   await expect(page.getByRole('heading', { name: 'Emma Greenfield' })).toBeVisible();
   await expectAccessible(page);
 
+  const calendarTrigger = page.getByTestId('nav-calendar');
+  await calendarTrigger.click();
+  const familyCalendar = page.getByTestId('family-calendar-dialog');
+  await expect(familyCalendar).toBeVisible();
+
+  const calendarFrame = familyCalendar.getByTestId('family-calendar-frame');
+  await expect(calendarFrame.getByTestId('family-calendar-content')).toBeVisible();
+  await expectAccessible(page, { include: ['[data-testid="family-calendar-dialog"]'] });
+
+  await calendarFrame.getByTestId('calendar-next-month').click();
+  const appointment = calendarFrame.locator('button[data-testid^="appointment-"]').first();
+  await expect(appointment).toBeVisible();
+  await appointment.click();
+  await expect(calendarFrame.getByTestId('appointment-dialog')).toBeVisible();
+  await expectAccessible(page, { include: ['[data-testid="appointment-dialog"]'] });
+  await page.keyboard.press('Escape');
+  await expect(calendarFrame.getByTestId('appointment-dialog')).toBeHidden();
+  await expect(familyCalendar).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(familyCalendar).toBeHidden();
+  await expect(calendarTrigger).toBeFocused();
+
   await page.getByTestId('dependent-documents-link').click();
   await expect(page.getByRole('heading', { name: "Emma Greenfield's Documents" })).toBeVisible();
   await expectAccessible(page);

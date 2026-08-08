@@ -62,4 +62,71 @@ class CalendarControllerTest < ActionDispatch::IntegrationTest
     assert_select "[data-testid='appointment-#{outside_appointment.id}']", count: 0
     assert_not_includes response.body, outside_appointment.description
   end
+
+  test "renders the family calendar panel in a dependent workspace with all account appointments" do
+    dependent = dependents(:emma)
+    sibling = dependents(:noah)
+    emma_appointment = dependent.appointments.create!(
+      scheduled_at: Time.zone.local(2030, 7, 22, 14, 30),
+      description: "Emma speech therapy"
+    )
+    sibling_appointment = sibling.appointments.create!(
+      scheduled_at: Time.zone.local(2030, 7, 23, 9, 0),
+      description: "Noah dental checkup"
+    )
+    outside_appointment = dependents(:other_dependent).appointments.create!(
+      scheduled_at: Time.zone.local(2030, 7, 24, 10, 0),
+      description: "Outside account appointment"
+    )
+    sign_in users(:family_admin)
+
+    get calendar_path(month: "2030-07", calendar_context_id: dependent.id, panel: 1),
+      headers: { "Turbo-Frame" => CalendarWorkspace::FAMILY_CALENDAR_FRAME_ID }
+
+    assert_response :success
+    assert_select "turbo-frame##{CalendarWorkspace::FAMILY_CALENDAR_FRAME_ID}[data-testid='family-calendar-frame']"
+    assert_select "[data-testid='app-shell']", count: 0
+    assert_select "select[data-testid='appointment-dependent'] option[selected][value='#{dependent.id}']", text: dependent.name
+    assert_select "[data-testid='appointment-#{emma_appointment.id}']", text: /Emma Greenfield.*Emma speech therapy/m
+    assert_select "[data-testid='appointment-#{sibling_appointment.id}']", text: /Noah Greenfield.*Noah dental checkup/m
+    assert_select "[data-testid='appointment-#{outside_appointment.id}']", count: 0
+    assert_not_includes response.body, outside_appointment.description
+    assert_select "a[data-testid='calendar-previous-month'][href='#{calendar_path(calendar_context_id: dependent.id, panel: 1, month: "2030-06")}']"
+    assert_select "a[data-testid='calendar-today'][href='#{calendar_path(calendar_context_id: dependent.id, panel: 1)}']"
+    assert_select "a[data-testid='calendar-next-month'][href='#{calendar_path(calendar_context_id: dependent.id, panel: 1, month: "2030-08")}']"
+    assert_select "form[data-testid='appointment-form'][action='#{appointments_path(calendar_context_id: dependent.id, panel: 1)}']"
+    assert_select "form[data-testid='appointment-email-form'][action='#{appointment_emails_path(calendar_context_id: dependent.id, panel: 1)}']"
+  end
+
+  test "does not open a family calendar panel for a dependent from another account" do
+    sign_in users(:family_admin)
+
+    get calendar_path(calendar_context_id: dependents(:other_dependent).id, panel: 1),
+      headers: { "Turbo-Frame" => CalendarWorkspace::FAMILY_CALENDAR_FRAME_ID }
+
+    assert_response :not_found
+  end
+
+  test "counts only appointments in the requested month" do
+    Appointment.delete_all
+
+    in_month = dependents(:emma).appointments.create!(
+      scheduled_at: Time.zone.local(2030, 7, 22, 14, 30),
+      description: "July appointment"
+    )
+    adjacent_month = dependents(:emma).appointments.create!(
+      scheduled_at: Time.zone.local(2030, 6, 30, 9, 0),
+      description: "June appointment"
+    )
+    sign_in users(:family_admin)
+
+    get calendar_path(month: "2030-07")
+
+    assert_response :success
+    assert_select "#calendar-month-heading + p", text: "1 appointment this month"
+    assert_select "[data-testid='calendar-grid'] [data-testid='appointment-#{in_month.id}']"
+    assert_select "[data-testid='calendar-grid'] [data-testid='appointment-#{adjacent_month.id}']"
+    assert_select "[data-testid='calendar-agenda'] [data-testid='agenda-appointment-#{in_month.id}']"
+    assert_select "[data-testid='calendar-agenda'] [data-testid='agenda-appointment-#{adjacent_month.id}']", count: 0
+  end
 end

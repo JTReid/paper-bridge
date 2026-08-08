@@ -70,4 +70,63 @@ class AppointmentsControllerTest < ActionDispatch::IntegrationTest
 
     assert_response :not_found
   end
+
+  test "creates an appointment for another profile without losing the family calendar context" do
+    calendar_context = dependents(:emma)
+    appointment_dependent = dependents(:noah)
+    sign_in users(:family_admin)
+
+    assert_difference -> { appointment_dependent.appointments.count }, 1 do
+      post appointments_path(calendar_context_id: calendar_context.id, panel: 1), params: {
+        appointment: {
+          dependent_id: appointment_dependent.id,
+          scheduled_at: "2030-08-05T09:15",
+          description: "Panel occupational therapy"
+        }
+      }, headers: { "Turbo-Frame" => CalendarWorkspace::FAMILY_CALENDAR_FRAME_ID }
+    end
+
+    assert_response :see_other
+    assert_redirected_to calendar_path(month: "2030-08", calendar_context_id: calendar_context.id, panel: 1)
+    created_appointment = appointment_dependent.appointments.find_by!(description: "Panel occupational therapy")
+    assert_equal appointment_dependent, created_appointment.dependent
+  end
+
+  test "renders panel appointment errors without losing its profile context" do
+    dependent = dependents(:emma)
+    sign_in users(:family_admin)
+
+    assert_no_difference -> { Appointment.count } do
+      post appointments_path(calendar_context_id: dependent.id, panel: 1), params: {
+        month: "2030-07",
+        appointment: {
+          dependent_id: dependent.id,
+          scheduled_at: "2030-07-23T11:00",
+          description: ""
+        }
+      }, headers: { "Turbo-Frame" => CalendarWorkspace::FAMILY_CALENDAR_FRAME_ID }
+    end
+
+    assert_response :unprocessable_entity
+    assert_select "turbo-frame##{CalendarWorkspace::FAMILY_CALENDAR_FRAME_ID}"
+    assert_select "[data-testid='appointment-errors']", text: /Description can.t be blank/
+    assert_select "select[data-testid='appointment-dependent'] option[selected][value='#{dependent.id}']"
+    assert_select "form[data-testid='appointment-form'][action='#{appointments_path(calendar_context_id: dependent.id, panel: 1)}']"
+  end
+
+  test "does not accept a family calendar context from another account" do
+    sign_in users(:family_admin)
+
+    assert_no_difference -> { Appointment.count } do
+      post appointments_path(calendar_context_id: dependents(:other_dependent).id, panel: 1), params: {
+        appointment: {
+          dependent_id: dependents(:emma).id,
+          scheduled_at: "2030-08-05T09:15",
+          description: "Unauthorized panel appointment"
+        }
+      }, headers: { "Turbo-Frame" => CalendarWorkspace::FAMILY_CALENDAR_FRAME_ID }
+    end
+
+    assert_response :not_found
+  end
 end

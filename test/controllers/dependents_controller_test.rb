@@ -39,7 +39,9 @@ class DependentsControllerTest < ActionDispatch::IntegrationTest
     assert_select "img[data-testid='dependent-avatar-profile'][src='#{avatar_dependent_path(dependent)}']"
     assert_select "img[data-testid='dependent-avatar-sidebar'][src='#{avatar_dependent_path(dependent)}']"
     assert_select "img[data-testid='dependent-avatar-mobile-menu'][src='#{avatar_dependent_path(dependent)}']"
-    assert_select "a[data-testid='nav-calendar'][href='#{calendar_path}']", text: "Calendar"
+    assert_select "a[data-testid='nav-calendar'][href='#{calendar_path(calendar_context_id: dependent.id, panel: 1)}'][data-turbo-frame='#{CalendarWorkspace::FAMILY_CALENDAR_FRAME_ID}'][aria-haspopup='dialog'][aria-expanded='false']", text: "Calendar"
+    assert_select "dialog[data-testid='family-calendar-dialog'][aria-labelledby='family-calendar-title']"
+    assert_select "turbo-frame##{CalendarWorkspace::FAMILY_CALENDAR_FRAME_ID}[data-testid='family-calendar-frame']"
     Document.categories.each_key do |category|
       assert_select "a[data-testid='dependent-category-#{category}'][href='#{dependent_documents_path(dependent, category: category)}']"
     end
@@ -87,6 +89,8 @@ class DependentsControllerTest < ActionDispatch::IntegrationTest
 
     assert_response :success
     assert_select "form[enctype='multipart/form-data'] input[type='file'][name='dependent[avatar]'][accept='image/jpeg,image/png,image/webp']"
+    assert_select "a[data-testid='nav-calendar'][data-turbo-frame='#{CalendarWorkspace::FAMILY_CALENDAR_FRAME_ID}']", text: "Calendar"
+    assert_select "a[href='#{dependent_path(dependent)}']", text: "Cancel"
 
     patch dependent_path(dependent), params: { dependent: { avatar: uploaded_avatar } }
 

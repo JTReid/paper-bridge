@@ -96,6 +96,41 @@ class AppointmentEmailsControllerTest < ActionDispatch::IntegrationTest
     assert_includes logged_message, "error_message=SES delivery rejected private detail"
   end
 
+  test "emails an appointment inside the family calendar panel and keeps its profile context" do
+    appointment = appointments(:emma_therapy)
+    dependent = dependents(:emma)
+    recipient_email = "panel-caregiver@example.test"
+    sign_in users(:family_admin)
+
+    assert_emails 1 do
+      post appointment_emails_path(calendar_context_id: dependent.id, panel: 1), params: {
+        appointment_email: {
+          appointment_id: appointment.id,
+          recipient_email: recipient_email
+        }
+      }, headers: { "Turbo-Frame" => CalendarWorkspace::FAMILY_CALENDAR_FRAME_ID }
+    end
+
+    assert_response :see_other
+    assert_redirected_to calendar_path(
+      month: appointment.scheduled_at.in_time_zone.strftime("%Y-%m"),
+      calendar_context_id: dependent.id,
+      panel: 1
+    )
+  end
+
+  test "does not accept an appointment email panel context from another account" do
+    sign_in users(:family_admin)
+
+    assert_no_emails do
+      post appointment_emails_path(calendar_context_id: dependents(:other_dependent).id, panel: 1),
+        params: appointment_email_params,
+        headers: { "Turbo-Frame" => CalendarWorkspace::FAMILY_CALENDAR_FRAME_ID }
+    end
+
+    assert_response :not_found
+  end
+
   private
 
     def appointment_email_params(appointment_id: appointments(:emma_therapy).id, recipient_email: "caregiver@example.test")

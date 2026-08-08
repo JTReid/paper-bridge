@@ -30,8 +30,9 @@ ruby scripts/paper_bridge_harness.rb review
 This product-level harness covers behavior implemented in the Rails app today:
 public/auth entry points, registration-created accounts, dashboard and
 dependent workspace navigation, dependent profile access, appointment creation,
-read-only calendar details, appointment-detail email delivery,
-upcoming-appointment display, document listing,
+read-only calendar details, appointment-detail email delivery, account-scoped
+full-page and in-profile calendar rendering, upcoming-appointment display,
+document listing,
 filename-search/category-filter/upload-form behavior, family-facing document
 status and AI language, care team invitations, category permissions,
 search-access mapping, email-attachment document sharing, and the Stripe billing
@@ -41,8 +42,8 @@ Future product requirements that are not implemented yet, such as appointment
 editing, deletion, reminders, recurrence, and external calendar integrations;
 in-app notifications; audit-log exports; tokenized sharing links; document
 version history; multi-plan billing entitlements beyond
-`stripe.standard_price`, invoice history screens, and mobile behavior, are
-intentionally not product harness contracts yet.
+`stripe.standard_price`, invoice history screens, and native mobile app
+behavior, are intentionally not product harness contracts yet.
 
 ## QA Troubleshooting Harness
 
@@ -68,6 +69,11 @@ This harness runs against `RAILS_ENV=test`, prepares the test DB, loads
 fixtures and synthetic QA seed data, builds Tailwind, starts a local Rails test
 server, and runs Playwright browser checks against `http://127.0.0.1:3100` by
 default.
+
+Use `workflow calendar` to prove the family calendar preserves unfinished
+profile work while creating and emailing appointments. Use `mobile surfaces`
+for the phone-sized agenda and profile panel, and `accessibility surfaces` for
+the loaded panel and nested appointment dialog.
 
 Use `seed` when development needs the synthetic processed-document and edge-case
 corpus. This loads 11 documents, 25 pages, 71 chunks, 67 embeddings, 54 timeline

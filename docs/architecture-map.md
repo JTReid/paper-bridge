@@ -17,6 +17,11 @@ ported from Scoutspace.
 - `Appointment` belongs to one dependent and stores the scheduled time plus a
   family-facing description. Account calendar access is derived through the
   dependent so appointment queries stay inside the account tenant boundary.
+- `CalendarWorkspace` loads the account-scoped month, appointments, profiles,
+  and optional current-profile context used by both calendar entry points. The
+  account entry renders a normal page; profile navigation targets a lazy Turbo
+  Frame inside a native dialog so the profile page, scroll position, and
+  unfinished form values remain in place underneath it.
 - `AppointmentEmailsController` account-scopes the selected appointment,
   validates the recipient address, and sends its profile, Central Time, and
   description details through `AppointmentMailer` without creating sharing
@@ -74,10 +79,10 @@ ported from Scoutspace.
 ## Current Boundaries
 
 - Public entry, authentication, account registration, accounts, dependents,
-  account memberships, appointment creation, read-only calendar display and
-  on-demand detail emails, document uploads, document categories, care team
-  memberships, current email-attachment document sharing, and document pages
-  are real.
+  account memberships, appointment creation, full-page and in-profile family
+  calendar display, on-demand detail emails, document uploads, document
+  categories, care team memberships, current email-attachment document sharing,
+  and document pages are real.
 - Admin/member authorization lives on `AccountMembership`. Care team document
   search authorization is derived from dependent-scoped `CareTeamMembership`
   category permissions.

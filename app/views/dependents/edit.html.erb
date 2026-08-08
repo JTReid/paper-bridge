@@ -1,6 +1,6 @@
 <% content_for :title, "Edit Profile | PaperBridge" %>
 
-<%= app_shell(active: :dependents) do %>
+<%= app_shell(active: :overview, dependent: @dependent) do %>
   <div class="mx-auto max-w-2xl space-y-6">
     <header>
       <%= link_to @dependent, class: "inline-flex items-center text-sm font-medium text-muted-foreground hover:text-foreground" do %>

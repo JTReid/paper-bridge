@@ -157,7 +157,7 @@ Named workflow modes:
 | `documents` | Exercises original-filename search, category-card and chip filtering, filter-aware upload defaults, successful multi-document upload, and document metadata editing. Required-file and blank-title validation live in `negative documents`. |
 | `care-team` | Verifies the care-team list, active member permissions, invite form, and successful invite creation with category permissions. |
 | `ai` | Opens the dependent-scoped AI assistant and verifies the current static page state without submitting a query. |
-| `calendar` | Opens the account calendar, creates a profile-owned appointment in Central Time, verifies its calendar date and read-only details, and exercises previous/next month navigation. |
+| `calendar` | Opens a profile edit page, leaves work unfinished, opens the family calendar panel without changing pages, creates and emails a profile-owned appointment, closes the panel, and verifies the unfinished edit remains. It also covers the full-page account calendar, Central Time rendering, read-only details, and previous/next month navigation. |
 
 Boundaries:
 

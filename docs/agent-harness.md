@@ -68,8 +68,9 @@ ruby scripts/paper_bridge_qa_harness.rb workflow documents
 ```
 
 For appointment persistence, account-wide month rendering, creation, detail
-email delivery, dashboard summaries, or calendar navigation, use the focused
-calendar checks:
+email delivery, dashboard summaries, calendar navigation, or the in-profile
+family calendar that preserves unfinished profile work, use the focused calendar
+checks:
 
 ```bash
 ruby scripts/paper_bridge_harness.rb calendar

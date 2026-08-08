@@ -1,5 +1,8 @@
 class AppointmentEmailsController < ApplicationController
+  include CalendarWorkspace
+
   before_action :authenticate_user!
+  before_action :set_calendar_context
   before_action :set_appointment
 
   def create
@@ -36,7 +39,7 @@ class AppointmentEmailsController < ApplicationController
     end
 
     def redirect_to_calendar(**flash)
-      redirect_to calendar_path(month: @appointment.scheduled_at.in_time_zone.strftime("%Y-%m")), **flash
+      redirect_to calendar_location(month: @appointment.scheduled_at.in_time_zone.strftime("%Y-%m")), status: :see_other, **flash
     end
 
     def log_delivery_failure(error)

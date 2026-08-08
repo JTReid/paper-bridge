@@ -1,6 +1,6 @@
 // @ts-check
 import { test, expect } from '../fixtures';
-import { signIn } from '../helpers/auth';
+import { openDependentWorkspace, signIn } from '../helpers/auth';
 import { expectAccessible } from '../helpers/accessibility';
 
 const APPOINTMENT = {
@@ -10,6 +10,73 @@ const APPOINTMENT = {
   dependent: 'Emma Greenfield',
 };
 const RECIPIENT_EMAIL = 'caregiver@example.test';
+
+test('family calendar panel preserves unfinished profile work', async ({ page }) => {
+  await openDependentWorkspace(page);
+  await page.getByRole('link', { name: 'Edit', exact: true }).click();
+
+  const notes = page.getByLabel('Notes');
+  const unfinishedNotes = `Unsaved family calendar note ${Date.now()}`;
+  await notes.fill(unfinishedNotes);
+  const editURL = page.url();
+  const calendarTrigger = page.getByTestId('nav-calendar');
+
+  await calendarTrigger.click();
+
+  const familyCalendar = page.getByTestId('family-calendar-dialog');
+  await expect(familyCalendar).toBeVisible();
+  await expect(familyCalendar.getByRole('heading', { name: 'Family Calendar', exact: true })).toBeVisible();
+  await expect(page).toHaveURL(editURL);
+  await expect(page.getByTestId('family-calendar-close')).toBeFocused();
+
+  const frame = page.getByTestId('family-calendar-frame');
+  await expect(frame.getByTestId('family-calendar-content')).toBeVisible();
+  await expect(frame.getByTestId('appointment-dependent').locator('option:checked')).toHaveText('Emma Greenfield');
+
+  await frame.getByTestId('calendar-next-month').click();
+  await expect(page).toHaveURL(editURL);
+  const monthHeading = frame.getByRole('heading', { name: /.+ \d{4}/ });
+  await expect(monthHeading).toBeVisible();
+  await expect(monthHeading).toBeFocused();
+
+  const emmaAppointment = frame.locator('button[data-testid^="appointment-"]', { hasText: 'Speech therapy appointment' });
+  const noahAppointment = frame.locator('button[data-testid^="appointment-"]', { hasText: 'Dental checkup' });
+  await expect(emmaAppointment).toContainText('Emma Greenfield');
+  await expect(noahAppointment).toContainText('Noah Greenfield');
+
+  await frame.getByTestId('appointment-dependent').selectOption({ label: 'Noah Greenfield' });
+
+  const description = `Profile calendar appointment ${Date.now()}`;
+  await frame.getByTestId('appointment-description').fill(description);
+  await frame.getByTestId('appointment-submit').click();
+
+  await expect(familyCalendar).toBeVisible();
+  await expect(page).toHaveURL(editURL);
+  await expect(frame.getByTestId('family-calendar-notice')).toContainText('Appointment added');
+  await expect(frame.getByTestId('family-calendar-notice')).toBeFocused();
+
+  const createdAppointment = frame.locator('button[data-testid^="appointment-"]', { hasText: description });
+  await expect(createdAppointment).toContainText('Noah Greenfield');
+  await expect(frame.getByTestId('appointment-dependent').locator('option:checked')).toHaveText('Emma Greenfield');
+  await createdAppointment.click();
+
+  const appointmentDetails = frame.getByTestId('appointment-dialog');
+  await expect(appointmentDetails).toBeVisible();
+  await appointmentDetails.getByLabel('Email to').fill(RECIPIENT_EMAIL);
+  await appointmentDetails.getByTestId('appointment-email-submit').click();
+
+  await expect(familyCalendar).toBeVisible();
+  await expect(page).toHaveURL(editURL);
+  await expect(frame.getByTestId('family-calendar-notice')).toContainText(`Appointment emailed to ${RECIPIENT_EMAIL}`);
+  await expect(frame.getByTestId('family-calendar-notice')).toBeFocused();
+
+  await page.getByTestId('family-calendar-close').click();
+
+  await expect(familyCalendar).toBeHidden();
+  await expect(page).toHaveURL(editURL);
+  await expect(notes).toHaveValue(unfinishedNotes);
+  await expect(calendarTrigger).toBeFocused();
+});
 
 test('family admin can add, review, and email a profile appointment on the account calendar', async ({ page }) => {
   await signIn(page);

@@ -13,10 +13,15 @@ operational harness checks until matching implementation exists.
 - Devise email/password registration and sign-in.
 - Registration-created family accounts with an admin `AccountMembership`.
 - Account-scoped dashboard and dependent profile workspace navigation.
-- Account calendar with persisted, profile-owned appointment creation, a
-  Sunday-start month grid with previous/next/today navigation, read-only
-  appointment details, on-demand appointment-detail email delivery, and an
-  upcoming-appointments dashboard list.
+- Family calendar with persisted, profile-owned appointment creation, a
+  Sunday-start desktop month grid, a phone-friendly monthly agenda,
+  previous/next/today navigation, read-only appointment details, on-demand
+  appointment-detail email delivery, and an upcoming-appointments dashboard
+  list. The account navigation opens the calendar as a full page. Inside a
+  profile workspace, the same calendar opens in a large panel without replacing
+  the page underneath. It shows the whole family's appointments and starts the
+  add form with the current profile selected while still allowing another
+  profile to be chosen.
 - Dependent profile listing, display, create, edit, update, and destroy paths,
   including optional JPEG, PNG, or WebP avatar uploads up to 5 MB, initials
   fallbacks, and account-scoped display through temporary storage URLs.

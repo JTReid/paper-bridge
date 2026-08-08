@@ -20,7 +20,7 @@ check enforces that every tracked, non-ignored Markdown file is linked here.
 
 | Doc | Purpose |
 | --- | --- |
-| [Current Product Shape](runbooks/current-product-shape.md) | Implemented profile, calendar, document, access, sharing, and billing behavior plus focused harness commands. |
+| [Current Product Shape](runbooks/current-product-shape.md) | Implemented profile, interruption-free family calendar, document, access, sharing, and billing behavior plus focused harness commands. |
 | [Agentic Pipeline Framework](runbooks/agentic-pipeline.md) | Generic `Agentic::Pipeline` framework contract. |
 | [Billing](runbooks/billing.md) | Stripe Checkout, Customer Portal, subscription gate, webhook sync, and super-admin billing overview. |
 | [Document Ingestion](runbooks/document-ingestion.md) | Upload, preparation, page, chunk, summary, embedding, and timeline lifecycle. |

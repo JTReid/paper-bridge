@@ -6,6 +6,13 @@ emma:
   school: Maplewood Elementary
   notes: Benefits from structured support.
 
+noah:
+  account: greenfield
+  name: Noah Greenfield
+  date_of_birth: 2018-09-03
+  grade: 1st Grade
+  school: Maplewood Elementary
+
 other_dependent:
   account: other
   name: Other Dependent

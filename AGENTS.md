@@ -33,6 +33,8 @@ Important directories:
 
 ## Working Rules
 
+- Speak to the user in casual, plain English by default. Keep jargon and
+  implementation details to the minimum needed unless the user asks for them.
 - Prefer existing Rails, service, and Stimulus patterns before adding new
   abstractions.
 - Keep changes scoped to the requested behavior. Do not rewrite unrelated
