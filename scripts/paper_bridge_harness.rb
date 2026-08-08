@@ -11,6 +11,7 @@ CURRENT_PRODUCT_FILES = %w[
   config/routes.rb
   db/schema.rb
   db/migrate/20260719000100_create_appointments.rb
+  db/migrate/20260808000100_create_ai_assistant_queries.rb
   docs/runbooks/current-product-shape.md
   docs/runbooks/care-team-access.md
   docs/runbooks/billing.md
@@ -38,10 +39,12 @@ CURRENT_PRODUCT_FILES = %w[
   app/helpers/application_helper.rb
   app/helpers/documents_helper.rb
   app/helpers/ai_assistant_helper.rb
+  app/jobs/answer_ai_assistant_query_job.rb
   app/javascript/controllers/document_search_controller.js
   app/javascript/controllers/appointment_dialog_controller.js
   app/javascript/controllers/family_calendar_controller.js
   app/models/account.rb
+  app/models/ai_assistant_query.rb
   app/models/account_membership.rb
   app/models/user.rb
   app/models/dependent.rb
@@ -66,6 +69,9 @@ CURRENT_PRODUCT_FILES = %w[
   app/views/dependents/show.html.erb
   app/views/documents/_form.html.erb
   app/views/documents/index.html.erb
+  app/views/ai_assistant/index.html.erb
+  app/views/ai_assistant/_query_result.html.erb
+  app/views/ai_assistant/create.turbo_stream.erb
   test/controllers/home_controller_test.rb
   test/controllers/devise_registrations_controller_test.rb
   test/controllers/devise_sessions_controller_test.rb
@@ -101,10 +107,14 @@ CURRENT_PRODUCT_FILES = %w[
   test/helpers/application_helper_test.rb
   test/helpers/documents_helper_test.rb
   test/helpers/ai_assistant_helper_test.rb
+  test/controllers/ai_assistant_controller_test.rb
+  test/jobs/answer_ai_assistant_query_job_test.rb
+  test/models/ai_assistant_query_test.rb
   tests/e2e/product/document_management.spec.js
   tests/e2e/product/calendar.spec.js
   tests/e2e/product/accessibility_suite.spec.js
   tests/e2e/product/mobile_suite.spec.js
+  tests/e2e/product/ai_assistant.spec.js
 ].freeze
 
 FOUNDATION_TESTS = %w[
@@ -165,6 +175,7 @@ RUBOCOP_PATHS = %w[
   config/application.rb
   config/routes.rb
   db/migrate/20260719000100_create_appointments.rb
+  db/migrate/20260808000100_create_ai_assistant_queries.rb
   app/controllers/application_controller.rb
   app/controllers/concerns/calendar_workspace.rb
   app/controllers/concerns/subscription_gate.rb
@@ -186,7 +197,9 @@ RUBOCOP_PATHS = %w[
   app/helpers/application_helper.rb
   app/helpers/documents_helper.rb
   app/helpers/ai_assistant_helper.rb
+  app/jobs/answer_ai_assistant_query_job.rb
   app/models/account.rb
+  app/models/ai_assistant_query.rb
   app/models/account_membership.rb
   app/models/user.rb
   app/models/dependent.rb
@@ -234,6 +247,9 @@ RUBOCOP_PATHS = %w[
   test/helpers/application_helper_test.rb
   test/helpers/documents_helper_test.rb
   test/helpers/ai_assistant_helper_test.rb
+  test/controllers/ai_assistant_controller_test.rb
+  test/jobs/answer_ai_assistant_query_job_test.rb
+  test/models/ai_assistant_query_test.rb
   scripts/paper_bridge_harness.rb
 ].freeze
 

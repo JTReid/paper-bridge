@@ -185,8 +185,10 @@ search lifecycle, including callback routing, PDF/text and image job execution,
 PDF preparation, page OCR/image artifacts, page-aware PDF chunk creation,
 GPT-backed image text extraction and classification, pgvector embedding
 persistence, PDF/text timeline-event persistence, account-scoped and
-label-scoped retrieval, structured answer synthesis with citations, pipeline
-records, and telemetry with fake PDF tooling and fake LLM/embedding calls.
+label-scoped retrieval, durable assistant queries, background answer execution,
+safe failure handling, final Turbo result broadcasts, structured answer
+synthesis with citations, pipeline records, and telemetry with fake PDF tooling
+and fake LLM/embedding calls.
 Image ingestion intentionally stops after extraction, classification, chunk
 creation, and embedding; it does not create timeline events or structured
 prescription fields. The `pdf-tools` command checks local Poppler/Tesseract

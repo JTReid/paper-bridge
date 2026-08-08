@@ -24,7 +24,7 @@ check enforces that every tracked, non-ignored Markdown file is linked here.
 | [Agentic Pipeline Framework](runbooks/agentic-pipeline.md) | Generic `Agentic::Pipeline` framework contract. |
 | [Billing](runbooks/billing.md) | Stripe Checkout, Customer Portal, subscription gate, webhook sync, and super-admin billing overview. |
 | [Document Ingestion](runbooks/document-ingestion.md) | Upload, preparation, page, chunk, summary, embedding, and timeline lifecycle. |
-| [AI Assistant Search](runbooks/ai-assistant-search.md) | Dependent-scoped retrieval, source validation, page-linked citations, access filtering, and answer synthesis. |
+| [AI Assistant Search](runbooks/ai-assistant-search.md) | Durable asynchronous questions, dependent-scoped retrieval, source validation, page-linked citations, access filtering, and answer synthesis. |
 | [Care Team Access](runbooks/care-team-access.md) | Account, dependent, care team invitation, and category-permission behavior. |
 | [Document Sharing](runbooks/document-sharing.md) | Current email-attachment sharing behavior and validation surface. |
 | [QA Troubleshooting](runbooks/qa-troubleshooting.md) | Local QA harness for browser bug reproduction, artifacts, and verification. |

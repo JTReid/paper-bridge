@@ -91,7 +91,9 @@ Use that command when changing document upload normalization or callbacks,
 `Agents::DocumentEmbedder`, `Agents::TimelineEventExtractor`, prompt/schema
 seeds, chunk persistence, embedding persistence, or chunk-sourced timeline event
 persistence. The same command also covers the dependent-scoped AI assistant:
-`GET /dependents/:dependent_id/ai-assistant`,
+read-only `GET /dependents/:dependent_id/ai-assistant`, durable POST submission
+through `AiAssistantQuery`, background execution through
+`AnswerAiAssistantQueryJob`, final Turbo delivery,
 `Agentic::DocumentSearchPipeline`, `Agents::QueryEmbedder`,
 `Agents::VectorRetriever`, `Agents::SearchAnswerGenerator`, account- and
 dependent-scoped vector retrieval, role-derived chunk-label filtering, and

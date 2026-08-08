@@ -8,6 +8,7 @@ class Dependent < ApplicationRecord
     attachable.variant :display, resize_to_fill: [ 256, 256 ]
   end
   has_many :documents, dependent: :restrict_with_error
+  has_many :ai_assistant_queries, dependent: :destroy
   has_many :appointments, dependent: :destroy
   has_many :care_team_memberships, dependent: :destroy
   has_many :care_team_users, through: :care_team_memberships, source: :user

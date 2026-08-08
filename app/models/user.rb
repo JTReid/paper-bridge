@@ -7,6 +7,7 @@ class User < ApplicationRecord
   has_many :account_memberships, dependent: :destroy
   has_many :accounts, through: :account_memberships
   has_many :care_team_memberships, dependent: :destroy
+  has_many :ai_assistant_queries, dependent: :restrict_with_error
   has_many :documents, dependent: :restrict_with_error
   has_many :share_events, foreign_key: :sender_id, inverse_of: :sender, dependent: :restrict_with_error
 

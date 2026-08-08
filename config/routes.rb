@@ -11,6 +11,7 @@ Rails.application.routes.draw do
   get "dependents/:dependent_id/documents/new" => "documents#new", as: :new_dependent_document
   post "dependents/:dependent_id/documents" => "documents#create"
   get "dependents/:dependent_id/ai-assistant" => "ai_assistant#index", as: :dependent_ai_assistant
+  post "dependents/:dependent_id/ai-assistant" => "ai_assistant#create"
   resources :dependents, only: [] do
     resources :care_team_memberships, path: "care-team", except: :show
   end

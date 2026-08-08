@@ -105,16 +105,22 @@ ported from Scoutspace.
   summary, key points, and search chunks, then `Agents::DocumentEmbedder`
   persists pgvector embeddings for those chunks. This first image path does not
   run the PDF preparation, document summarizer, or timeline-event extractor.
-- `GET /dependents/:dependent_id/ai-assistant` creates a `PipelineRun` for
-  nonblank queries, runs `Agentic::DocumentSearchPipeline`, embeds the user
-  query with `text-embedding-3-large`, retrieves matching chunks through
-  pgvector, and synthesizes a structured answer with citations using
-  `gpt-5.4-mini`.
+- `AiAssistantQuery` durably owns one account-, dependent-, and user-scoped
+  question, its lifecycle state, and its final answer.
+- `GET /dependents/:dependent_id/ai-assistant` is read-only. `POST` saves a
+  queued query and enqueues `AnswerAiAssistantQueryJob`, which rechecks access,
+  creates a `PipelineRun` with the query as its subject, runs
+  `Agentic::DocumentSearchPipeline`, and broadcasts state and the final answer
+  back to the dependent page through Turbo.
+- The search pipeline embeds the user query with `text-embedding-3-large`,
+  retrieves matching chunks through pgvector, and synthesizes a structured
+  answer with citations using the configured search-answer LLM.
 - Search retrieval is constrained to the current account, optional dependent,
   and labels allowed by `Documents::SearchAccessProfile`.
 - Development and production Active Job processing uses Solid Queue. In
   development, queue tables live in `paper_bridge_development_queue`, and
-  workers are started with `bin/jobs`.
+  workers are started with `bin/jobs`. The dedicated `ai_assistant` queue is
+  consumed by the current wildcard worker configuration.
 - Billing uses Stripe-hosted Checkout and Customer Portal sessions. Webhook
   verification and dispatch are mounted through `stripe_event` at
   `/stripe/webhooks`, with subscription state synchronized by

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_07_19_000100) do
+ActiveRecord::Schema[8.1].define(version: 2026_08_08_000100) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "vector"
@@ -68,6 +68,28 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_19_000100) do
     t.datetime "updated_at", null: false
     t.index ["llm_id"], name: "index_agent_types_on_llm_id"
     t.index ["name"], name: "index_agent_types_on_name", unique: true
+  end
+
+  create_table "ai_assistant_queries", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.jsonb "answer", default: {}, null: false
+    t.datetime "completed_at"
+    t.datetime "created_at", null: false
+    t.bigint "dependent_id", null: false
+    t.text "draft_answer"
+    t.text "error_message"
+    t.datetime "failed_at"
+    t.text "question", null: false
+    t.integer "result_count"
+    t.datetime "started_at"
+    t.string "state", default: "queued", null: false
+    t.datetime "updated_at", null: false
+    t.bigint "user_id", null: false
+    t.index ["account_id", "dependent_id", "created_at"], name: "idx_on_account_id_dependent_id_created_at_4ecc67b017"
+    t.index ["account_id"], name: "index_ai_assistant_queries_on_account_id"
+    t.index ["dependent_id"], name: "index_ai_assistant_queries_on_dependent_id"
+    t.index ["user_id", "created_at"], name: "index_ai_assistant_queries_on_user_id_and_created_at"
+    t.index ["user_id"], name: "index_ai_assistant_queries_on_user_id"
   end
 
   create_table "appointments", force: :cascade do |t|
@@ -345,6 +367,9 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_19_000100) do
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
   add_foreign_key "agent_types", "llms"
+  add_foreign_key "ai_assistant_queries", "accounts"
+  add_foreign_key "ai_assistant_queries", "dependents"
+  add_foreign_key "ai_assistant_queries", "users"
   add_foreign_key "appointments", "dependents"
   add_foreign_key "billing_subscriptions", "accounts"
   add_foreign_key "care_team_memberships", "accounts"

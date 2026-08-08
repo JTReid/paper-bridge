@@ -79,6 +79,7 @@ QA_DB_CLEANUP_RUNNER = <<~"RUBY"
   PipelineActivity.delete_all
   PipelineLog.delete_all
   PipelineRun.delete_all
+  AiAssistantQuery.delete_all
   Account.find_by(name: "PaperBridge QA Harness")&.destroy
   ActiveStorage::VariantRecord.delete_all
   ActiveStorage::Attachment.delete_all

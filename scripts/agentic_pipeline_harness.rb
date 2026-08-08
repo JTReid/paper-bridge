@@ -47,8 +47,10 @@ AGENTIC_CORE_FILES = %w[
 DOCUMENT_PIPELINE_FILES = %w[
   app/controllers/ai_assistant_controller.rb
   app/helpers/ai_assistant_helper.rb
+  app/jobs/answer_ai_assistant_query_job.rb
   app/jobs/process_image_document_job.rb
   app/jobs/process_document_job.rb
+  app/models/ai_assistant_query.rb
   app/models/document.rb
   app/models/document_chunk.rb
   app/models/document_embedding.rb
@@ -77,6 +79,9 @@ DOCUMENT_PIPELINE_FILES = %w[
   app/services/documents/vector_search.rb
   docs/runbooks/document-ingestion.md
   docs/runbooks/ai-assistant-search.md
+  app/views/ai_assistant/_query_result.html.erb
+  app/views/ai_assistant/create.turbo_stream.erb
+  db/migrate/20260808000100_create_ai_assistant_queries.rb
   db/migrate/20260614033907_add_summary_to_documents.rb
   db/migrate/20260614040236_create_document_pages.rb
   db/migrate/20260614040243_add_preparation_to_documents.rb
@@ -87,6 +92,7 @@ DOCUMENT_PIPELINE_FILES = %w[
   test/controllers/documents_controller_test.rb
   test/controllers/ai_assistant_controller_test.rb
   test/helpers/ai_assistant_helper_test.rb
+  test/jobs/answer_ai_assistant_query_job_test.rb
   test/jobs/process_document_job_test.rb
   test/jobs/process_image_document_job_test.rb
   test/models/document_chunk_test.rb
@@ -94,6 +100,7 @@ DOCUMENT_PIPELINE_FILES = %w[
   test/models/document_page_test.rb
   test/models/document_test.rb
   test/models/timeline_event_test.rb
+  test/models/ai_assistant_query_test.rb
   test/services/documents/prepare_pdf_test.rb
   test/services/documents/prepare_text_test.rb
   test/services/documents/search_access_profile_test.rb
@@ -286,6 +293,7 @@ COMMANDS = {
     [
       "bin/rails", "test",
       "test/models/document_test.rb",
+      "test/models/ai_assistant_query_test.rb",
       "test/models/document_page_test.rb",
       "test/models/document_chunk_test.rb",
       "test/models/document_embedding_test.rb",
@@ -293,6 +301,7 @@ COMMANDS = {
       "test/controllers/documents_controller_test.rb",
       "test/controllers/ai_assistant_controller_test.rb",
       "test/helpers/ai_assistant_helper_test.rb",
+      "test/jobs/answer_ai_assistant_query_job_test.rb",
       "test/jobs/process_document_job_test.rb",
       "test/jobs/process_image_document_job_test.rb",
       "test/services/documents/prepare_text_test.rb",
@@ -322,6 +331,7 @@ COMMANDS = {
       "app/helpers/ai_assistant_helper.rb",
       "app/jobs",
       "app/models/agent_type.rb",
+      "app/models/ai_assistant_query.rb",
       "app/models/document.rb",
       "app/models/document_chunk.rb",
       "app/models/document_embedding.rb",
@@ -345,6 +355,7 @@ COMMANDS = {
       "test/services/agents",
       "test/services/documents",
       "test/models/document_test.rb",
+      "test/models/ai_assistant_query_test.rb",
       "test/models/document_page_test.rb",
       "test/models/document_chunk_test.rb",
       "test/models/document_embedding_test.rb",

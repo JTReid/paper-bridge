@@ -5,12 +5,24 @@ lifecycle.
 
 ## Contract
 
-- `GET /dependents/:dependent_id/ai-assistant` is authenticated.
-- Blank search queries render without creating a `PipelineRun` or calling an LLM
-  provider.
-- Nonblank search queries create a `PipelineRun` for the current account and
-  selected dependent, with the stripped user query stored in
-  `PipelineRun.context["query"]` for later reproduction and diagnosis.
+- `GET /dependents/:dependent_id/ai-assistant` is authenticated and read-only.
+  Query-string parameters never start AI work.
+- `POST /dependents/:dependent_id/ai-assistant` strips and saves the question as
+  a queued `AiAssistantQuery` owned by the current account, dependent, and user,
+  then enqueues `AnswerAiAssistantQueryJob`.
+- The job rechecks that the dependent belongs to the account and that the user
+  still belongs to the account before making a provider call.
+- The durable state flow is `queued` to `processing` to `completed`. Retryable
+  provider errors return to `queued`; terminal or configuration errors become
+  `failed` with a family-safe message.
+- `AnswerAiAssistantQueryJob` creates a `PipelineRun` whose subject is the
+  `AiAssistantQuery`. The stripped question is also stored in
+  `PipelineRun.context["query"]` for reproduction and diagnosis.
+- Turbo broadcasts replace the saved query result when its state changes. A
+  final answer survives reload, and reloading the page does not run the query
+  again.
+- Phase 1 reserves `draft_answer` for streaming work. It broadcasts state and
+  the final persisted answer, not token-by-token output.
 - `Agentic::DocumentSearchPipeline` can run retrieval-only for debugging, or
   retrieval plus answer synthesis for the product UI.
 - In answer mode, it executes `Agents::QueryEmbedder`,
@@ -33,7 +45,8 @@ lifecycle.
   to accountless care-team logins requires a shared document-access scope and is
   not implied by this citation-link feature.
 - If retrieval returns no chunks, answer synthesis is skipped without making a
-  chat completion call.
+  chat completion call. This is a completed query with no supported answer, not
+  a failed job.
 - Retrieval is constrained by account before results are ranked.
 - Retrieval is constrained by both document category and
   `Documents::SearchAccessProfile` labels before results are ranked.
