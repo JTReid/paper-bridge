@@ -59,12 +59,20 @@ class AnswerAiAssistantQueryJob < ApplicationJob
     )
     mark_failed(ai_assistant_query)
   rescue Agentic::Errors::ExecutionError => e
-    Rails.logger.warn(
-      "paperbridge_answer_retrying query_id=#{ai_assistant_query.id} " \
-        "error_class=#{e.class.name} error_message=#{e.message.to_s.squish}"
-    )
-    mark_queued(ai_assistant_query)
-    raise
+    if e.retryable?
+      Rails.logger.warn(
+        "paperbridge_answer_retrying query_id=#{ai_assistant_query.id} " \
+          "error_class=#{e.class.name} error_message=#{e.message.to_s.squish}"
+      )
+      mark_queued(ai_assistant_query)
+      raise
+    else
+      Rails.logger.error(
+        "paperbridge_answer_failed query_id=#{ai_assistant_query.id} " \
+          "error_class=#{e.class.name} error_message=#{e.message.to_s.squish}"
+      )
+      mark_failed(ai_assistant_query)
+    end
   rescue StandardError
     mark_failed(ai_assistant_query)
     raise

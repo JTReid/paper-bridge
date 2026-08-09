@@ -15,11 +15,15 @@ module Agentic
       end
 
       def call
-        calls = priced_calls
+        calls = llm_calls
+        priced_calls = calls.select { |call| call[:cost_available] }
 
         pricing = {
-          total_cost: rounded_cost(total_cost(calls)),
-          llm_call_count: calls.count
+          total_cost: rounded_cost(total_cost(priced_calls)),
+          llm_call_count: calls.count,
+          priced_llm_call_count: priced_calls.count,
+          unpriced_llm_call_count: calls.count - priced_calls.count,
+          cost_complete: priced_calls.count == calls.count
         }
         pricing[:calls] = calls.map { |call| rounded_call(call) } if by_agent?
 
@@ -34,16 +38,18 @@ module Agentic
         @by_agent
       end
 
-      def priced_calls
-        log_entries_for(LLM_EVENT_TYPE).map { |entry| priced_call(entry) }
+      def llm_calls
+        log_entries_for(LLM_EVENT_TYPE).map { |entry| llm_call(entry) }
       end
 
-      def priced_call(entry)
+      def llm_call(entry)
         payload = entry.fetch("payload", {}).to_h.symbolize_keys
+        cost = Agentic::LlmCallPricing.estimate_if_available(payload)
 
         payload.slice(:provider, :model, :input_tokens, :cached_input_tokens, :output_tokens).merge(
           agent: entry.fetch("agent"),
-          cost: payload.empty? ? BigDecimal("0") : Agentic::LlmCallPricing.estimate(payload)
+          cost: cost,
+          cost_available: !cost.nil?
         )
       end
 
@@ -52,6 +58,8 @@ module Agentic
       end
 
       def rounded_call(call)
+        return call if call[:cost].nil?
+
         call.merge(cost: rounded_cost(call[:cost]))
       end
 

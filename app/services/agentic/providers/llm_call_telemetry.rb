@@ -3,14 +3,15 @@
 module Agentic
   module Providers
     module LlmCallTelemetry
-      attr_reader :elapsed_ms, :raw_response
+      attr_reader :elapsed_ms, :raw_response, :stream_callback_elapsed_ms
 
       def llm_metadata
         {
           provider: provider_name,
           model: requirements[:model],
           operation_type: operation_type.to_s,
-          elapsed_ms: elapsed_ms
+          elapsed_ms: elapsed_ms,
+          stream_callback_elapsed_ms: stream_callback_elapsed_ms
         }.merge(token_usage).merge(raw_usage: raw_usage)
       end
 
@@ -28,11 +29,26 @@ module Agentic
       private
 
       def measure_api_call
-        started_at = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+        @stream_callback_elapsed_seconds = 0.0
+        started_at = monotonic_time
 
         yield
       ensure
-        @elapsed_ms = ((Process.clock_gettime(Process::CLOCK_MONOTONIC) - started_at) * 1000).round
+        elapsed_seconds = monotonic_time - started_at
+        @elapsed_ms = (elapsed_seconds * 1000).round
+        @stream_callback_elapsed_ms = (@stream_callback_elapsed_seconds * 1000).round
+      end
+
+      def measure_stream_callback
+        started_at = monotonic_time
+
+        yield
+      ensure
+        @stream_callback_elapsed_seconds += monotonic_time - started_at
+      end
+
+      def monotonic_time
+        Process.clock_gettime(Process::CLOCK_MONOTONIC)
       end
 
       def token_usage

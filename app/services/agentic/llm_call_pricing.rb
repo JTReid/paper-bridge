@@ -7,6 +7,16 @@ module Agentic
     TOKENS_PER_MILLION = BigDecimal("1000000")
 
     RATE_CARD = {
+      "openai:gpt-5.6" => {
+        input_per_million: BigDecimal("0.20"),
+        cached_input_per_million: BigDecimal("0.20"),
+        output_per_million: BigDecimal("1.20")
+      },
+      "openai:gpt-5.6-luna" => {
+        input_per_million: BigDecimal("0.20"),
+        cached_input_per_million: BigDecimal("0.20"),
+        output_per_million: BigDecimal("1.20")
+      },
       "openai:gpt-5.4" => {
         input_per_million: BigDecimal("2.50"),
         cached_input_per_million: BigDecimal("0.25"),
@@ -43,6 +53,10 @@ module Agentic
       new(call).estimate
     end
 
+    def self.estimate_if_available(call)
+      new(call).estimate_if_available
+    end
+
     def initialize(call)
       @call = call
     end
@@ -51,12 +65,47 @@ module Agentic
       input_cost + cached_input_cost + output_cost
     end
 
+    def estimate_if_available
+      estimate if model_identity_available? && rate_available? && required_usage_available?
+    end
+
     private
 
     attr_reader :call
 
     def rate
       @rate ||= RATE_CARD.fetch(model_key, zero_rate)
+    end
+
+    def model_identity_available?
+      call[:provider].present? && call[:model].present?
+    end
+
+    def rate_available?
+      RATE_CARD.key?(model_key)
+    end
+
+    def required_usage_available?
+      input_usage_available? && output_usage_available?
+    end
+
+    def input_usage_available?
+      return true if rate.fetch(:input_per_million).zero? && rate.fetch(:cached_input_per_million).zero?
+
+      !call[:input_tokens].nil? && cached_usage_available?
+    end
+
+    def cached_usage_available?
+      return true if rate.fetch(:cached_input_per_million) == rate.fetch(:input_per_million)
+      return true if model_key.start_with?("openai:text-embedding-")
+
+      !call[:cached_input_tokens].nil?
+    end
+
+    def output_usage_available?
+      return true if rate.fetch(:output_per_million).zero?
+
+      !call[:output_tokens].nil?
     end
 
     def model_key

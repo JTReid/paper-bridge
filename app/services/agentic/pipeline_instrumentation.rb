@@ -52,7 +52,7 @@ module Agentic
 
       if error.respond_to?(:http_code)
         payload[:http_code] = error.http_code
-        payload[:response_body] = error.response&.body&.truncate(1000)
+        payload[:response_body] = error.response&.body&.truncate(1000) if error.respond_to?(:response)
       end
 
       append_log(

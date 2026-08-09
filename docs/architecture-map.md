@@ -114,7 +114,10 @@ ported from Scoutspace.
   with the query as its subject, runs
   `Agentic::DocumentSearchPipeline`, streams escaped answer drafts, and
   broadcasts state and the normalized final answer back to the dependent page
-  through Turbo.
+  through Turbo. An authenticated status endpoint reconciles active queries as
+  a fallback when the browser misses a Cable replacement, and an ambiguous
+  start response retries the same idempotent query instead of creating another
+  run.
 - The search pipeline embeds the user query with `text-embedding-3-large`,
   retrieves matching chunks through pgvector, and synthesizes a structured
   answer with citations using the configured search-answer LLM.

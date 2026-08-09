@@ -16,6 +16,20 @@ class Agentic::Providers::OpenaiTest < ActiveSupport::TestCase
     end
   end
 
+  class InterruptedStreamResponse
+    attr_reader :code
+
+    def initialize(code:, chunks:)
+      @code = code.to_s
+      @chunks = chunks
+    end
+
+    def read_body
+      @chunks.each { |chunk| yield chunk }
+      raise IOError, "connection closed"
+    end
+  end
+
   class StreamingConnection
     class << self
       attr_accessor :last_request, :response
@@ -81,6 +95,15 @@ class Agentic::Providers::OpenaiTest < ActiveSupport::TestCase
     end
   end
 
+  class BufferedHttpFailureConnection
+    class Request
+      def self.execute(**)
+        response = Struct.new(:code, :body).new(400, "private provider detail")
+        raise RestClient::BadRequest.new(response)
+      end
+    end
+  end
+
   test "builds structured JSON chat requests and parses responses" do
     provider = Agentic::Providers::Openai.new(
       connection: FakeConnection,
@@ -141,6 +164,25 @@ class Agentic::Providers::OpenaiTest < ActiveSupport::TestCase
     assert_nil provider.llm_metadata.fetch(:output_tokens)
   end
 
+  test "classifies buffered HTTP client failures without exposing response bodies" do
+    provider = Agentic::Providers::Openai.new(
+      connection: BufferedHttpFailureConnection,
+      operation_type: :embeddings,
+      requirements: {
+        model: "text-embedding-3-large",
+        input: [ "query" ],
+        encoding_format: "float"
+      }
+    )
+
+    error = assert_raises(Agentic::Providers::Openai::HttpError) { provider.call }
+
+    assert_equal 400, error.http_code
+    assert_not_predicate error, :retryable?
+    assert_equal "OpenAI request failed with HTTP 400", error.message
+    assert_not_includes error.message, "private provider detail"
+  end
+
   test "streams chat deltas and rebuilds a normal response with final usage" do
     content = '{"answer":"A streamed answer.","citations":[],"limitations":[]}'
     stream_body = sse_body(
@@ -177,6 +219,24 @@ class Agentic::Providers::OpenaiTest < ActiveSupport::TestCase
     assert_equal 12, provider.llm_metadata.fetch(:input_tokens)
     assert_equal 4, provider.llm_metadata.fetch(:cached_input_tokens)
     assert_equal 8, provider.llm_metadata.fetch(:output_tokens)
+  end
+
+  test "reports synchronous draft delivery time without changing request wall time" do
+    content = '{"answer":"Draft","citations":[],"limitations":[]}'
+    StreamingConnection.response = FakeStreamResponse.new(
+      code: 200,
+      chunks: [ sse_body(stream_chunk(content, finish_reason: "stop"), "[DONE]") ]
+    )
+    provider = streaming_provider(->(_delta) { })
+    clock_values = [ 0.0, 2.0, 7.0, 10.0 ]
+    provider.define_singleton_method(:monotonic_time) { clock_values.shift }
+
+    provider.call
+
+    metadata = provider.llm_metadata
+    assert_equal 10_000, metadata.fetch(:elapsed_ms)
+    assert_equal 5_000, metadata.fetch(:stream_callback_elapsed_ms)
+    assert_not metadata.key?(:provider_elapsed_ms)
   end
 
   test "rejects streams that end without the done event" do
@@ -217,9 +277,21 @@ class Agentic::Providers::OpenaiTest < ActiveSupport::TestCase
       length_provider.call
     end
     assert_equal "OpenAI stream reached its output limit", length_error.message
+    assert_instance_of Agentic::Errors::NonRetryableExecutionError, length_error
+    assert_not_predicate length_error, :retryable?
     assert_equal 7, length_provider.failure_metadata(length_error).fetch(:input_tokens)
     assert_equal 2, length_provider.failure_metadata(length_error).fetch(:cached_input_tokens)
     assert_equal 3, length_provider.failure_metadata(length_error).fetch(:output_tokens)
+
+    StreamingConnection.response = FakeStreamResponse.new(
+      code: 200,
+      chunks: [ sse_body(stream_chunk(nil, finish_reason: "content_filter"), "[DONE]") ]
+    )
+    content_filter_error = assert_raises(Agentic::Errors::ExecutionError) do
+      streaming_provider(->(_delta) { }).call
+    end
+    assert_equal "OpenAI stream was stopped by a content filter", content_filter_error.message
+    assert_not_predicate content_filter_error, :retryable?
 
     StreamingConnection.response = FakeStreamResponse.new(
       code: 429,
@@ -231,7 +303,72 @@ class Agentic::Providers::OpenaiTest < ActiveSupport::TestCase
     end
     assert_equal "OpenAI streaming request failed with HTTP 429", http_error.message
     assert_equal 429, http_error.http_code
+    assert_predicate http_error, :retryable?
     assert_not_includes http_error.message, "private provider detail"
+
+    StreamingConnection.response = FakeStreamResponse.new(code: 400, chunks: [ "bad request" ])
+    client_error = assert_raises(Agentic::Errors::ExecutionError) do
+      streaming_provider(->(_delta) { }).call
+    end
+    assert_equal 400, client_error.http_code
+    assert_not_predicate client_error, :retryable?
+
+    StreamingConnection.response = FakeStreamResponse.new(code: 408, chunks: [ "timeout" ])
+    timeout_error = assert_raises(Agentic::Errors::ExecutionError) do
+      streaming_provider(->(_delta) { }).call
+    end
+    assert_equal 408, timeout_error.http_code
+    assert_predicate timeout_error, :retryable?
+
+    StreamingConnection.response = FakeStreamResponse.new(code: 409, chunks: [ "conflict" ])
+    conflict_error = assert_raises(Agentic::Errors::ExecutionError) do
+      streaming_provider(->(_delta) { }).call
+    end
+    assert_equal 409, conflict_error.http_code
+    assert_predicate conflict_error, :retryable?
+
+    StreamingConnection.response = FakeStreamResponse.new(code: 503, chunks: [ "unavailable" ])
+    server_error = assert_raises(Agentic::Errors::ExecutionError) do
+      streaming_provider(->(_delta) { }).call
+    end
+    assert_equal 503, server_error.http_code
+    assert_predicate server_error, :retryable?
+  end
+
+  test "keeps received usage when a stream disconnects and leaves missing usage unknown" do
+    usage_event = {
+      choices: [],
+      usage: {
+        prompt_tokens: 9,
+        completion_tokens: 4,
+        total_tokens: 13,
+        prompt_tokens_details: { cached_tokens: 2 }
+      }
+    }
+    StreamingConnection.response = InterruptedStreamResponse.new(
+      code: 200,
+      chunks: [ sse_body(usage_event) ]
+    )
+    provider = streaming_provider(->(_delta) { })
+
+    error = assert_raises(IOError) { provider.call }
+    metadata = provider.failure_metadata(error)
+
+    assert_equal 9, metadata.fetch(:input_tokens)
+    assert_equal 2, metadata.fetch(:cached_input_tokens)
+    assert_equal 4, metadata.fetch(:output_tokens)
+    assert_equal usage_event.fetch(:usage).deep_stringify_keys, metadata.fetch(:raw_usage)
+
+    StreamingConnection.response = InterruptedStreamResponse.new(code: 200, chunks: [])
+    provider_without_usage = streaming_provider(->(_delta) { })
+
+    missing_usage_error = assert_raises(IOError) { provider_without_usage.call }
+    missing_usage_metadata = provider_without_usage.failure_metadata(missing_usage_error)
+
+    assert_nil missing_usage_metadata.fetch(:input_tokens)
+    assert_nil missing_usage_metadata.fetch(:cached_input_tokens)
+    assert_nil missing_usage_metadata.fetch(:output_tokens)
+    assert_empty missing_usage_metadata.fetch(:raw_usage)
   end
 
   test "a draft callback failure does not abort the paid stream" do
@@ -280,6 +417,7 @@ class Agentic::Providers::OpenaiTest < ActiveSupport::TestCase
 
       assert_equal expected_message, error.message
       assert_not_includes error.message, "private detail"
+      assert_not_predicate error, :retryable? if expected_message == "OpenAI refused the streaming request"
     end
   end
 

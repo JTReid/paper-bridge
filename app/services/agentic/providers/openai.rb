@@ -6,12 +6,22 @@ module Agentic
       include Errors
       include LlmCallTelemetry
 
-      class StreamingHttpError < ExecutionError
+      class HttpError < ExecutionError
         attr_reader :http_code
 
-        def initialize(http_code)
+        def initialize(http_code, message: nil)
           @http_code = http_code
-          super("OpenAI streaming request failed with HTTP #{http_code}")
+          super(message || "OpenAI request failed with HTTP #{http_code}")
+        end
+
+        def retryable?
+          http_code.in?([ 408, 409, 429 ]) || http_code.between?(500, 599)
+        end
+      end
+
+      class StreamingHttpError < HttpError
+        def initialize(http_code)
+          super(http_code, message: "OpenAI streaming request failed with HTTP #{http_code}")
         end
       end
 
@@ -62,6 +72,8 @@ module Agentic
           )
         end
         @raw_response = JSON.parse(@http_response)
+      rescue RestClient::ExceptionWithResponse => e
+        raise HttpError.new(e.http_code)
       end
 
       def parse_response(raw_response)
@@ -138,7 +150,9 @@ module Agentic
       def deliver_content_delta(content_delta)
         return unless @content_delta_callback
 
-        @content_delta_callback.call(content_delta)
+        measure_stream_callback do
+          @content_delta_callback.call(content_delta)
+        end
       rescue StandardError => e
         Rails.logger.warn("openai_stream_callback_failed error_class=#{e.class.name}")
         @content_delta_callback = nil
@@ -146,15 +160,15 @@ module Agentic
 
       def validate_completed_stream!
         raise ExecutionError, "OpenAI stream ended before completion" unless @stream_done
-        raise ExecutionError, "OpenAI refused the streaming request" if @stream_refusal.present?
+        raise NonRetryableExecutionError, "OpenAI refused the streaming request" if @stream_refusal.present?
 
         case @stream_finish_reason
         when "stop"
           nil
         when "length"
-          raise ExecutionError, "OpenAI stream reached its output limit"
+          raise NonRetryableExecutionError, "OpenAI stream reached its output limit"
         when "content_filter"
-          raise ExecutionError, "OpenAI stream was stopped by a content filter"
+          raise NonRetryableExecutionError, "OpenAI stream was stopped by a content filter"
         else
           raise ExecutionError, "OpenAI stream ended without a successful finish reason"
         end
@@ -179,7 +193,7 @@ module Agentic
         @content_delta_callback = requirements[:on_content_delta]
         @stream_content = +""
         @stream_refusal = +""
-        @stream_usage = {}
+        @stream_usage = nil
         @stream_finish_reason = nil
         @stream_done = false
       end
@@ -273,7 +287,7 @@ module Agentic
       end
 
       def raw_usage
-        raw_response&.fetch("usage", {}) || {}
+        raw_response&.fetch("usage", nil) || @stream_usage || {}
       end
 
       def input_tokens

@@ -88,6 +88,8 @@ module Agentic
         tag: agent_tags[:tag],
         error: e
       )
+      raise if e.is_a?(Error)
+
       raise ExecutionError, e.message
     end
 

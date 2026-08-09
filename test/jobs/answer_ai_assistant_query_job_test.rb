@@ -51,6 +51,14 @@ class AnswerAiAssistantQueryJobTest < ActiveJob::TestCase
     end
   end
 
+  class NonRetryableFailurePipeline
+    def initialize(**); end
+
+    def execute
+      raise Agentic::Errors::NonRetryableExecutionError, "Output limit reached"
+    end
+  end
+
   class TransientAnswerJob < AnswerAiAssistantQueryJob
     self.pipeline_class = ExecutionFailurePipeline
     self.llm_connection = Object.new
@@ -92,6 +100,19 @@ class AnswerAiAssistantQueryJobTest < ActiveJob::TestCase
 
     assert_predicate query.reload, :queued?
     assert_nil query.failed_at
+    assert_nil query.draft_answer
+  end
+
+  test "fails a non-retryable provider response without scheduling another attempt" do
+    query = create_query
+    job_class = configured_job_class(NonRetryableFailurePipeline)
+
+    assert_no_enqueued_jobs do
+      job_class.perform_now(query)
+    end
+
+    assert_predicate query.reload, :failed?
+    assert_not_nil query.failed_at
     assert_nil query.draft_answer
   end
 

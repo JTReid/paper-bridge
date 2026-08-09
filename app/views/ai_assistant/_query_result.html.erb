@@ -25,10 +25,14 @@
   class="space-y-6"
   data-ai-assistant-query-target="query"
   data-query-id="<%= ai_assistant_query.id %>"
+  data-query-version="<%= ai_assistant_query.updated_at.utc.iso8601(6) %>"
   data-phase="<%= phase %>"
   data-active="<%= ai_assistant_query.active? %>"
   data-started-at="<%= ai_assistant_query.created_at.iso8601 %>"
   data-announcement="<%= announcements.fetch(phase) %>"
+  <% if ai_assistant_query.active? %>
+    data-status-url="<%= status_dependent_ai_assistant_query_path(ai_assistant_query.dependent, ai_assistant_query) %>"
+  <% end %>
   <% if ai_assistant_query.queued? && ai_assistant_query.enqueued_at.nil? %>
     data-start-url="<%= start_dependent_ai_assistant_query_path(ai_assistant_query.dependent, ai_assistant_query) %>"
   <% end %>

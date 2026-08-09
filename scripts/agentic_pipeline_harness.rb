@@ -39,6 +39,7 @@ AGENTIC_CORE_FILES = %w[
   db/migrate/20260614023700_create_agentic_pipeline.rb
   docs/agentic-pipeline-runbook.md
   docs/runbooks/agentic-pipeline.md
+  test/services/agentic/llm_call_pricing_test.rb
   test/services/agentic/pipeline_test.rb
   test/services/agentic/providers/anthropic_test.rb
   test/services/agentic/providers/openai_test.rb
@@ -288,6 +289,7 @@ COMMANDS = {
   "tests" => [
     [
       "bin/rails", "test",
+      "test/services/agentic/llm_call_pricing_test.rb",
       "test/services/agentic/pipeline_test.rb",
       "test/services/agentic/providers/openai_test.rb",
       "test/services/agentic/providers/sse_parser_test.rb",

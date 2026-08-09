@@ -35,7 +35,7 @@ class AiAssistantControllerTest < ActionDispatch::IntegrationTest
     assert_select "form[method='post'][data-testid='ai-assistant-form']"
     assert_select "turbo-cable-stream-source"
     assert_select "meta[name='turbo-cache-control'][content='no-cache']"
-    assert_select "[data-controller='ai-assistant-query'][data-ai-assistant-query-reassure-after-value='10000'][data-ai-assistant-query-long-wait-after-value='30000']"
+    assert_select "[data-controller='ai-assistant-query'][data-ai-assistant-query-reassure-after-value='10000'][data-ai-assistant-query-long-wait-after-value='30000'][data-ai-assistant-query-reconcile-every-value='3000'][data-ai-assistant-query-start-retry-after-value='2000'][data-ai-assistant-query-start-retry-max-attempts-value='4']"
     assert_select "[data-ai-assistant-query-target='announcer'][aria-live='polite']"
 
     visible_text = Nokogiri::HTML(response.body).text.squish
@@ -91,8 +91,45 @@ class AiAssistantControllerTest < ActionDispatch::IntegrationTest
     assert_includes response.body, "What changed?"
     query = AiAssistantQuery.order(:id).last
     start_path = start_dependent_ai_assistant_query_path(dependent, query)
-    assert_select "[data-ai-assistant-query-target='query'][data-phase='queued'][data-active='true'][data-start-url='#{start_path}']"
+    status_path = status_dependent_ai_assistant_query_path(dependent, query)
+    assert_select "[data-ai-assistant-query-target='query'][data-query-version][data-phase='queued'][data-active='true'][data-start-url='#{start_path}'][data-status-url='#{status_path}']"
     assert_nil query.enqueued_at
+  end
+
+  test "a second post reuses the current user's active query" do
+    query = create_query(
+      question: "The question already running",
+      enqueued_at: Time.current
+    )
+    sign_in users(:family_admin)
+
+    assert_no_difference -> { AiAssistantQuery.count } do
+      assert_no_enqueued_jobs do
+        post dependent_ai_assistant_path(query.dependent),
+          params: { q: "A duplicate question from another tab" },
+          headers: { "Accept" => "text/vnd.turbo-stream.html" }
+      end
+    end
+
+    assert_response :success
+    assert_select "turbo-stream[action='update'][target='ai_assistant_result']"
+    assert_select "[data-testid='ai-assistant-query-result'][data-query-id='#{query.id}'][data-active='true']"
+    assert_includes response.body, "The question already running"
+    assert_not_includes response.body, "A duplicate question from another tab"
+  end
+
+  test "an invalid second post returns its errors instead of reusing an active query" do
+    query = create_query(enqueued_at: Time.current)
+    sign_in users(:family_admin)
+
+    assert_no_difference -> { AiAssistantQuery.count } do
+      assert_no_enqueued_jobs do
+        post dependent_ai_assistant_path(query.dependent), params: { q: "   " }
+      end
+    end
+
+    assert_redirected_to dependent_ai_assistant_path(query.dependent)
+    assert_equal "Question can't be blank", flash[:alert]
   end
 
   test "start enqueues a saved query once" do
@@ -125,6 +162,49 @@ class AiAssistantControllerTest < ActionDispatch::IntegrationTest
 
     assert_response :not_found
     assert_nil query.reload.enqueued_at
+  end
+
+  test "status returns the latest durable query state as versioned HTML" do
+    query = create_query(
+      state: :processing,
+      started_at: Time.current,
+      draft_answer: "The durable draft"
+    )
+    sign_in users(:family_admin)
+
+    get status_dependent_ai_assistant_query_path(query.dependent, query)
+
+    assert_response :success
+    assert_equal "text/html", response.media_type
+    assert_includes response.headers["Cache-Control"], "no-cache"
+    assert_select "turbo-stream", count: 0
+    assert_select "[data-testid='ai-assistant-query-result'][data-query-version='#{query.updated_at.utc.iso8601(6)}'][data-phase='drafting'][data-active='true'][data-status-url='#{status_dependent_ai_assistant_query_path(query.dependent, query)}']"
+    assert_includes response.body, "The durable draft"
+  end
+
+  test "status returns a finished query and stops its status checks" do
+    query = create_query(
+      state: :completed,
+      completed_at: Time.current,
+      answer: { answer: "The durable final answer.", citations: [], limitations: [] }
+    )
+    sign_in users(:family_admin)
+
+    get status_dependent_ai_assistant_query_path(query.dependent, query)
+
+    assert_response :success
+    assert_select "[data-testid='ai-assistant-query-result'][data-phase='completed'][data-active='false']"
+    assert_select "[data-testid='ai-assistant-query-result'][data-status-url]", count: 0
+    assert_includes response.body, "The durable final answer."
+  end
+
+  test "another user cannot reconcile a saved query" do
+    query = create_query(state: :processing, started_at: Time.current)
+    sign_in users(:account_member)
+
+    get status_dependent_ai_assistant_query_path(query.dependent, query)
+
+    assert_response :not_found
   end
 
   test "blank post does not save or enqueue a query" do

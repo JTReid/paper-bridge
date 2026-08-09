@@ -51,6 +51,12 @@ module AgenticPipelineTestAgents
     end
   end
 
+  class HttpFailingAgent < BaseAgent
+    def execute
+      raise Agentic::Providers::Openai::StreamingHttpError.new(429)
+    end
+  end
+
   class Pipeline < Agentic::Pipeline
     def initialize(context:)
       super(
@@ -93,6 +99,16 @@ module AgenticPipelineTestAgents
   class FailedPipeline < Agentic::Pipeline
     def initialize(context:)
       super([ [ FailingAgent, {}, { tag: :failure } ] ], context: context)
+    end
+
+    def to_response
+      nil
+    end
+  end
+
+  class HttpFailedPipeline < Agentic::Pipeline
+    def initialize(context:)
+      super([ [ HttpFailingAgent, {}, { tag: :failure } ] ], context: context)
     end
 
     def to_response
@@ -146,5 +162,23 @@ class Agentic::PipelineTest < ActiveSupport::TestCase
     assert_equal "boom", error.message
     assert_equal "failed", pipeline_run.reload.state
     assert_includes pipeline_run.pipeline_log.entries.pluck("message"), "Pipeline execution failed"
+  end
+
+  test "provider errors keep their retry details without requiring a response object" do
+    pipeline_run = PipelineRun.create!
+    pipeline = AgenticPipelineTestAgents::HttpFailedPipeline.new(
+      context: { pipeline_run_gid: pipeline_run.to_global_id.to_s }
+    )
+
+    error = assert_raises(Agentic::Providers::Openai::StreamingHttpError) do
+      pipeline.execute("source")
+    end
+
+    assert_equal 429, error.http_code
+    assert_predicate error, :retryable?
+    assert_predicate pipeline_run.reload, :failed?
+    failed_step = pipeline_run.pipeline_log.entries.find { |entry| entry["message"].include?("Step 1 failed") }
+    assert_equal 429, failed_step.dig("payload", "http_code")
+    assert_not failed_step.fetch("payload").key?("response_body")
   end
 end
