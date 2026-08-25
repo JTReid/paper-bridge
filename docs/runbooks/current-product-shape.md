@@ -46,9 +46,10 @@ operational harness checks until matching implementation exists.
   `DocumentShareMailer`.
 - Account-level Stripe billing foundation with `BillingSubscription`, hosted
   Stripe Checkout and Customer Portal session endpoints, StripeEvent webhook
-  subscription sync, signed-in account subscription enforcement, a reusable
-  `require_subscription!` controller gate, and a super-admin account billing
-  overview.
+  subscription sync, a locked post-Checkout dashboard state that refreshes from
+  an account-scoped Turbo broadcast, signed-in account subscription enforcement,
+  a reusable `require_subscription!` controller gate, and a super-admin account
+  billing overview.
 
 ## Family-Facing Language
 

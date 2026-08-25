@@ -12,6 +12,7 @@ module Billing
 
       billing_subscription = current_account.billing_subscription || current_account.build_billing_subscription
       billing_subscription.stripe_customer_id ||= create_stripe_customer.id
+      billing_subscription.mark_checkout_pending
       billing_subscription.save!
 
       checkout_session = Stripe::Checkout::Session.create(
@@ -19,7 +20,7 @@ module Billing
         customer: billing_subscription.stripe_customer_id,
         client_reference_id: current_account.id.to_s,
         line_items: [ { price: Billing::StripeConfig.price_id, quantity: 1 } ],
-        success_url: billing_url(checkout: "success"),
+        success_url: dashboard_url(checkout: "success"),
         cancel_url: billing_url(checkout: "cancel"),
         metadata: stripe_metadata,
         subscription_data: { metadata: stripe_metadata }
@@ -27,6 +28,7 @@ module Billing
 
       redirect_to checkout_session.url, allow_other_host: true, status: :see_other
     rescue Stripe::StripeError => e
+      clear_checkout_pending(billing_subscription)
       Rails.logger.error("stripe_checkout_failed account_id=#{current_account.id} error_class=#{e.class.name} error_message=#{e.message.to_s.squish}")
       redirect_to billing_path, alert: "We couldn’t start checkout. Please try again."
     end
@@ -49,6 +51,13 @@ module Billing
 
       def stripe_metadata
         { account_id: current_account.id.to_s }
+      end
+
+      def clear_checkout_pending(billing_subscription)
+        return unless billing_subscription&.persisted?
+
+        billing_subscription.clear_checkout_pending
+        billing_subscription.save! if billing_subscription.changed?
       end
   end
 end

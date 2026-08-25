@@ -152,7 +152,7 @@ Named workflow modes:
 | Mode | Coverage |
 | --- | --- |
 | `all` | Runs every deterministic workflow mode in this table. It does not run `negative`, `mailpit`, seeded edge-state modes, or live-service probes. |
-| `billing` | Verifies inactive-account billing gating, hidden product navigation, Checkout form full-page navigation, active-account product access, and Customer Portal form full-page navigation with synthetic Stripe records. |
+| `billing` | Verifies inactive-account billing gating, hidden product navigation, Checkout form full-page navigation, the locked post-Checkout dashboard state, Turbo-driven active and non-active outcomes, cancellation feedback, active-account product access, and Customer Portal form full-page navigation with synthetic Stripe records. |
 | `sharing` | Opens the share modal, selects a care team recipient, submits a document share, and verifies the browser success path without SMTP capture. |
 | `documents` | Exercises original-filename search, category-card and chip filtering, filter-aware upload defaults, successful multi-document upload, and document metadata editing. Required-file and blank-title validation live in `negative documents`. |
 | `care-team` | Verifies the care-team list, active member permissions, invite form, and successful invite creation with category permissions. |
@@ -179,9 +179,10 @@ Boundaries:
 
 Live-service caveats:
 
-- Billing workflow coverage uses synthetic subscription records and form
-  attributes. It does not call live Stripe Checkout, the Customer Portal,
-  Stripe webhooks, or the Stripe CLI.
+- Billing workflow coverage uses synthetic subscription records, form
+  attributes, and a browser-delivered synthetic Turbo refresh. It does not call
+  live Stripe Checkout, the Customer Portal, Stripe webhooks, the Stripe CLI, or
+  prove live webhook-to-WebSocket delivery.
 - AI assistant workflow coverage submits and persists a queued question through
   the test adapter. It does not run a worker, call a live LLM, generate
   embeddings, prove vector retrieval, or wait for a final answer.

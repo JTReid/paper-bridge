@@ -1,4 +1,5 @@
 class BillingSubscription < ApplicationRecord
+  CHECKOUT_PENDING_KEY = "checkout_pending"
   ACCESS_STATUSES = %w[active trialing].freeze
   STATUSES = {
     incomplete: "incomplete",
@@ -26,5 +27,17 @@ class BillingSubscription < ApplicationRecord
 
   def stripe_linked?
     stripe_customer_id.present? || stripe_subscription_id.present?
+  end
+
+  def checkout_pending?
+    metadata[CHECKOUT_PENDING_KEY] == true
+  end
+
+  def mark_checkout_pending
+    self.metadata = metadata.merge(CHECKOUT_PENDING_KEY => true)
+  end
+
+  def clear_checkout_pending
+    self.metadata = metadata.except(CHECKOUT_PENDING_KEY)
   end
 end

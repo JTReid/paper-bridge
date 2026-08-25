@@ -20,6 +20,19 @@ today.
   billing overview.
 - `/billing` shows the current account's billing state and starts hosted Stripe
   Checkout when `stripe.price_id` is configured.
+- Successful Checkout returns to `/dashboard?checkout=success`. Until Stripe
+  reports a decisive subscription result, the route renders a locked activation
+  state with no product data and subscribes to an account-scoped Turbo stream.
+  The waiting page does not poll.
+- Starting Checkout records a temporary pending marker in the existing billing
+  metadata. A decisive subscription lifecycle or failed-invoice webhook clears
+  that marker and broadcasts a Turbo page refresh. Stripe's provisional
+  `incomplete` state keeps waiting; active or trialing accounts enter the
+  dashboard with a confirmation, while terminal non-active results return to
+  `/billing` with an actionable message. The query parameter and Turbo broadcast
+  never grant access themselves.
+- Canceled Checkout returns to `/billing`, clears the temporary pending marker,
+  and confirms that the subscription did not change.
 - `/billing/portal_session` starts Stripe's hosted Customer Portal when the
   account has a Stripe customer ID.
 - `/stripe/webhooks` is mounted through StripeEvent. Webhook requests require a
@@ -54,6 +67,16 @@ Run the billing harness command:
 ```bash
 ruby scripts/paper_bridge_harness.rb billing
 ```
+
+For the browser-visible pending, success, failure, and cancellation states, run:
+
+```bash
+ruby scripts/paper_bridge_qa_harness.rb workflow billing
+```
+
+The browser workflow uses synthetic subscription records and a synthetic Turbo
+refresh. It does not call live Stripe or prove live webhook-to-WebSocket
+delivery.
 
 Before broader product-shape changes:
 

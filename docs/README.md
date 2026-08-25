@@ -22,7 +22,7 @@ check enforces that every tracked, non-ignored Markdown file is linked here.
 | --- | --- |
 | [Current Product Shape](runbooks/current-product-shape.md) | Implemented profile, interruption-free family calendar, document, access, sharing, and billing behavior plus focused harness commands. |
 | [Agentic Pipeline Framework](runbooks/agentic-pipeline.md) | Generic `Agentic::Pipeline` framework contract. |
-| [Billing](runbooks/billing.md) | Stripe Checkout, Customer Portal, subscription gate, webhook sync, and super-admin billing overview. |
+| [Billing](runbooks/billing.md) | Stripe Checkout and Customer Portal, subscription gates, webhook-synchronized Turbo activation, and super-admin billing overview. |
 | [Document Ingestion](runbooks/document-ingestion.md) | Upload, preparation, page, chunk, summary, embedding, and timeline lifecycle. |
 | [AI Assistant Search](runbooks/ai-assistant-search.md) | Durable asynchronous questions, streamed answer drafts, dependent-scoped retrieval, source validation, page-linked citations, access filtering, and answer synthesis. |
 | [Care Team Access](runbooks/care-team-access.md) | Account, dependent, care team invitation, and category-permission behavior. |

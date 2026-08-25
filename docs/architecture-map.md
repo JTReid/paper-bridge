@@ -130,6 +130,8 @@ ported from Scoutspace.
 - Billing uses Stripe-hosted Checkout and Customer Portal sessions. Webhook
   verification and dispatch are mounted through `stripe_event` at
   `/stripe/webhooks`, with subscription state synchronized by
-  `Billing::StripeWebhookHandler`.
+  `Billing::StripeWebhookHandler`. Successful Checkout returns to a locked
+  dashboard state; subscription-result webhooks clear its pending marker and
+  broadcast an account-scoped Turbo refresh that re-runs the subscription gate.
 - Live model checks are opt-in and should use fake or in-house test data for
   this spike.

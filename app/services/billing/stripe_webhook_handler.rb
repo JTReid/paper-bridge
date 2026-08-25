@@ -41,26 +41,48 @@ module Billing
         return unless subscription.account || account
 
         subscription.account ||= account
+        checkout_was_pending = subscription.checkout_pending?
+        status = normalized_status(stripe_value(stripe_subscription, "status"))
         subscription.assign_attributes(
           stripe_customer_id: stripe_id(stripe_value(stripe_subscription, "customer")),
           stripe_subscription_id: stripe_subscription_id,
           stripe_price_id: stripe_price_id(stripe_subscription),
-          status: normalized_status(stripe_value(stripe_subscription, "status")),
+          status: status,
           current_period_end: stripe_time(subscription_period_end(stripe_subscription)),
           trial_end: stripe_time(stripe_value(stripe_subscription, "trial_end")),
           cancel_at_period_end: stripe_value(stripe_subscription, "cancel_at_period_end") == true,
           canceled_at: stripe_time(stripe_value(stripe_subscription, "canceled_at")),
           latest_event_id: event.id
         )
+        subscription.clear_checkout_pending unless status == BillingSubscription.statuses[:incomplete]
         subscription.save!
+        broadcast_checkout_result(subscription) if checkout_was_pending && !subscription.checkout_pending?
       end
 
       def mark_subscription_past_due(invoice, event)
-        stripe_subscription_id = stripe_id(stripe_value(invoice, "subscription"))
+        stripe_subscription_id = invoice_subscription_id(invoice)
         return if stripe_subscription_id.blank?
 
         subscription = BillingSubscription.find_by(stripe_subscription_id: stripe_subscription_id)
-        subscription&.update!(status: :past_due, latest_event_id: event.id)
+        return unless subscription
+
+        checkout_was_pending = subscription.checkout_pending?
+        subscription.assign_attributes(status: :past_due, latest_event_id: event.id)
+        subscription.clear_checkout_pending
+        subscription.save!
+        broadcast_checkout_result(subscription) if checkout_was_pending
+      end
+
+      def invoice_subscription_id(invoice)
+        parent = stripe_value(invoice, "parent")
+        subscription_details = stripe_value(parent, "subscription_details")
+
+        stripe_id(stripe_value(subscription_details, "subscription")) ||
+          stripe_id(stripe_value(invoice, "subscription"))
+      end
+
+      def broadcast_checkout_result(subscription)
+        Billing::CheckoutReturnBroadcaster.call(subscription)
       end
 
       def account_from_subscription(stripe_subscription)

@@ -44,11 +44,16 @@ class ApplicationController < ActionController::Base
       return if current_user.super_admin?
       return if current_account.blank?
       return if current_account.subscription_active?
+      return if successful_checkout_return?
 
       redirect_to billing_path, alert: "A subscription is required to continue."
     end
 
     def subscription_exempt_controller?
       controller_path.in?(%w[billing billing/checkout_sessions billing/portal_sessions])
+    end
+
+    def successful_checkout_return?
+      controller_path == "dashboard" && action_name == "index" && params[:checkout] == "success"
     end
 end

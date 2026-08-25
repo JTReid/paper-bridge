@@ -57,6 +57,7 @@ CURRENT_PRODUCT_FILES = %w[
   app/models/shared_document.rb
   app/models/billing_subscription.rb
   app/services/billing/stripe_config.rb
+  app/services/billing/checkout_return_broadcaster.rb
   app/services/billing/stripe_webhook_handler.rb
   app/mailers/document_share_mailer.rb
   app/mailers/appointment_mailer.rb
@@ -67,6 +68,7 @@ CURRENT_PRODUCT_FILES = %w[
   app/views/appointment_mailer/share.html.erb
   app/views/appointment_mailer/share.text.erb
   app/views/dashboard/index.html.erb
+  app/views/dashboard/checkout_pending.html.erb
   app/views/shared/_app_shell.html.erb
   app/views/dependents/show.html.erb
   app/views/documents/_form.html.erb
@@ -102,6 +104,7 @@ CURRENT_PRODUCT_FILES = %w[
   test/models/shared_document_test.rb
   test/models/billing_subscription_test.rb
   test/services/billing/stripe_config_test.rb
+  test/services/billing/checkout_return_broadcaster_test.rb
   test/services/billing/stripe_webhook_handler_test.rb
   test/mailers/document_share_mailer_test.rb
   test/mailers/appointment_mailer_test.rb
@@ -117,6 +120,7 @@ CURRENT_PRODUCT_FILES = %w[
   tests/e2e/product/accessibility_suite.spec.js
   tests/e2e/product/mobile_suite.spec.js
   tests/e2e/product/ai_assistant.spec.js
+  tests/e2e/product/billing.spec.js
 ].freeze
 
 FOUNDATION_TESTS = %w[
@@ -153,12 +157,14 @@ SHARING_TESTS = %w[
 
 BILLING_TESTS = %w[
   test/models/billing_subscription_test.rb
+  test/controllers/dashboard_controller_test.rb
   test/controllers/billing_controller_test.rb
   test/controllers/billing_checkout_sessions_controller_test.rb
   test/controllers/billing_portal_sessions_controller_test.rb
   test/controllers/admin_accounts_controller_test.rb
   test/controllers/stripe_webhooks_controller_test.rb
   test/services/billing/stripe_config_test.rb
+  test/services/billing/checkout_return_broadcaster_test.rb
   test/services/billing/stripe_webhook_handler_test.rb
 ].freeze
 
@@ -213,6 +219,7 @@ RUBOCOP_PATHS = %w[
   app/models/shared_document.rb
   app/models/billing_subscription.rb
   app/services/billing/stripe_config.rb
+  app/services/billing/checkout_return_broadcaster.rb
   app/services/billing/stripe_webhook_handler.rb
   config/initializers/stripe.rb
   app/mailers/document_share_mailer.rb
@@ -243,6 +250,7 @@ RUBOCOP_PATHS = %w[
   test/models/shared_document_test.rb
   test/models/billing_subscription_test.rb
   test/services/billing/stripe_config_test.rb
+  test/services/billing/checkout_return_broadcaster_test.rb
   test/services/billing/stripe_webhook_handler_test.rb
   test/mailers/document_share_mailer_test.rb
   test/mailers/appointment_mailer_test.rb

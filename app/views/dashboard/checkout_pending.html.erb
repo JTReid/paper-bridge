@@ -1,0 +1,16 @@
+<% content_for :title, "Finishing your subscription | PaperBridge" %>
+
+<%= turbo_stream_from current_account, :billing_checkout %>
+
+<%= app_shell(active: :dashboard) do %>
+  <div class="flex min-h-[60vh] items-center justify-center py-10" data-testid="checkout-pending-page">
+    <section class="w-full max-w-xl rounded-2xl border border-border/60 bg-white p-8 text-center shadow-sm" role="status" aria-live="polite">
+      <span class="mx-auto block h-10 w-10 animate-spin rounded-full border-4 border-primary/15 border-t-primary" aria-hidden="true"></span>
+      <p class="mt-6 text-xs font-medium uppercase tracking-widest text-accent">Checkout complete</p>
+      <h1 class="mt-2 text-2xl font-bold tracking-tight text-primary">Finishing your subscription…</h1>
+      <p class="mx-auto mt-3 max-w-md text-sm leading-6 text-muted-foreground">
+        PaperBridge is confirming the subscription for <%= current_account.name %>. Keep this page open and your dashboard will appear automatically.
+      </p>
+    </section>
+  </div>
+<% end %>

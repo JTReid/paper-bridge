@@ -86,4 +86,50 @@ class DashboardControllerTest < ActionDispatch::IntegrationTest
     assert_redirected_to billing_path
     assert_equal "A subscription is required to continue.", flash[:alert]
   end
+
+  test "renders a locked checkout confirmation while the subscription is inactive" do
+    subscription = accounts(:greenfield).billing_subscription
+    subscription.status = :incomplete
+    subscription.mark_checkout_pending
+    subscription.save!
+    sign_in users(:family_admin)
+
+    get dashboard_path(checkout: "success")
+
+    assert_response :success
+    assert_select "turbo-cable-stream-source"
+    assert_select "[data-testid='checkout-pending-page']"
+    assert_includes response.body, "Finishing your subscription"
+    assert_includes response.body, accounts(:greenfield).name
+    assert_not_includes response.body, "Your Family Hub"
+    assert_not_includes response.body, dependents(:emma).name
+  end
+
+  test "returns a completed non-active checkout result to billing" do
+    accounts(:greenfield).billing_subscription.update!(status: :incomplete)
+    sign_in users(:family_admin)
+
+    get dashboard_path(checkout: "success")
+
+    assert_redirected_to billing_path(checkout: "failed")
+  end
+
+  test "completes a successful checkout return when the subscription is active" do
+    sign_in users(:family_admin)
+
+    get dashboard_path(checkout: "success")
+
+    assert_redirected_to dashboard_path
+    assert_equal "You’re all set. Your PaperBridge subscription is active.", flash[:notice]
+  end
+
+  test "completes a successful checkout return when the subscription is trialing" do
+    accounts(:greenfield).billing_subscription.update!(status: :trialing)
+    sign_in users(:family_admin)
+
+    get dashboard_path(checkout: "success")
+
+    assert_redirected_to dashboard_path
+    assert_equal "You’re all set. Your PaperBridge subscription is active.", flash[:notice]
+  end
 end

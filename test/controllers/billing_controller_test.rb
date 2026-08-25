@@ -79,6 +79,28 @@ class BillingControllerTest < ActionDispatch::IntegrationTest
     end
   end
 
+  test "returns a canceled checkout to billing with a notice" do
+    subscription = accounts(:greenfield).billing_subscription
+    subscription.mark_checkout_pending
+    subscription.save!
+    sign_in users(:family_admin)
+
+    get billing_path(checkout: "cancel")
+
+    assert_redirected_to billing_path
+    assert_equal "Checkout canceled. Your subscription hasn’t changed.", flash[:notice]
+    assert_not subscription.reload.checkout_pending?
+  end
+
+  test "returns an inactive checkout result to billing with an alert" do
+    sign_in users(:family_admin)
+
+    get billing_path(checkout: "failed")
+
+    assert_redirected_to billing_path
+    assert_equal "Your subscription isn’t active yet. Review your billing details and try again.", flash[:alert]
+  end
+
   test "redirects super admins without an account to admin accounts" do
     sign_in users(:super_admin)
 
