@@ -6,6 +6,7 @@ class HomeControllerTest < ActionDispatch::IntegrationTest
 
     assert_response :success
     assert_includes response.body, "PaperBridge"
+    assert_select "img[alt='PaperBridge'][src*='paperbridge-logo']", count: 1
     assert_includes response.body, "Sign In"
     assert_includes response.body, "Get Started"
     assert_includes response.body, "Your child's"
@@ -16,10 +17,14 @@ class HomeControllerTest < ActionDispatch::IntegrationTest
     assert_includes response.body, "Complete Story"
     assert_includes response.body, "Know What Comes Next"
     assert_includes response.body, "AI-tailored summaries"
-    assert_includes response.body, "Share by Email"
-    assert_includes response.body, "Advocacy Copilot"
+    assert_includes response.body, "isn't just storing files"
+    assert_includes response.body, "Meet PaperBridge"
+    assert_not_includes response.body, "Watch How It Works"
+    assert_not_includes response.body, "Share by Email"
+    assert_not_includes response.body, "Advocacy Copilot"
     assert_not_includes response.body, "AI-Powered Care Advocacy"
-    assert_select "#features article", count: 5
+    assert_select "#how-it-works h2 .block", text: "Ready to advocate."
+    assert_select "#features article", count: 3
     assert_select "[data-testid='home-nav-secondary']", count: 1
     assert_select "[data-controller='reveal']"
   end

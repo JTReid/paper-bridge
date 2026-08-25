@@ -49,21 +49,13 @@ module ApplicationHelper
   end
 
   def paperbridge_logo(width: 160, height: 56, class_name: nil)
-    class_attr = class_name.present? ? %( class="#{ERB::Util.html_escape(class_name)}") : ""
-
-    <<~SVG.html_safe
-      <svg#{class_attr} width="#{width}" height="#{height}" viewBox="0 0 900 320" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="PaperBridge">
-        <g transform="translate(320,35)">
-          <path d="M0 90C45 35 155 35 200 90" stroke="#1e3a8a" stroke-width="10" stroke-linecap="round"></path>
-          <path d="M-10 55C50 0 150 0 210 55" stroke="#1e3a8a" stroke-width="10" stroke-linecap="round"></path>
-          <line x1="30" y1="40" x2="30" y2="90" stroke="#1e3a8a" stroke-width="10" stroke-linecap="round"></line>
-          <line x1="100" y1="18" x2="100" y2="72" stroke="#1e3a8a" stroke-width="10" stroke-linecap="round"></line>
-          <line x1="170" y1="40" x2="170" y2="90" stroke="#1e3a8a" stroke-width="10" stroke-linecap="round"></line>
-        </g>
-        <text x="450" y="190" text-anchor="middle" font-family="Georgia, serif" font-size="72" fill="#1e3a8a">PaperBridge</text>
-        <text x="450" y="245" text-anchor="middle" font-family="Inter, sans-serif" font-size="28" fill="#4b5563">Organize. Understand. Advocate.</text>
-      </svg>
-    SVG
+    image_tag(
+      "paperbridge-logo.png",
+      alt: "PaperBridge",
+      width: width,
+      height: height,
+      class: [ "object-contain", class_name ].compact_blank.join(" ")
+    )
   end
 
   def pb_icon(name, class_name: "h-5 w-5")

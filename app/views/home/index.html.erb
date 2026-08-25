@@ -78,26 +78,6 @@
         ["user-check", "Strengthen collaboration across your care team"],
         ["heart", "Improve your child's care"]
       ]
-    },
-    {
-      title: "Share by Email",
-      subtitle: "Share insights with one click.",
-      items: [
-        ["mail", "Share AI summaries"],
-        ["send", "Share document details"],
-        ["eye", "Content preview before sending"],
-        ["check-circle", "Email sent for you"]
-      ]
-    },
-    {
-      title: "Advocacy Copilot",
-      subtitle: "From paperwork to action.",
-      items: [
-        ["sparkles", "Prepare for IEP meetings"],
-        ["help-circle", "Suggested questions"],
-        ["trending-up", "Progress highlights"],
-        ["alert-circle", "Missing information alerts"]
-      ]
     }
   ]
 
@@ -248,7 +228,7 @@
         </p>
 
         <p class="mb-8 text-sm text-muted-foreground">
-          PaperBridge doesn't just store files&mdash;it preserves the complete narrative of your child's care.
+          PaperBridge isn't just storing files&mdash;it preserves the complete narrative of your child's care.
         </p>
 
         <div class="flex flex-col items-center justify-center gap-3 sm:flex-row">
@@ -260,7 +240,7 @@
           <% end %>
           <a href="#how-it-works" class="inline-flex h-12 items-center justify-center rounded-full border border-border bg-transparent px-8 text-sm font-medium shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground">
             <%= pb_icon("play", class_name: "mr-2 h-4 w-4") %>
-            Watch How It Works
+            Meet PaperBridge
           </a>
         </div>
       </div>
@@ -383,7 +363,7 @@
       <div class="mx-auto mb-16 max-w-2xl text-center" data-controller="reveal">
         <p class="mb-4 text-xs font-semibold uppercase tracking-widest text-primary">The Solution</p>
         <h2 class="text-3xl font-bold leading-tight tracking-tight text-foreground md:text-5xl">
-          Everything organized. <span class="text-primary">Ready to advocate.</span>
+          Everything organized. <span class="block text-primary">Ready to advocate.</span>
         </h2>
       </div>
 
@@ -415,7 +395,7 @@
 
       <div class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
         <% feature_groups.each_with_index do |group, index| %>
-          <article class="rounded-2xl border border-border/50 bg-muted/30 p-7 transition-all duration-300 hover:border-primary/20 <%= "md:col-span-2 lg:col-span-1" if index == 4 %>" data-controller="reveal" data-reveal-delay-value="<%= index * 70 %>">
+          <article class="rounded-2xl border border-border/50 bg-muted/30 p-7 transition-all duration-300 hover:border-primary/20" data-controller="reveal" data-reveal-delay-value="<%= index * 70 %>">
             <h3 class="mb-1 text-lg font-semibold text-foreground"><%= group[:title] %></h3>
             <p class="mb-5 text-sm text-muted-foreground"><%= group[:subtitle] %></p>
             <div class="space-y-3">

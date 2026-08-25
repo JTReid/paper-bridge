@@ -51,7 +51,7 @@ test('active account can use product and billing portal form uses full-page navi
 
   await signIn(page);
   await expect(page.getByTestId('nav-dashboard')).toBeVisible();
-  await expect(page.getByTestId('nav-dependents')).toBeVisible();
+  await expect(page.getByTestId('nav-dependents')).toHaveCount(0);
 
   await page.goto('/billing');
   await expect(page.getByTestId('billing-status')).toContainText('Subscription active');

@@ -30,7 +30,6 @@
     nav_items = if current_account.present? && product_access
       [
         { key: :dashboard, label: "Dashboard", path: dashboard_path, icon: "sparkles" },
-        { key: :dependents, label: "Profiles", path: dependents_path, icon: "users" },
         { key: :calendar, label: "Calendar", path: calendar_path, icon: "calendar-days" },
         { key: :billing, label: "Billing", path: billing_path, icon: "shield" }
       ]

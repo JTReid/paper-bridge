@@ -8,7 +8,7 @@ test('active account can reach the current product surface', async ({ page }) =>
 
   await expect(page.getByRole('heading', { name: 'Good to see you.' })).toBeVisible();
   await expect(page.getByTestId('nav-dashboard')).toBeVisible();
-  await expect(page.getByTestId('nav-dependents')).toBeVisible();
+  await expect(page.getByTestId('nav-dependents')).toHaveCount(0);
   await expect(page.getByTestId('nav-calendar')).toBeVisible();
   await expect(page.getByTestId('nav-billing')).toBeVisible();
 
