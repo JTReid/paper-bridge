@@ -107,6 +107,7 @@ DOCUMENT_PIPELINE_FILES = %w[
   test/models/document_test.rb
   test/models/timeline_event_test.rb
   test/models/ai_assistant_query_test.rb
+  test/services/documents/pdf_command_runner_test.rb
   test/services/documents/prepare_pdf_test.rb
   test/services/documents/prepare_text_test.rb
   test/services/documents/search_access_profile_test.rb
@@ -314,6 +315,7 @@ COMMANDS = {
       "test/jobs/answer_ai_assistant_query_job_test.rb",
       "test/jobs/process_document_job_test.rb",
       "test/jobs/process_image_document_job_test.rb",
+      "test/services/documents/pdf_command_runner_test.rb",
       "test/services/documents/prepare_text_test.rb",
       "test/services/documents/prepare_pdf_test.rb",
       "test/services/documents/search_access_profile_test.rb",

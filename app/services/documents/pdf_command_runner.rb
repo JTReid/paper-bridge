@@ -17,18 +17,19 @@ module Documents
     end
 
     def render_page(pdf_path, page_number:, output_dir:, dpi:)
-      prefix = File.join(output_dir, "page")
+      prefix = File.join(output_dir, "page-#{page_number}")
       run!(
         "pdftoppm",
         "-f", page_number.to_s,
         "-l", page_number.to_s,
+        "-singlefile",
         "-r", dpi.to_s,
         "-png",
         pdf_path,
         prefix
       )
 
-      expected_path = "#{prefix}-#{page_number}.png"
+      expected_path = "#{prefix}.png"
       return expected_path if File.exist?(expected_path)
 
       raise Agentic::Errors::ConfigurationError, "PDF page image was not rendered for page #{page_number}"
