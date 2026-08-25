@@ -91,13 +91,19 @@ mobile, or broader negative workflows.
 The intended Phase 3 workflow selector is
 `ruby scripts/paper_bridge_qa_harness.rb workflow MODE`. Use it for named,
 deterministic product scenarios such as `billing`, `sharing`, `documents`,
-`care-team`, `ai`, `calendar`, or `all`. Workflow modes sit between `smoke` and
+`care-team`, `ai`, `calendar`, `onboarding`, or `all`. Workflow modes sit between `smoke` and
 `browser`:
 they submit real browser workflows in `RAILS_ENV=test`, but they do not imply
 the full Chromium suite, Mailpit SMTP capture, bughunt artifacts, live Stripe,
 live AI, document ingestion, seeded edge-state scenarios, or the complete
 negative/error-state matrix. The detailed contract is in
 `docs/runbooks/qa-troubleshooting.md`.
+
+Use `workflow onboarding` for the fresh-registration path from Billing through
+the first-run Driver.js prompts, Profile creation, one-file upload, Ask
+PaperBridge submission, dismissal/replay persistence, and a phone-width layout
+check. It uses synthetic subscription state and the test job adapter; it does
+not open Stripe Checkout, run document processing, or call a live model.
 
 The Phase 4 negative/error-state selector contract is
 `ruby scripts/paper_bridge_qa_harness.rb negative MODE`. The deterministic

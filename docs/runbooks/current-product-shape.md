@@ -12,6 +12,10 @@ operational harness checks until matching implementation exists.
 - Public home page with signed-out entry actions and signed-in dashboard access.
 - Devise email/password registration and sign-in.
 - Registration-created family accounts with an admin `AccountMembership`.
+- A six-step first-run setup tour for new account admins. It starts on the first
+  empty Dashboard reached after subscription activation, then guides Profile
+  creation, Documents, upload, and the first Ask PaperBridge question without
+  changing or gating those workflows.
 - Account-scoped dashboard and dependent profile workspace navigation.
 - Family calendar with persisted, profile-owned appointment creation, a
   Sunday-start desktop month grid, a phone-friendly monthly agenda,
@@ -71,6 +75,38 @@ describing the implementation:
 - Internal failures are logged for diagnosis while the interface gives a short,
   actionable message.
 
+## First-Run Setup Tour
+
+The setup tour is browser guidance, not a second onboarding workflow. Driver.js
+highlights the existing Rails controls, and each link or form continues to use
+its normal Turbo request. Link milestones advance when the user follows the
+highlighted link. Profile creation, document upload, and question submission
+advance only after the real form succeeds, so validation errors stay on the
+same milestone.
+
+The tour has six customer-facing milestones:
+
+1. Create a Profile.
+2. Open that Profile's Documents.
+3. Open Add Documents.
+4. Choose and upload one or more files.
+5. Open Ask PaperBridge, with an extra Back to documents prompt after a
+   single-file upload redirects to document detail.
+6. Submit a suggested or custom question.
+
+Only an active account admin with no Profiles is eligible for automatic start.
+Progress is stored as a version, status, and phase in account-scoped browser
+`localStorage`; it never stores Profile names, file names, or question text.
+Closing or pressing Escape stores `dismissed` in that browser. Completion stores
+`completed`. **Replay setup tour** in the account menu resets progress and starts
+from Dashboard; when a Profile already exists, replay starts by opening it
+instead of prompting for a duplicate.
+
+The tour may tell customers to wait for a document to say **Ready** before
+asking for the best answer, but it does not block early access to Ask
+PaperBridge. Missing targets leave progress unchanged, unrelated pages stay
+quiet, and Turbo page caching removes any active overlay before caching.
+
 ## Not Current Harness Scope
 
 These areas are product requirements or future shape, but they are not current
@@ -100,6 +136,7 @@ ruby scripts/paper_bridge_harness.rb static
 ruby scripts/paper_bridge_harness.rb calendar
 ruby scripts/paper_bridge_harness.rb document-ui
 ruby scripts/paper_bridge_harness.rb product
+ruby scripts/paper_bridge_qa_harness.rb workflow onboarding
 ```
 
 Before broader product-shape or runbook changes:

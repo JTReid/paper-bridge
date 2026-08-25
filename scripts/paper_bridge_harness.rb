@@ -8,6 +8,7 @@ ROOT = Pathname.new(__dir__).join("..").realpath
 CURRENT_PRODUCT_FILES = %w[
   AGENTS.md
   config/application.rb
+  config/importmap.rb
   config/routes.rb
   db/schema.rb
   db/migrate/20260719000100_create_appointments.rb
@@ -45,6 +46,9 @@ CURRENT_PRODUCT_FILES = %w[
   app/javascript/controllers/ai_assistant_query_controller.js
   app/javascript/controllers/appointment_dialog_controller.js
   app/javascript/controllers/family_calendar_controller.js
+  app/javascript/controllers/product_tour_controller.js
+  app/assets/stylesheets/product_tour.css
+  app/assets/stylesheets/vendor/driver.css
   app/models/account.rb
   app/models/ai_assistant_query.rb
   app/models/account_membership.rb
@@ -69,10 +73,13 @@ CURRENT_PRODUCT_FILES = %w[
   app/views/appointment_mailer/share.text.erb
   app/views/dashboard/index.html.erb
   app/views/dashboard/checkout_pending.html.erb
+  app/views/layouts/application.html.erb
   app/views/shared/_app_shell.html.erb
+  app/views/dependents/_form.html.erb
   app/views/dependents/show.html.erb
   app/views/documents/_form.html.erb
   app/views/documents/index.html.erb
+  app/views/documents/show.html.erb
   app/views/ai_assistant/index.html.erb
   app/views/ai_assistant/_query_result.html.erb
   app/views/ai_assistant/create.turbo_stream.erb
@@ -121,6 +128,9 @@ CURRENT_PRODUCT_FILES = %w[
   tests/e2e/product/mobile_suite.spec.js
   tests/e2e/product/ai_assistant.spec.js
   tests/e2e/product/billing.spec.js
+  tests/e2e/product/onboarding_tour.spec.js
+  vendor/javascript/driver.js.js
+  vendor/javascript/driver.js.LICENSE.txt
 ].freeze
 
 FOUNDATION_TESTS = %w[

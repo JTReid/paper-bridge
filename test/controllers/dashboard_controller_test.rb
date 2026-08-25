@@ -28,12 +28,46 @@ class DashboardControllerTest < ActionDispatch::IntegrationTest
     assert_select "a[data-testid='dashboard-calendar-link'][href='#{calendar_path}']", text: /View calendar/
     assert_select "[data-testid='dashboard-calendar-empty-state']"
     assert_select "img[data-testid='dependent-avatar-dashboard-#{dependent.id}'][src='#{avatar_dependent_path(dependent)}']"
+    assert_select "main[data-controller~='product-tour'][data-product-tour-account-id-value='#{accounts(:greenfield).id}'][data-product-tour-auto-start-value='false'][data-product-tour-dashboard-url-value='#{dashboard_path}']"
+    assert_select "a[data-testid='dashboard-add-profile'][data-tour='create-profile'][data-action='product-tour#advance'][data-product-tour-from-phase-param='create_profile'][data-product-tour-next-phase-param='profile_form']"
+    assert_select "a[data-testid='dependent-card-#{dependent.id}'][data-tour='open-profile'][data-product-tour-from-phase-param='open_profile'][data-product-tour-next-phase-param='open_documents']"
+    assert_select "button[data-testid='product-tour-replay'][data-action='product-tour#replay']", text: /Replay setup tour/
+    assert_select "button[data-testid='mobile-product-tour-replay'][data-action='product-tour#replay']", text: /Replay setup tour/
     assert_not_includes response.body, "Ask PaperBridge"
     assert_not_includes response.body, "All Profiles"
     assert_not_includes response.body, "AI Workspace"
     assert_not_includes response.body, "Recent Documents"
     assert_not_includes response.body, "Evidence chunks"
     assert_not_includes response.body, documents(:advance_directive).title
+  end
+
+  test "marks an empty active account as eligible to auto-start the setup tour" do
+    user = User.create!(
+      account_name: "Tour Family",
+      email: "tour-family@example.test",
+      name: "Tour Admin",
+      password: "password"
+    )
+    user.account.create_billing_subscription!(status: :active)
+    sign_in user
+
+    get dashboard_path
+
+    assert_response :success
+    assert_select "main[data-controller~='product-tour'][data-product-tour-account-id-value='#{user.account.id}'][data-product-tour-auto-start-value='true']"
+    assert_select "[data-tour='open-profile']", count: 0
+    assert_select "[data-tour='create-profile']", count: 1
+  end
+
+  test "does not offer the setup tour to non-admin account members" do
+    sign_in users(:account_member)
+
+    get dashboard_path
+
+    assert_response :success
+    assert_select "main[data-controller~='product-tour']", count: 0
+    assert_select "[data-testid='product-tour-replay']", count: 0
+    assert_select "[data-testid='mobile-product-tour-replay']", count: 0
   end
 
   test "renders the next account appointments in scheduled order" do

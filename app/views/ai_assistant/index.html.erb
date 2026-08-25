@@ -40,33 +40,43 @@
       </p>
     </header>
 
-    <section class="space-y-2">
-      <p class="text-xs font-medium uppercase tracking-wider text-muted-foreground">Suggested questions</p>
-      <div class="flex flex-wrap gap-2">
-        <% guided_prompts.each do |question| %>
-          <%= button_to question,
-            dependent_ai_assistant_path(@dependent),
-            method: :post,
-            params: { q: question },
-            class: "rounded-full border border-primary/20 bg-primary/5 px-3 py-1.5 text-left text-xs text-primary transition-colors hover:bg-primary/10 disabled:cursor-not-allowed disabled:opacity-50",
-            data: { ai_assistant_query_target: "submitter" },
-            form: { class: "contents" } %>
-        <% end %>
-      </div>
-    </section>
-
-    <section class="space-y-4 rounded-2xl border border-border/50 bg-white p-6">
-      <%= form_with url: dependent_ai_assistant_path(@dependent), method: :post, class: "space-y-4", data: { testid: "ai-assistant-form" } do |form| %>
-        <%= form.text_area :q, placeholder: "Ask a question about documents, care progress, or next steps...", class: "min-h-[110px] w-full resize-none rounded-xl border border-border bg-white px-3 py-3 text-sm text-foreground outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/10 read-only:bg-muted/30", data: { testid: "ai-assistant-query", ai_assistant_query_target: "input" } %>
-        <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <p class="text-xs text-muted-foreground">Most answers begin appearing within about 30 seconds. Once your question is queued, you can leave this page while PaperBridge keeps working.</p>
-          <%= button_tag type: :submit, class: "inline-flex h-9 shrink-0 items-center justify-center rounded-full bg-primary px-4 text-xs font-medium text-white transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50", data: { testid: "ai-assistant-submit", turbo_submits_with: "Asking…", ai_assistant_query_target: "submitter" } do %>
-            <%= pb_icon("send", class_name: "mr-2 h-3.5 w-3.5") %>
-            Ask
+    <div class="space-y-6" data-tour="ask-question">
+      <section class="space-y-2">
+        <p class="text-xs font-medium uppercase tracking-wider text-muted-foreground">Suggested questions</p>
+        <div class="flex flex-wrap gap-2">
+          <% guided_prompts.each do |question| %>
+            <%= button_to question,
+              dependent_ai_assistant_path(@dependent),
+              method: :post,
+              params: { q: question },
+              class: "rounded-full border border-primary/20 bg-primary/5 px-3 py-1.5 text-left text-xs text-primary transition-colors hover:bg-primary/10 disabled:cursor-not-allowed disabled:opacity-50",
+              data: { ai_assistant_query_target: "submitter" },
+              form: {
+                class: "contents",
+                data: {
+                  action: "turbo:submit-end->product-tour#advanceAfterSubmit",
+                  product_tour_from_phase_param: "ask_question",
+                  product_tour_kind_param: "question",
+                  product_tour_next_phase_param: "completed"
+                }
+              } %>
           <% end %>
         </div>
-      <% end %>
-    </section>
+      </section>
+
+      <section class="space-y-4 rounded-2xl border border-border/50 bg-white p-6">
+        <%= form_with url: dependent_ai_assistant_path(@dependent), method: :post, class: "space-y-4", data: { action: "input->product-tour#pause turbo:submit-end->product-tour#advanceAfterSubmit", product_tour_from_phase_param: "ask_question", product_tour_kind_param: "question", product_tour_next_phase_param: "completed", testid: "ai-assistant-form" } do |form| %>
+          <%= form.text_area :q, placeholder: "Ask a question about documents, care progress, or next steps...", class: "min-h-[110px] w-full resize-none rounded-xl border border-border bg-white px-3 py-3 text-sm text-foreground outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/10 read-only:bg-muted/30", data: { testid: "ai-assistant-query", ai_assistant_query_target: "input" } %>
+          <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <p class="text-xs text-muted-foreground">Most answers begin appearing within about 30 seconds. Once your question is queued, you can leave this page while PaperBridge keeps working.</p>
+            <%= button_tag type: :submit, class: "inline-flex h-9 shrink-0 items-center justify-center rounded-full bg-primary px-4 text-xs font-medium text-white transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50", data: { testid: "ai-assistant-submit", turbo_submits_with: "Asking…", ai_assistant_query_target: "submitter" } do %>
+              <%= pb_icon("send", class_name: "mr-2 h-3.5 w-3.5") %>
+              Ask
+            <% end %>
+          </div>
+        <% end %>
+      </section>
+    </div>
 
     <div id="ai_assistant_result_region" aria-busy="<%= @ai_assistant_query&.active? || false %>" data-ai-assistant-query-target="region">
       <div hidden class="rounded-2xl border border-primary/15 bg-primary/5 p-6" data-ai-assistant-query-target="optimistic" data-testid="ai-assistant-immediate-progress">

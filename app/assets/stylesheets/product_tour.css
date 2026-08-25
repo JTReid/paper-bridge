@@ -1,0 +1,98 @@
+.driver-popover.paperbridge-tour {
+  box-sizing: border-box;
+  width: min(22rem, calc(100vw - 2rem));
+  min-width: 0;
+  max-width: calc(100vw - 2rem);
+  border: 1px solid hsl(214 28% 86%);
+  border-radius: 1rem;
+  padding: 1.25rem;
+  color: hsl(215 35% 20%);
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  box-shadow: 0 24px 60px rgb(15 23 42 / 22%);
+}
+
+.paperbridge-tour .driver-popover-title {
+  padding-right: 2.5rem;
+  color: hsl(222 65% 33%);
+  font-size: 1.05rem;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.paperbridge-tour .driver-popover-description {
+  margin-top: 0.6rem;
+  color: hsl(215 18% 34%);
+  font-size: 0.9rem;
+  line-height: 1.55;
+}
+
+.paperbridge-tour .driver-popover-close-btn {
+  display: flex;
+  width: 2.75rem;
+  height: 2.75rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  color: hsl(215 18% 42%);
+  font-size: 1.35rem;
+  line-height: 1;
+  transition: background-color 150ms ease, color 150ms ease;
+}
+
+.paperbridge-tour .driver-popover-close-btn:hover {
+  background: hsl(210 33% 96%);
+  color: hsl(222 65% 33%);
+}
+
+.paperbridge-tour .driver-popover-close-btn:focus-visible {
+  outline: 3px solid hsl(222 65% 33% / 35%);
+  outline-offset: 2px;
+}
+
+.paperbridge-tour .driver-popover-footer {
+  margin-top: 1rem;
+}
+
+.paperbridge-tour .driver-popover-footer-btn {
+  display: inline-flex;
+  min-height: 2.75rem;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 9999px;
+  background: hsl(222 65% 33%);
+  padding: 0.65rem 1rem;
+  color: white;
+  font-size: 0.82rem;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.paperbridge-tour .driver-popover-footer-btn:hover {
+  background: hsl(222 65% 27%);
+}
+
+.paperbridge-tour .driver-popover-footer-btn:focus-visible {
+  outline: 3px solid hsl(222 65% 33% / 35%);
+  outline-offset: 2px;
+}
+
+.paperbridge-tour__step {
+  display: block;
+  margin-bottom: 0.35rem;
+  color: hsl(138 26% 34%);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .driver-fade .driver-overlay,
+  .driver-fade .driver-popover,
+  .paperbridge-tour .driver-popover-close-btn {
+    animation: none;
+    transition: none;
+  }
+}

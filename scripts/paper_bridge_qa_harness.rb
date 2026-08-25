@@ -36,7 +36,8 @@ WORKFLOW_SPECS = {
   "documents" => [ "tests/e2e/product/document_management.spec.js" ].freeze,
   "care-team" => [ "tests/e2e/product/care_team.spec.js" ].freeze,
   "ai" => [ "tests/e2e/product/ai_assistant.spec.js" ].freeze,
-  "calendar" => [ "tests/e2e/product/calendar.spec.js" ].freeze
+  "calendar" => [ "tests/e2e/product/calendar.spec.js" ].freeze,
+  "onboarding" => [ "tests/e2e/product/onboarding_tour.spec.js" ].freeze
 }.freeze
 WORKFLOW_ALL_PATHS = WORKFLOW_SPECS.values.flatten.freeze
 WORKFLOW_MODES = [ *WORKFLOW_SPECS.keys, "all" ].freeze
@@ -94,6 +95,10 @@ STATIC_FILES = %w[
   scripts/paper_bridge_qa_harness.rb
   app/javascript/controllers/document_search_controller.js
   app/javascript/controllers/ai_assistant_query_controller.js
+  app/javascript/controllers/product_tour_controller.js
+  app/assets/stylesheets/product_tour.css
+  app/assets/stylesheets/vendor/driver.css
+  config/importmap.rb
   playwright.config.js
   package.json
   package-lock.json
@@ -120,6 +125,9 @@ STATIC_FILES = %w[
   tests/e2e/product/mobile_negative.spec.js
   tests/e2e/product/qa_seed_edge_states.spec.js
   tests/e2e/product/ai_assistant.spec.js
+  tests/e2e/product/onboarding_tour.spec.js
+  vendor/javascript/driver.js.js
+  vendor/javascript/driver.js.LICENSE.txt
   tests/e2e/regressions/README.md
 ].freeze
 
@@ -148,6 +156,7 @@ def usage
     Examples:
       ruby scripts/paper_bridge_qa_harness.rb workflow documents
       ruby scripts/paper_bridge_qa_harness.rb workflow calendar
+      ruby scripts/paper_bridge_qa_harness.rb workflow onboarding
       ruby scripts/paper_bridge_qa_harness.rb workflow all
       ruby scripts/paper_bridge_qa_harness.rb negative documents
       ruby scripts/paper_bridge_qa_harness.rb negative care-team
@@ -178,6 +187,7 @@ def workflow_usage
       care-team  Run care team invitation and permissions workflow checks
       ai         Run AI assistant page workflow checks without live model calls
       calendar   Run calendar appointment and month navigation workflow checks
+      onboarding Run the post-signup setup tour through the first question
       all        Run all workflow modes above
   USAGE
 end

@@ -57,6 +57,19 @@ export function completeLatestAiAssistantQueryWithoutBroadcast(accountName, answ
   );
 }
 
+export function deleteAccountsAndUsers(accounts) {
+  runRailsRunner(
+    `
+      accounts = JSON.parse(ENV.fetch("QA_ACCOUNTS"))
+      Account.where(name: accounts.pluck("accountName")).find_each(&:destroy!)
+      User.where(email: accounts.pluck("email")).find_each(&:destroy!)
+    `,
+    {
+      QA_ACCOUNTS: JSON.stringify(accounts),
+    },
+  );
+}
+
 function runRailsRunner(code, env = {}) {
   execFileSync('bin/rails', ['runner', code], {
     cwd: process.cwd(),

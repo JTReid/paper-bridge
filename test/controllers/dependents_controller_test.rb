@@ -42,9 +42,26 @@ class DependentsControllerTest < ActionDispatch::IntegrationTest
     assert_select "a[data-testid='nav-calendar'][href='#{calendar_path(calendar_context_id: dependent.id, panel: 1)}'][data-turbo-frame='#{CalendarWorkspace::FAMILY_CALENDAR_FRAME_ID}'][aria-haspopup='dialog'][aria-expanded='false']", text: "Calendar"
     assert_select "dialog[data-testid='family-calendar-dialog'][aria-labelledby='family-calendar-title']"
     assert_select "turbo-frame##{CalendarWorkspace::FAMILY_CALENDAR_FRAME_ID}[data-testid='family-calendar-frame']"
+    assert_select "a[data-testid='dependent-documents-link'][data-tour='open-documents'][data-action='product-tour#advance'][data-product-tour-from-phase-param='open_documents'][data-product-tour-next-phase-param='add_documents']"
     Document.categories.each_key do |category|
       assert_select "a[data-testid='dependent-category-#{category}'][href='#{dependent_documents_path(dependent, category: category)}']"
     end
+  end
+
+  test "renders the create profile tour hook only on the new form" do
+    sign_in users(:family_admin)
+
+    get new_dependent_path
+
+    assert_response :success
+    assert_select "form[data-testid='profile-create-form'][data-tour='profile-form'][data-action='input->product-tour#pause turbo:submit-end->product-tour#advanceAfterSubmit'][data-product-tour-from-phase-param='profile_form'][data-product-tour-next-phase-param='open_documents']"
+    assert_select "input[data-testid='profile-create-submit']"
+
+    get edit_dependent_path(dependents(:emma))
+
+    assert_response :success
+    assert_select "form[data-tour='profile-form']", count: 0
+    assert_select "input[data-testid='profile-save-submit']"
   end
 
   test "renders initials when the selected dependent has no avatar" do

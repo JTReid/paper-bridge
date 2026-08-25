@@ -3,7 +3,15 @@
 
 <div class="flex flex-col gap-8">
   <nav aria-label="Document navigation">
-    <%= link_to dependent_documents_path(@dependent), class: "inline-flex items-center text-sm font-medium text-slate-600 hover:text-slate-950" do %>
+    <%= link_to dependent_documents_path(@dependent),
+        class: "inline-flex items-center text-sm font-medium text-slate-600 hover:text-slate-950",
+        data: {
+          action: "product-tour#advance",
+          product_tour_from_phase_param: "open_ask",
+          product_tour_next_phase_param: "open_ask",
+          testid: "document-back-to-documents",
+          tour: "back-to-documents"
+        } do %>
       <span aria-hidden="true" class="mr-2">&larr;</span>
       Back to documents
     <% end %>

@@ -158,6 +158,7 @@ Named workflow modes:
 | `care-team` | Verifies the care-team list, active member permissions, invite form, and successful invite creation with category permissions. |
 | `ai` | Opens the dependent-scoped AI assistant, submits a synthetic question, verifies immediate and queued states without leaving the profile, and runs an axe check. |
 | `calendar` | Opens a profile edit page, leaves work unfinished, opens the family calendar panel without changing pages, creates and emails a profile-owned appointment, closes the panel, and verifies the unfinished edit remains. It also covers the full-page account calendar, Central Time rendering, read-only details, and previous/next month navigation. |
+| `onboarding` | Registers a fresh family account, activates it with synthetic billing state, follows the six-step setup tour through Profile creation, one-file upload, and the first queued question, then verifies completion, dismissal/replay, account-scoped non-sensitive storage, reduced-motion behavior, accessibility, and phone-width fit. |
 
 Boundaries:
 

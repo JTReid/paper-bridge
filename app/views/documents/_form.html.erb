@@ -9,8 +9,16 @@
 %>
 
 <% form_data = { testid: editing ? "document-edit-form" : "document-upload-form" } %>
-<% form_data[:controller] = "file-dropzone" unless editing %>
-<% form_data[:file_dropzone_category_options_value] = category_options_json unless editing %>
+<% unless editing %>
+  <% form_data.merge!(
+    action: "input->product-tour#pause turbo:submit-end->product-tour#advanceAfterSubmit",
+    controller: "file-dropzone",
+    file_dropzone_category_options_value: category_options_json,
+    product_tour_from_phase_param: "upload_submit",
+    product_tour_next_phase_param: "open_ask",
+    tour: "upload-form"
+  ) %>
+<% end %>
 
 <%= form_with model: document, url: form_url, class: "space-y-6 rounded-2xl border border-border/50 bg-white p-6 shadow-sm", data: form_data do |form| %>
   <% if document.errors.any? %>
@@ -44,8 +52,8 @@
   <% unless editing %>
     <div>
       <%= form.label :files, "Files", class: "block text-sm font-medium text-slate-700" %>
-      <div class="relative mt-2 rounded-lg border border-dashed border-slate-300 bg-slate-50/70 p-6 text-center transition-colors hover:border-emerald-500 hover:bg-emerald-50/70" data-file-dropzone-target="dropzone" data-action="dragover->file-dropzone#dragOver dragleave->file-dropzone#dragLeave drop->file-dropzone#drop">
-        <%= form.file_field :files, multiple: true, required: true, accept: Documents::UploadNormalizer::ACCEPT_ATTRIBUTE, class: "absolute inset-0 h-full w-full cursor-pointer opacity-0", data: { testid: "document-file-field", file_dropzone_target: "input", action: "change->file-dropzone#changed" }, aria: { describedby: "document-files-summary" } %>
+      <div class="relative mt-2 rounded-lg border border-dashed border-slate-300 bg-slate-50/70 p-6 text-center transition-colors hover:border-emerald-500 hover:bg-emerald-50/70" data-file-dropzone-target="dropzone" data-action="dragover->file-dropzone#dragOver dragleave->file-dropzone#dragLeave drop->file-dropzone#drop" data-tour="choose-files">
+        <%= form.file_field :files, multiple: true, required: true, accept: Documents::UploadNormalizer::ACCEPT_ATTRIBUTE, class: "absolute inset-0 h-full w-full cursor-pointer opacity-0", data: { testid: "document-file-field", file_dropzone_target: "input", action: "change->file-dropzone#changed change->product-tour#filesSelected" }, aria: { describedby: "document-files-summary" } %>
         <div class="pointer-events-none flex flex-col items-center gap-3">
           <span class="flex h-12 w-12 items-center justify-center rounded-full border border-emerald-100 bg-white text-emerald-700 shadow-sm">
             <%= pb_icon("upload", class_name: "h-5 w-5") %>
@@ -62,6 +70,6 @@
 
   <div class="flex items-center justify-end gap-3 border-t border-slate-200 pt-6">
     <%= link_to "Cancel", cancel_path, class: "rounded-md px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100" %>
-    <%= form.submit submit_label, class: "rounded-md bg-emerald-700 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-emerald-800", data: { testid: editing ? "document-save-submit" : "document-upload-submit" } %>
+    <%= form.button submit_label, type: :submit, class: "rounded-md bg-emerald-700 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-emerald-800", data: { testid: editing ? "document-save-submit" : "document-upload-submit", tour: editing ? nil : "upload-submit" }.compact %>
   </div>
 <% end %>

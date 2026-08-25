@@ -9,12 +9,20 @@ module ApplicationHelper
     CARE_TEAM_ACCESS_LABELS.fetch(status.to_s, status.to_s.humanize)
   end
 
-  def app_shell(active:, dependent: nil, &block)
+  def app_shell(active:, dependent: nil, product_tour_auto_start: false, &block)
+    product_tour_enabled = current_account.present? &&
+      current_account.subscription_active? &&
+      current_user.present? &&
+      !current_user.super_admin? &&
+      current_user.can_manage_account?(current_account)
+
     render(
       partial: "shared/app_shell",
       locals: {
         active: active.to_sym,
         dependent: dependent,
+        product_tour_auto_start: product_tour_auto_start,
+        product_tour_enabled: product_tour_enabled,
         content: capture(&block)
       }
     )

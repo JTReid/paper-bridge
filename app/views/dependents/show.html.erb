@@ -40,7 +40,16 @@
       <div class="space-y-4">
         <div class="flex items-center justify-between">
           <h2 class="text-base font-bold text-primary">Recent Documents</h2>
-          <%= link_to "View all", dependent_documents_path(@dependent), class: "text-xs font-medium text-primary hover:opacity-70", data: { testid: "dependent-documents-link" } %>
+          <%= link_to "View all",
+              dependent_documents_path(@dependent),
+              class: "text-xs font-medium text-primary hover:opacity-70",
+              data: {
+                action: "product-tour#advance",
+                product_tour_from_phase_param: "open_documents",
+                product_tour_next_phase_param: "add_documents",
+                testid: "dependent-documents-link",
+                tour: "open-documents"
+              } %>
         </div>
 
         <% if @documents.any? %>

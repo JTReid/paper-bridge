@@ -33,6 +33,9 @@ class AiAssistantControllerTest < ActionDispatch::IntegrationTest
     assert_includes response.body, "Based on your records"
     assert_includes response.body, "Most answers begin appearing within about 30 seconds"
     assert_select "form[method='post'][data-testid='ai-assistant-form']"
+    assert_select "[data-tour='ask-question']"
+    assert_select "form[method='post'][data-testid='ai-assistant-form'][data-action='input->product-tour#pause turbo:submit-end->product-tour#advanceAfterSubmit'][data-product-tour-from-phase-param='ask_question'][data-product-tour-kind-param='question'][data-product-tour-next-phase-param='completed']"
+    assert_select "[data-tour='ask-question'] form.contents[data-action='turbo:submit-end->product-tour#advanceAfterSubmit'][data-product-tour-kind-param='question']", count: 6
     assert_select "turbo-cable-stream-source"
     assert_select "meta[name='turbo-cache-control'][content='no-cache']"
     assert_select "[data-controller='ai-assistant-query'][data-ai-assistant-query-reassure-after-value='10000'][data-ai-assistant-query-long-wait-after-value='30000'][data-ai-assistant-query-reconcile-every-value='3000'][data-ai-assistant-query-start-retry-after-value='2000'][data-ai-assistant-query-start-retry-max-attempts-value='4']"

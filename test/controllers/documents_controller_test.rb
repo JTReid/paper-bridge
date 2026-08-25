@@ -86,6 +86,8 @@ class DocumentsControllerTest < ActionDispatch::IntegrationTest
     assert_includes response.body, "data-document-share-target=\"modal\""
     assert_includes response.body, "Share #{documents(:advance_directive).title}"
     assert_includes response.body, ActionView::RecordIdentifier.dom_id(documents(:advance_directive), :share_checkbox)
+    assert_select "a[data-testid='documents-add-link'][data-tour='add-documents'][data-action='product-tour#advance'][data-product-tour-from-phase-param='add_documents'][data-product-tour-next-phase-param='choose_files']"
+    assert_select "a[data-testid='documents-ask-ai-link'][data-tour='open-ask'][data-action='product-tour#advance'][data-product-tour-from-phase-param='open_ask'][data-product-tour-next-phase-param='ask_question']"
   end
 
   test "filters documents by category" do
@@ -230,6 +232,9 @@ class DocumentsControllerTest < ActionDispatch::IntegrationTest
     assert_includes response.body, "multiple=\"multiple\""
     assert_select "input[type='file'][accept*='.heic'][accept*='.heif'][accept*='.tif'][accept*='.tiff']"
     assert_select "input[type='file'][accept*='image/jpeg'][accept*='image/png'][accept*='image/webp']"
+    assert_select "form[data-testid='document-upload-form'][data-tour='upload-form'][data-action='input->product-tour#pause turbo:submit-end->product-tour#advanceAfterSubmit'][data-product-tour-from-phase-param='upload_submit'][data-product-tour-next-phase-param='open_ask']"
+    assert_select "[data-tour='choose-files'] input[data-testid='document-file-field'][data-action='change->file-dropzone#changed change->product-tour#filesSelected']"
+    assert_select "button[type='submit'][data-testid='document-upload-submit'][data-tour='upload-submit']", text: "Upload"
   end
 
   test "preselects a valid category passed to the upload form" do
@@ -460,6 +465,7 @@ class DocumentsControllerTest < ActionDispatch::IntegrationTest
     assert_not_includes response.body, "View document text"
     assert_not_includes response.body, "Embedded page text"
     assert_select "a[data-testid='document-open-original'][target='_blank'][rel='noopener'][href='#{original_document_path(document)}']", text: "Open original"
+    assert_select "a[data-testid='document-back-to-documents'][data-tour='back-to-documents'][data-action='product-tour#advance'][data-product-tour-from-phase-param='open_ask'][data-product-tour-next-phase-param='open_ask']"
 
     visible_text = Nokogiri::HTML(response.body).text.squish
     assert_no_match(/\bchunks?\b|\bembeddings?\b|ingestion job|\bchars\b/i, visible_text)

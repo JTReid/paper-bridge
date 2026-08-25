@@ -9,11 +9,27 @@
         <p class="mt-1.5 text-sm text-muted-foreground">All records for this profile, organized and ready to search.</p>
       </div>
       <div class="flex flex-col gap-2 sm:flex-row">
-        <%= link_to dependent_ai_assistant_path(@dependent), class: "inline-flex h-10 items-center justify-center rounded-full border border-accent text-primary px-4 text-xs font-medium transition-colors hover:bg-accent/10", data: { testid: "documents-ask-ai-link" } do %>
+        <%= link_to dependent_ai_assistant_path(@dependent),
+            class: "inline-flex h-10 items-center justify-center rounded-full border border-accent text-primary px-4 text-xs font-medium transition-colors hover:bg-accent/10",
+            data: {
+              action: "product-tour#advance",
+              product_tour_from_phase_param: "open_ask",
+              product_tour_next_phase_param: "ask_question",
+              testid: "documents-ask-ai-link",
+              tour: "open-ask"
+            } do %>
           <%= pb_icon("sparkles", class_name: "mr-1.5 h-3.5 w-3.5") %>
           Ask PaperBridge
         <% end %>
-        <%= link_to new_dependent_document_path(@dependent, category: @category), class: "inline-flex h-10 items-center justify-center rounded-full bg-accent px-5 text-sm font-medium text-accent-foreground shadow-sm transition-all duration-200 hover:bg-accent/80", data: { testid: "documents-add-link" } do %>
+        <%= link_to new_dependent_document_path(@dependent, category: @category),
+            class: "inline-flex h-10 items-center justify-center rounded-full bg-accent px-5 text-sm font-medium text-accent-foreground shadow-sm transition-all duration-200 hover:bg-accent/80",
+            data: {
+              action: "product-tour#advance",
+              product_tour_from_phase_param: "add_documents",
+              product_tour_next_phase_param: "choose_files",
+              testid: "documents-add-link",
+              tour: "add-documents"
+            } do %>
           <%= pb_icon("upload", class_name: "mr-1.5 h-4 w-4") %>
           Add Documents
         <% end %>
