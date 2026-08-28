@@ -25,6 +25,13 @@ class HomeControllerTest < ActionDispatch::IntegrationTest
     assert_not_includes response.body, "AI-Powered Care Advocacy"
     assert_select "#how-it-works h2 .block", text: "Ready to advocate."
     assert_select "#features article", count: 3
+    assert_select "#privacy" do
+      assert_select "article", count: 1
+      assert_select "h3", text: "Privacy-first design"
+      assert_select "h3", text: "Parent-controlled sharing", count: 0
+      assert_select "h3", text: "Read-only access", count: 0
+      assert_select "h3", text: "Choose which records to share", count: 0
+    end
     assert_select "[data-testid='home-nav-secondary']", count: 1
     assert_select "[data-controller='reveal']"
   end

@@ -149,21 +149,6 @@
 
   privacy_items = [
     {
-      icon: "user-check",
-      title: "Parent-controlled sharing",
-      description: "You decide who sees what. Every permission is in your hands."
-    },
-    {
-      icon: "eye",
-      title: "Read-only access",
-      description: "Care team members can view—never upload, edit, delete, or re-share."
-    },
-    {
-      icon: "lock",
-      title: "Choose which records to share",
-      description: "Give access to specific types of records, not everything."
-    },
-    {
       icon: "shield",
       title: "Privacy-first design",
       description: "Your child's story is protected. Secure organization from the ground up."
@@ -546,7 +531,7 @@
           </p>
         </div>
 
-        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <div class="grid grid-cols-1 gap-4">
           <% privacy_items.each_with_index do |item, index| %>
             <article class="rounded-2xl border border-border/50 bg-muted/40 p-5" data-controller="reveal" data-reveal-delay-value="<%= index * 70 %>">
               <div class="mb-3 flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10">
