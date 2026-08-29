@@ -26,7 +26,10 @@ class HomeControllerTest < ActionDispatch::IntegrationTest
     assert_select "#how-it-works h2 .block", text: "Ready to advocate."
     assert_select "#features article", count: 3
     assert_select "#privacy" do
-      assert_select "article", count: 1
+      assert_select "article", count: 4
+      assert_select "h3", text: "Your family’s own space"
+      assert_select "h3", text: "Answers stay with the right Profile"
+      assert_select "h3", text: "Protected connection"
       assert_select "h3", text: "Privacy-first design"
       assert_select "h3", text: "Parent-controlled sharing", count: 0
       assert_select "h3", text: "Read-only access", count: 0

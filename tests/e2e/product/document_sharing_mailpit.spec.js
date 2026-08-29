@@ -40,7 +40,7 @@ test('document sharing sends an email captured by Mailpit', async ({ page, reque
     { timeoutMs: 8000 },
   );
 
-  expect(email.From.Address).toBe('from@example.com');
+  expect(email.From.Address).toBe('support@paperbridgeadvocacy.com');
   expect(email.Attachments).toBe(1);
   expect(email.Snippet).toContain('PaperBridge document');
 
