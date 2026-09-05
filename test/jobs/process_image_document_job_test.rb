@@ -8,7 +8,7 @@ class ProcessImageDocumentJobTest < ActiveJob::TestCase
 
   class FakeConnection
     class << self
-      attr_accessor :requests, :embedding_failure
+      attr_accessor :requests, :embedding_failure, :metadata_response
     end
 
     class Request
@@ -33,7 +33,6 @@ class ProcessImageDocumentJobTest < ActiveJob::TestCase
               message: {
                 content: {
                   extracted_text: "Amoxicillin 500 mg. Take one capsule twice daily. Dr. Rivera.",
-                  category: "prescriptions",
                   summary: "A prescription for amoxicillin with handwritten dosage instructions.",
                   key_points: [
                     "Amoxicillin 500 mg",
@@ -49,7 +48,7 @@ class ProcessImageDocumentJobTest < ActiveJob::TestCase
                       label: "medical"
                     }
                   ]
-                }.to_json
+                }.merge(FakeConnection.metadata_response).to_json
               }
             }
           ],
@@ -102,6 +101,7 @@ class ProcessImageDocumentJobTest < ActiveJob::TestCase
     @original_connection = ProcessImageDocumentJob.llm_connection
     FakeConnection.requests = []
     FakeConnection.embedding_failure = false
+    FakeConnection.metadata_response = { category: "prescriptions", description: "An amoxicillin prescription with dosage instructions." }
     ProcessImageDocumentJob.llm_connection = FakeConnection
   end
 
@@ -134,7 +134,9 @@ class ProcessImageDocumentJobTest < ActiveJob::TestCase
     assert_equal 1, document.prepared_payload.fetch("page_count")
     assert_equal "Amoxicillin 500 mg. Take one capsule twice daily. Dr. Rivera.", document.prepared_payload.fetch("extracted_text")
     assert_equal document.prepared_payload.fetch("extracted_text"), document.prepared_payload.fetch("full_text")
-    assert_equal "general", document.category
+    assert_equal "prescriptions", document.category
+    assert_equal "An amoxicillin prescription with dosage instructions.", document.description
+    assert_not document.initial_metadata_pending?
     assert_equal "prescriptions", document.prepared_payload.dig("classification", "detected_category")
     assert_not document.prepared_payload.fetch("classification").key?("applied_category")
     assert_equal 1, document.document_pages.count
@@ -155,6 +157,7 @@ class ProcessImageDocumentJobTest < ActiveJob::TestCase
     assert_equal "completed", pipeline_run.state
 
     assert_equal "gpt-5.4-mini", extraction_payload.fetch("model")
+    assert_includes extraction_payload.dig("response_format", "json_schema", "schema", "required"), "description"
     user_content = extraction_payload.dig("messages", 1, "content")
     assert_kind_of Array, user_content
     assert_includes user_content.first.fetch("text"), "including printed and handwritten text"
@@ -167,16 +170,35 @@ class ProcessImageDocumentJobTest < ActiveJob::TestCase
     assert pipeline_run.pipeline_log.entries.any? { |entry| entry["event_type"] == "llm_call" }
     assert pipeline_run.pipeline_activity.entries.any? { |entry| entry["action"] == "image_document_extracted" }
     assert pipeline_run.pipeline_activity.entries.any? { |entry| entry["action"] == "document_chunks_embedded" }
+    assert_equal 2, FakeConnection.requests.count
   end
 
-  test "retains GPT classification as metadata without changing the document category" do
-    document = create_image_document(category: :medical)
+  test "initial image metadata completion broadcasts enabled editing fields after the whole extraction transaction" do
+    document = create_image_document
+    clear_enqueued_jobs
+
+    streams = capture_turbo_stream_broadcasts(document) { ProcessImageDocumentJob.perform_now(document) }
+    target = ActionView::RecordIdentifier.dom_id(document, :editable_metadata)
+    metadata_streams = streams.select { |stream| stream["target"] == target }
+
+    assert_equal 1, metadata_streams.count
+    template = metadata_streams.last.at_css("template")
+    assert_nil template.at_css("fieldset[disabled]")
+    assert_equal "prescriptions", template.at_css("option[selected]")["value"]
+    assert_includes template.text, "An amoxicillin prescription with dosage instructions."
+  end
+
+  test "legacy documents retain their category and description with an older response" do
+    document = create_image_document(category: :medical, initial_metadata_pending: false)
+    document.update!(description: "Original image description.")
+    FakeConnection.metadata_response = { category: "prescriptions" }
     clear_enqueued_jobs
 
     ProcessImageDocumentJob.perform_now(document)
 
     document.reload
     assert_equal "medical", document.category
+    assert_equal "Original image description.", document.description
     assert_equal "prescriptions", document.prepared_payload.dig("classification", "detected_category")
     assert_not document.prepared_payload.fetch("classification").key?("applied_category")
     assert_equal "prescriptions", document.summary.dig("metadata", "detected_category")
@@ -255,15 +277,66 @@ class ProcessImageDocumentJobTest < ActiveJob::TestCase
     assert_empty FakeConnection.requests
   end
 
+  test "keeps completed metadata and later edits through an image processing retry" do
+    document = create_image_document
+    clear_enqueued_jobs
+    FakeConnection.embedding_failure = true
+
+    assert_enqueued_jobs 1, only: ProcessImageDocumentJob do
+      ProcessImageDocumentJob.perform_now(document)
+    end
+
+    assert_equal "failed", document.reload.status
+    assert_equal "prescriptions", document.category
+    assert_equal "An amoxicillin prescription with dosage instructions.", document.description
+    assert_not document.initial_metadata_pending?
+    document.update!(category: :therapy, description: "My corrected image description.")
+    FakeConnection.embedding_failure = false
+    FakeConnection.metadata_response = { category: "medical", description: "A different generated image description." }
+
+    ProcessImageDocumentJob.perform_now(document)
+
+    assert_equal "processed", document.reload.status
+    assert_equal "therapy", document.category
+    assert_equal "My corrected image description.", document.description
+    assert_not document.initial_metadata_pending?
+  end
+
+  {
+    "missing category" => { description: "A generated description." },
+    "invalid category" => { category: "not-a-category", description: "A generated description." },
+    "missing description" => { category: "prescriptions" },
+    "blank description" => { category: "prescriptions", description: "  " }
+  }.each do |label, metadata|
+    test "leaves image metadata pending and stops before embedding for #{label}" do
+      document = create_image_document
+      FakeConnection.metadata_response = metadata
+      clear_enqueued_jobs
+
+      assert_enqueued_jobs 1, only: ProcessImageDocumentJob do
+        ProcessImageDocumentJob.perform_now(document)
+      end
+
+      assert_equal "failed", document.reload.status
+      assert document.initial_metadata_pending?
+      assert_equal "general", document.category
+      assert_nil document.description
+      assert_empty document.document_chunks
+      assert_empty document.document_embeddings
+      assert FakeConnection.requests.none? { |request| request.fetch(:url).include?("/embeddings") }
+    end
+  end
+
   private
 
-    def create_image_document(category: :general, filename: "prescription.png", content_type: "image/png", identify: true)
+    def create_image_document(category: :general, filename: "prescription.png", content_type: "image/png", identify: true, initial_metadata_pending: true)
       Document.create!(
         account: accounts(:greenfield),
         dependent: dependents(:emma),
         user: users(:family_admin),
         title: "Prescription photo",
         category: category,
+        initial_metadata_pending: initial_metadata_pending,
         file: {
           io: StringIO.new(ONE_BY_ONE_PNG),
           filename: filename,

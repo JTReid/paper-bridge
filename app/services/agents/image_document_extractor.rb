@@ -59,6 +59,8 @@ module Agents
       created_chunks = persist_extraction!(
         extracted_text: extracted_text,
         detected_category: detected_category,
+        category: parsed[:category],
+        description: parsed[:description],
         summary: parsed[:summary].to_s.squish,
         key_points: key_points,
         chunks: chunks
@@ -109,8 +111,8 @@ module Agents
             text: <<~PROMPT
               Extract as much visible text as possible from this uploaded image document, including printed and handwritten text.
               Preserve uncertainty instead of guessing; use [illegible] where text cannot be read reliably.
-              Classify the document using exactly one category: #{Document.categories.keys.join(", ")}.
               Create a concise caregiver-facing summary and key points grounded only in the image.
+              #{Documents::MetadataSchemas::INSTRUCTIONS}
               Create coherent search chunks containing the useful extracted facts and wording.
               Each chunk must use exactly one search label: #{DocumentChunk::LABELS.join(", ")}.
 
@@ -183,10 +185,11 @@ module Agents
         "general"
       end
 
-      def persist_extraction!(extracted_text:, detected_category:, summary:, key_points:, chunks:)
+      def persist_extraction!(extracted_text:, detected_category:, category:, description:, summary:, key_points:, chunks:)
         created_chunks = []
 
         Document.transaction do
+          document.complete_initial_metadata!(category: category, description: description)
           document.document_chunks.destroy_all
 
           page.update!(

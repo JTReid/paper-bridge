@@ -15,8 +15,10 @@ CURRENT_PRODUCT_FILES = %w[
   db/migrate/20260808000100_create_ai_assistant_queries.rb
   db/migrate/20260808000200_add_enqueued_at_to_ai_assistant_queries.rb
   db/migrate/20260904000100_split_dependent_names.rb
+  db/migrate/20260905000100_add_initial_metadata_pending_to_documents.rb
   docs/runbooks/current-product-shape.md
   docs/runbooks/profile-management.md
+  docs/runbooks/document-uploads.md
   docs/runbooks/care-team-access.md
   docs/runbooks/billing.md
   docs/runbooks/document-sharing.md
@@ -80,6 +82,8 @@ CURRENT_PRODUCT_FILES = %w[
   app/views/dependents/_form.html.erb
   app/views/dependents/show.html.erb
   app/views/documents/_form.html.erb
+  app/views/documents/_editable_metadata.html.erb
+  app/views/documents/_description.html.erb
   app/views/documents/index.html.erb
   app/views/documents/show.html.erb
   app/views/ai_assistant/index.html.erb
@@ -203,6 +207,7 @@ RUBOCOP_PATHS = %w[
   db/migrate/20260808000100_create_ai_assistant_queries.rb
   db/migrate/20260808000200_add_enqueued_at_to_ai_assistant_queries.rb
   db/migrate/20260904000100_split_dependent_names.rb
+  db/migrate/20260905000100_add_initial_metadata_pending_to_documents.rb
   app/controllers/application_controller.rb
   app/controllers/concerns/calendar_workspace.rb
   app/controllers/concerns/subscription_gate.rb

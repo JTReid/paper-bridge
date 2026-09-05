@@ -2,12 +2,4 @@
   <span class="inline-flex rounded-md border px-2.5 py-1 text-xs font-semibold <%= document_status_classes(document) %>">
     <%= document_status_label(document) %>
   </span>
-
-  <% if document.file.attached? %>
-    <% if document.content_type == "application/pdf" %>
-      <%= link_to "Open original", original_document_path(document), target: "_blank", rel: "noopener", class: "text-sm font-medium text-emerald-700 hover:text-emerald-900", data: { testid: "document-open-original" } %>
-    <% else %>
-      <%= link_to "Download original", original_document_path(document), download: document.original_filename, class: "text-sm font-medium text-emerald-700 hover:text-emerald-900", data: { testid: "document-download-original" } %>
-    <% end %>
-  <% end %>
 </div>

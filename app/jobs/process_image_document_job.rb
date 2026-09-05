@@ -20,7 +20,7 @@ class ProcessImageDocumentJob < ApplicationJob
       context: pipeline_context(document, pipeline_run)
     ).execute
 
-    document.update!(status: :processed)
+    document.reload.update!(status: :processed)
   rescue Agentic::Errors::ConfigurationError => e
     mark_document_failed(document, e)
   rescue StandardError => e

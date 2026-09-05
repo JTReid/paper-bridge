@@ -33,7 +33,7 @@ dependent workspace navigation, dependent profile access, appointment creation,
 read-only calendar details, appointment-detail email delivery, account-scoped
 full-page and in-profile calendar rendering, upcoming-appointment display,
 document listing,
-filename-search/category-filter/upload-form behavior, family-facing document
+filename-search/category-filter/file-only-upload behavior, family-facing document
 status and AI language, care team invitations, category permissions,
 search-access mapping, email-attachment document sharing, and the Stripe billing
 foundation.
@@ -202,6 +202,10 @@ OpenAI SSE parsing, safe progressive answer extraction, batched draft delivery,
 safe failure handling, final Turbo result broadcasts, structured answer
 synthesis with citations, pipeline records, and exact final usage telemetry with
 fake PDF tooling and fake LLM/embedding calls.
+It also covers one-time category/description generation, retry preservation,
+pending-document search exclusion, edit-field completion broadcasts, and the
+separate document-schema updater described in
+[Document Uploads](runbooks/document-uploads.md).
 The browser `workflow ai` check owns immediate progress, queued-state delivery,
 profile-workspace continuity, duplicate-submit locking, same-query start
 retries, missed-Cable reconciliation from durable state, and targeted axe

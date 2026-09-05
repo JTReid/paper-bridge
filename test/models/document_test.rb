@@ -103,6 +103,76 @@ class DocumentTest < ActiveSupport::TestCase
     assert_empty Document.search_by_filename("_")
   end
 
+  test "initial metadata is completed once and never replaces later edits" do
+    document = build_document
+    document.initial_metadata_pending = true
+    document.save!
+    stale_document = Document.find(document.id)
+
+    assert document.complete_initial_metadata!(category: "medical", description: "  Initial description.  ")
+    assert_not document.reload.initial_metadata_pending?
+    assert_equal "medical", document.category
+    assert_equal "Initial description.", document.description
+
+    document.update!(category: "therapy", description: "Family correction.")
+
+    assert_not stale_document.complete_initial_metadata!(category: "insurance", description: "Retried description.")
+    assert_equal "therapy", document.reload.category
+    assert_equal "Family correction.", document.description
+  end
+
+  test "existing documents are not opted into initial metadata generation" do
+    document = build_document
+    document.description = "Original description"
+    document.save!
+
+    assert_not document.initial_metadata_pending?
+    assert_not document.complete_initial_metadata!(category: "medical", description: "Generated description")
+    assert_equal "general", document.reload.category
+    assert_equal "Original description", document.description
+  end
+
+  test "initial metadata accepts every supported category" do
+    Document.categories.each_key do |category|
+      document = build_document
+      document.initial_metadata_pending = true
+      document.save!
+
+      document.complete_initial_metadata!(category: category, description: "A description of this document.")
+
+      assert_equal category, document.reload.category
+      assert_not document.initial_metadata_pending?
+    end
+  end
+
+  test "invalid initial metadata stays pending and does not save a partial result" do
+    document = build_document
+    document.initial_metadata_pending = true
+    document.save!
+
+    [ [ nil, "Description" ], [ "unknown", "Description" ], [ "medical", "  " ], [ "medical", [ "Description" ] ] ].each do |category, description|
+      assert_raises(ArgumentError) do
+        document.complete_initial_metadata!(category: category, description: description)
+      end
+
+      assert document.reload.initial_metadata_pending?
+      assert_equal "general", document.category
+      assert_nil document.description
+    end
+  end
+
+  test "pending metadata cannot be edited but the document title can" do
+    document = build_document
+    document.initial_metadata_pending = true
+    document.save!
+
+    assert document.update(title: "New title")
+    assert_not document.update(category: "medical", description: "Premature change")
+    assert_includes document.errors[:base], "Category and description can be edited after initial document processing finishes."
+    assert_equal "general", document.reload.category
+    assert_nil document.description
+  end
+
   private
 
     def build_document(account: accounts(:greenfield), dependent: dependents(:emma), user: users(:family_admin), title: "Trust")

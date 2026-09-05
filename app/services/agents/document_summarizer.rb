@@ -55,10 +55,13 @@ module Agents
         }
       )
 
-      document.update!(
-        summary: response,
-        summarized_at: Time.current
-      )
+      Document.transaction do
+        document.complete_initial_metadata!(category: parsed[:category], description: parsed[:description])
+        document.update!(
+          summary: response,
+          summarized_at: Time.current
+        )
+      end
 
       log_activity(
         action: "document_summarized",
@@ -84,7 +87,6 @@ module Agents
         <<~PROMPT
           Document title: #{document.title}
           Original filename: #{document.original_filename}
-          Category: #{document.category}
           Dependent: #{document.dependent.name}
 
           Summarize the document from the evidence chunks below.
@@ -94,6 +96,7 @@ module Agents
           Write for a parent or caregiver in plain language.
           Explain necessary medical or educational terms briefly.
           Never mention chunks, embeddings, retrieval, IDs, pipelines, models, or other system internals.
+          #{Documents::MetadataSchemas::INSTRUCTIONS}
           #{truncation_notice}
 
           Evidence chunks:

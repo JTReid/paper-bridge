@@ -1,0 +1,19 @@
+<div id="<%= dom_id(document, :editable_metadata) %>">
+  <% if document.initial_metadata_pending? %>
+    <p class="mb-4 rounded-md border border-slate-200 bg-slate-50 p-3 text-sm text-slate-600" role="status" data-testid="document-metadata-pending">The category and description become editable after initial processing finishes. You can still update the title now.</p>
+  <% end %>
+
+  <%= tag.fieldset disabled: document.initial_metadata_pending?, class: "space-y-6 disabled:opacity-60", data: { testid: "document-editable-metadata" } do %>
+    <%= fields_for :document, document do |fields| %>
+      <div>
+        <%= fields.label :description, class: "block text-sm font-medium text-slate-700" %>
+        <%= fields.text_area :description, rows: 4, class: "mt-2 block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-950 shadow-sm outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100", data: { testid: "document-description-field" } %>
+      </div>
+
+      <div>
+        <%= fields.label :category, class: "block text-sm font-medium text-slate-700" %>
+        <%= fields.select :category, Document.categories.keys.map { |category| [category.humanize, category] }, {}, class: "mt-2 block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-950 shadow-sm outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100", data: { testid: "document-category-field" } %>
+      </div>
+    <% end %>
+  <% end %>
+</div>

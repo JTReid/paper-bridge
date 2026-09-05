@@ -57,6 +57,27 @@ export function completeLatestAiAssistantQueryWithoutBroadcast(accountName, answ
   );
 }
 
+export function completeDocumentInitialMetadata(documentId, metadata) {
+  const output = runRailsRunner(
+    `
+      document = Document.find(ENV.fetch("QA_DOCUMENT_ID"))
+      metadata = JSON.parse(ENV.fetch("QA_DOCUMENT_METADATA"))
+      document.complete_initial_metadata!(
+        category: metadata.fetch("category"),
+        description: metadata.fetch("description")
+      )
+      broadcasts = ActionCable.server.pubsub.broadcasts(document.to_gid_param)
+      puts JSON.generate(broadcasts.map { |message| JSON.parse(message) })
+    `,
+    {
+      QA_DOCUMENT_ID: String(documentId),
+      QA_DOCUMENT_METADATA: JSON.stringify(metadata),
+    },
+  );
+
+  return JSON.parse(output);
+}
+
 export function deleteAccountsAndUsers(accounts) {
   runRailsRunner(
     `
@@ -71,7 +92,7 @@ export function deleteAccountsAndUsers(accounts) {
 }
 
 function runRailsRunner(code, env = {}) {
-  execFileSync('bin/rails', ['runner', code], {
+  return execFileSync('bin/rails', ['runner', code], {
     cwd: process.cwd(),
     env: {
       ...process.env,
@@ -79,5 +100,6 @@ function runRailsRunner(code, env = {}) {
       RAILS_ENV: 'test',
     },
     stdio: 'pipe',
+    encoding: 'utf8',
   });
 }

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_09_04_000100) do
+ActiveRecord::Schema[8.1].define(version: 2026_09_05_000100) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "vector"
@@ -222,6 +222,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_09_04_000100) do
     t.datetime "created_at", null: false
     t.bigint "dependent_id", null: false
     t.text "description"
+    t.boolean "initial_metadata_pending", default: false, null: false
     t.string "original_filename"
     t.text "preparation_error"
     t.string "preparation_status", default: "unprepared", null: false

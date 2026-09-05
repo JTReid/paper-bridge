@@ -41,6 +41,13 @@ test('QA seeded empty and failed document details render safely', async ({ page 
   await expect(page.getByTestId('document-processing-status')).toContainText('Uploaded');
   await expect(page.getByText('A summary isn’t available yet.')).toBeVisible();
   await expect(page.getByText('View document text')).toHaveCount(0);
+  const openOriginal = page.getByTestId('document-open-original');
+  await expect(openOriginal).toBeVisible();
+  await expect(openOriginal).toHaveAttribute('href', /\/documents\/\d+\/original$/);
+  await expect(openOriginal).toHaveAttribute('target', '_blank');
+  await expect(openOriginal).toHaveAttribute('rel', 'noopener');
+  await expect(page.getByTestId('document-processing-status').getByTestId('document-open-original')).toHaveCount(0);
+  await expect(openOriginal.locator('..').getByTestId('document-edit-link')).toBeVisible();
   await expectAccessible(page);
 
   await backToSeededDocuments(page);

@@ -34,12 +34,17 @@ operational harness checks until matching implementation exists.
   through temporary storage URLs. See [Profile Management](profile-management.md)
   for the separate legacy-name backfill and deletion behavior.
 - Document upload, listing, case-insensitive original-filename search, category
-  filtering, filter-aware upload defaults, show, edit, update, and destroy
+  filtering, file-only upload, show, edit, update, and destroy
   paths. Intake supports text-like files, PDFs, and one JPEG, PNG, WebP, HEIC,
   HEIF, or TIFF image per document; HEIC/HEIF and TIFF uploads are converted to
   JPEG before Active Storage persistence.
+- Upload selection supports individual removal and Clear selection. Single and
+  batch uploads return to the profile's Documents list. Category and description are
+  generated once during initial processing and editable afterward; retries
+  preserve them. See [Document Uploads](document-uploads.md).
 - Document processing status, summary, readiness, file-detail rendering, and an
-  original-file link that opens PDFs in a new tab and downloads other formats.
+  prominent original-file action that opens PDFs in a new tab and downloads
+  other formats.
 - Separate GPT-backed image ingestion that extracts text, classifies the
   document, creates search chunks, and stores pgvector embeddings.
 - Care team invitations for a dependent, backed by `CareTeamMembership`.
@@ -94,8 +99,7 @@ The tour has six customer-facing milestones:
 2. Open that Profile's Documents.
 3. Open Add Documents.
 4. Choose and upload one or more files.
-5. Open Ask PaperBridge, with an extra Back to documents prompt after a
-   single-file upload redirects to document detail.
+5. Open Ask PaperBridge from Documents after either a single or batch upload.
 6. Submit a suggested or custom question.
 
 Only an active account admin with no Profiles is eligible for automatic start.

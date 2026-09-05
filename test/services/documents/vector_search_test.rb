@@ -150,6 +150,23 @@ class Documents::VectorSearchTest < ActiveSupport::TestCase
     assert_empty search(query_embedding: unit_vector(0))
   end
 
+  test "initial metadata must finish before document contents are searchable" do
+    chunk = create_chunk!("Medical record", label: "medical", chunk_index: 2)
+    create_embedding!(chunk, unit_vector(0))
+    @document.update_column(:initial_metadata_pending, true)
+
+    assert_empty search(query_embedding: unit_vector(0))
+
+    @document.file.attach(io: StringIO.new("Medical record"), filename: "medical.txt", content_type: "text/plain")
+    @document.complete_initial_metadata!(category: "medical", description: "A medical record.")
+
+    assert_equal [ chunk ], search(query_embedding: unit_vector(0)).map(&:chunk)
+    educational_access = Documents::SearchAccessProfile.new(
+      role: "teacher", allowed_document_categories: [ "educational" ], allowed_chunk_labels: [ "medical" ]
+    )
+    assert_empty search(query_embedding: unit_vector(0), access_profile: educational_access)
+  end
+
   private
 
     def search(query_embedding:, access_profile: @owner_profile, dependent: nil)

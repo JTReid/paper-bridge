@@ -138,40 +138,6 @@ document_chunks_schema = {
   required: %w[chunks]
 }
 
-image_document_extraction_schema = {
-  type: "object",
-  additionalProperties: false,
-  properties: {
-    extracted_text: { type: "string", minLength: 1 },
-    category: {
-      type: "string",
-      enum: Document.categories.keys
-    },
-    summary: { type: "string", minLength: 1 },
-    key_points: {
-      type: "array",
-      items: { type: "string" }
-    },
-    search_chunks: {
-      type: "array",
-      minItems: 1,
-      items: {
-        type: "object",
-        additionalProperties: false,
-        properties: {
-          content: { type: "string", minLength: 1 },
-          label: {
-            type: "string",
-            enum: DocumentChunk::LABELS
-          }
-        },
-        required: %w[content label]
-      }
-    }
-  },
-  required: %w[extracted_text category summary key_points search_chunks]
-}
-
 search_answer_schema = {
   type: "object",
   additionalProperties: false,
@@ -252,10 +218,10 @@ timeline_events_schema = {
 
 {
   "structured_summary" => summary_schema,
-  "document_summary" => summary_schema,
+  "document_summary" => Documents::MetadataSchemas.document_summary,
   "structured_validation" => validation_schema,
   "document_chunks" => document_chunks_schema,
-  "image_document_extraction" => image_document_extraction_schema,
+  "image_document_extraction" => Documents::MetadataSchemas.image_document_extraction,
   "search_answer" => search_answer_schema,
   "timeline_events" => timeline_events_schema
 }.each do |name, schema|

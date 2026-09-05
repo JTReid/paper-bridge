@@ -8,7 +8,7 @@ class ProcessDocumentJobTest < ActiveJob::TestCase
 
   class FakeConnection
     class << self
-      attr_accessor :requests
+      attr_accessor :requests, :metadata_response, :embedding_failure
 
       def last_request
         requests.last
@@ -69,7 +69,7 @@ class ProcessDocumentJobTest < ActiveJob::TestCase
                     "Uses document chunks as summary evidence.",
                     "Includes the processed chunk content."
                   ]
-                }.to_json
+                }.merge(FakeConnection.metadata_response).to_json
               }
             }
           ],
@@ -117,6 +117,7 @@ class ProcessDocumentJobTest < ActiveJob::TestCase
 
       def self.embedding_response(payload)
         inputs = Array(payload.fetch("input"))
+        inputs = [] if FakeConnection.embedding_failure
 
         {
           data: inputs.each_with_index.map do |_input, index|
@@ -182,6 +183,8 @@ class ProcessDocumentJobTest < ActiveJob::TestCase
     @original_connection = ProcessDocumentJob.llm_connection
     @original_pdf_command_runner = ProcessDocumentJob.pdf_command_runner
     FakeConnection.requests = []
+    FakeConnection.metadata_response = { category: "educational", description: "A short description of the uploaded document." }
+    FakeConnection.embedding_failure = false
     ProcessDocumentJob.llm_connection = FakeConnection
   end
 
@@ -210,6 +213,9 @@ class ProcessDocumentJobTest < ActiveJob::TestCase
     embedding_payload = JSON.parse(embedding_request.fetch(:payload))
 
     assert_equal "processed", document.status
+    assert_equal "educational", document.category
+    assert_equal "A short description of the uploaded document.", document.description
+    assert_not document.initial_metadata_pending?
     assert_equal "prepared", document.preparation_status
     assert_equal "text-v1", document.prepared_payload.fetch("preparation_version")
     assert_equal 1, document.document_pages.count
@@ -230,6 +236,8 @@ class ProcessDocumentJobTest < ActiveJob::TestCase
     assert_equal "completed", pipeline_run.state
     assert_equal "gpt-5.4-nano", chunk_payload.fetch("model")
     assert_equal "gpt-5.4-mini", summary_payload.fetch("model")
+    assert_includes summary_payload.dig("response_format", "json_schema", "schema", "required"), "category"
+    assert_includes summary_payload.dig("response_format", "json_schema", "schema", "required"), "description"
     assert_equal "gpt-5.4-mini", timeline_payload.fetch("model")
     assert_equal "text-embedding-3-large", embedding_payload.fetch("model")
     assert_includes chunk_payload.dig("messages", 1, "content").first.fetch("text"), "This is the uploaded test document."
@@ -242,6 +250,22 @@ class ProcessDocumentJobTest < ActiveJob::TestCase
     assert pipeline_run.pipeline_activity.entries.any? { |entry| entry["action"] == "document_summarized" }
     assert pipeline_run.pipeline_activity.entries.any? { |entry| entry["action"] == "document_chunks_embedded" }
     assert pipeline_run.pipeline_activity.entries.any? { |entry| entry["action"] == "timeline_events_extracted" }
+    assert_equal 4, FakeConnection.requests.count
+  end
+
+  test "initial metadata completion broadcasts enabled editing fields after the whole summary transaction" do
+    document = create_document
+    clear_enqueued_jobs
+
+    streams = capture_turbo_stream_broadcasts(document) { ProcessDocumentJob.perform_now(document) }
+    target = ActionView::RecordIdentifier.dom_id(document, :editable_metadata)
+    metadata_streams = streams.select { |stream| stream["target"] == target }
+
+    assert_equal 1, metadata_streams.count
+    template = metadata_streams.last.at_css("template")
+    assert_nil template.at_css("fieldset[disabled]")
+    assert_equal "educational", template.at_css("option[selected]")["value"]
+    assert_includes template.text, "A short description of the uploaded document."
   end
 
   test "prepares PDFs before chunking and embedding them" do
@@ -256,6 +280,9 @@ class ProcessDocumentJobTest < ActiveJob::TestCase
     payload = JSON.parse(chunk_request.fetch(:payload))
 
     assert_equal "processed", document.status
+    assert_equal "educational", document.category
+    assert_equal "A short description of the uploaded document.", document.description
+    assert_not document.initial_metadata_pending?
     assert_equal "prepared", document.preparation_status
     assert_equal "pdf-v1", document.prepared_payload.fetch("preparation_version")
     assert_equal 1, document.document_pages.count
@@ -302,15 +329,79 @@ class ProcessDocumentJobTest < ActiveJob::TestCase
     assert_match %r{\Adata:image/png;base64,}, image_content.first.dig("image_url", "url")
   end
 
+  test "keeps completed metadata and later edits through a processing retry" do
+    document = create_document
+    clear_enqueued_jobs
+    FakeConnection.embedding_failure = true
+
+    assert_enqueued_jobs 1, only: ProcessDocumentJob do
+      ProcessDocumentJob.perform_now(document)
+    end
+
+    document.reload
+    assert_equal "failed", document.status
+    assert_equal "educational", document.category
+    assert_equal "A short description of the uploaded document.", document.description
+    assert_not document.initial_metadata_pending?
+    document.update!(category: :therapy, description: "My corrected description.")
+    FakeConnection.embedding_failure = false
+    FakeConnection.metadata_response = { category: "medical", description: "A different generated description." }
+
+    ProcessDocumentJob.perform_now(document)
+
+    assert_equal "processed", document.reload.status
+    assert_equal "therapy", document.category
+    assert_equal "My corrected description.", document.description
+    assert_not document.initial_metadata_pending?
+  end
+
+  test "legacy documents retain metadata when an older response has no new metadata fields" do
+    document = create_document(initial_metadata_pending: false)
+    document.update!(category: :insurance, description: "Original description.")
+    FakeConnection.metadata_response = {}
+    clear_enqueued_jobs
+
+    ProcessDocumentJob.perform_now(document)
+
+    assert_equal "processed", document.reload.status
+    assert_equal "insurance", document.category
+    assert_equal "Original description.", document.description
+  end
+
+  {
+    "missing category" => { description: "A generated description." },
+    "invalid category" => { category: "not-a-category", description: "A generated description." },
+    "missing description" => { category: "medical" },
+    "blank description" => { category: "medical", description: "  " }
+  }.each do |label, metadata|
+    test "leaves metadata pending and stops before embedding for #{label}" do
+      document = create_document
+      FakeConnection.metadata_response = metadata
+      clear_enqueued_jobs
+
+      assert_enqueued_jobs 1, only: ProcessDocumentJob do
+        ProcessDocumentJob.perform_now(document)
+      end
+
+      assert_equal "failed", document.reload.status
+      assert document.initial_metadata_pending?
+      assert_equal "general", document.category
+      assert_nil document.description
+      assert_empty document.document_embeddings
+      assert FakeConnection.requests.none? { |request| request.fetch(:url).include?("/embeddings") }
+    end
+  end
+
   private
 
-    def create_document
+    def create_document(initial_metadata_pending: true)
       Document.create!(
         account: accounts(:greenfield),
         dependent: dependents(:emma),
         user: users(:family_admin),
         title: "Power of Attorney",
         category: :general,
+        initial_metadata_pending: initial_metadata_pending,
         file: {
           io: StringIO.new("This is the uploaded test document."),
           filename: "power-of-attorney.txt",
@@ -326,6 +417,7 @@ class ProcessDocumentJobTest < ActiveJob::TestCase
         user: users(:family_admin),
         title: "PDF Document",
         category: :educational,
+        initial_metadata_pending: true,
         file: {
           io: StringIO.new("%PDF-1.4\n% fake test pdf"),
           filename: "document.pdf",

@@ -10,6 +10,10 @@ documents.
 - Each `Document` has one Active Storage attachment named `file`.
 - Multi-file upload requests create one `Document` record per uploaded file;
   one image is always one document.
+- New web uploads receive a category and short description once during initial
+  processing, before becoming searchable. Existing documents and later edits
+  are preserved. See [Document Uploads](document-uploads.md) for completion,
+  edit-lock, retry, and schema-update behavior.
 - Document intake accepts text-like uploads, PDFs, and JPEG, PNG, WebP, HEIC,
   HEIF, or TIFF images. Unsupported file types are rejected before enqueueing.
 - `Documents::UploadNormalizer` decodes image uploads before document creation.
@@ -61,10 +65,10 @@ documents.
   structured multimodal extraction request.
 - The extraction result includes the most complete textual reading GPT can
   produce, a document category, summary, key points, and search chunks.
-- GPT classification is metadata-only in this first iteration and never changes
-  `Document.category`. The GPT-detected category is persisted with the
-  extraction metadata. This first iteration does not persist
-  prescription-specific fields.
+- For new web uploads, the detected category and generated description populate
+  the document once. Detected classification is also retained in extraction
+  metadata. Later retries do not overwrite the editable category or description.
+  Image extraction does not persist prescription-specific fields.
 - The extracted chunks are persisted as `DocumentChunk` records and
   `Agents::DocumentEmbedder` creates pgvector embeddings so image documents are
   available to the existing search pipeline.

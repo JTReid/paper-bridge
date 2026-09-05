@@ -37,8 +37,7 @@ class DocumentsController < ApplicationController
   def new
     set_form_options
 
-    category = params[:category] if Document.categories.key?(params[:category])
-    @document = current_account.documents.new(user: current_user, dependent: @dependent, category: category || :general)
+    @document = build_document
   end
 
   def create
@@ -47,19 +46,17 @@ class DocumentsController < ApplicationController
     files = uploaded_files(upload_params)
 
     if files.empty?
-      @document = build_document(upload_params)
+      @document = build_document
       @document.validate
       render :new, status: :unprocessable_entity
       return
     end
 
-    uploaded_documents, failed_uploads = create_uploaded_documents(files, upload_params)
+    uploaded_documents, failed_uploads = create_uploaded_documents(files)
 
     if uploaded_documents.empty?
       @document = failed_uploads.first.fetch(:document)
       render :new, status: :unprocessable_entity
-    elsif uploaded_documents.one? && failed_uploads.empty?
-      redirect_to uploaded_documents.first, notice: "Document uploaded."
     else
       flash[:notice] = upload_success_message(uploaded_documents.count) if uploaded_documents.any?
       flash[:alert] = upload_failure_message(failed_uploads) if failed_uploads.any?
@@ -100,7 +97,7 @@ class DocumentsController < ApplicationController
     end
 
     def document_upload_params
-      params.require(:document).permit(:title, :description, :category, :file, files: [], file_categories: [])
+      params.require(:document).permit(:file, files: [])
     end
 
     def positive_page_number
@@ -118,13 +115,12 @@ class DocumentsController < ApplicationController
       Array.wrap(files).reject(&:blank?)
     end
 
-    def create_uploaded_documents(files, upload_params)
-      file_count = files.size
+    def create_uploaded_documents(files)
       uploaded_documents = []
       failed_uploads = []
 
-      files.each_with_index do |file, index|
-        document = build_document(upload_params, file_count: file_count, file_index: index)
+      files.each do |file|
+        document = build_document
         normalized_upload = nil
 
         begin
@@ -152,21 +148,13 @@ class DocumentsController < ApplicationController
       [ uploaded_documents, failed_uploads ]
     end
 
-    def build_document(upload_params, file_count: 1, file_index: nil)
-      document = current_account.documents.new(
-        description: upload_params[:description],
-        category: document_category(upload_params, file_index)
+    def build_document
+      current_account.documents.new(
+        user: current_user,
+        dependent: @dependent,
+        category: :general,
+        initial_metadata_pending: true
       )
-      document.title = upload_params[:title] if file_count == 1 && upload_params[:title].present?
-      document.user = current_user
-      document.dependent = @dependent
-      document
-    end
-
-    def document_category(upload_params, file_index)
-      file_category = Array.wrap(upload_params[:file_categories])[file_index] if file_index
-
-      file_category.presence || upload_params[:category]
     end
 
     def failed_upload_for(file, document)

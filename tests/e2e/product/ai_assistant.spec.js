@@ -29,6 +29,11 @@ test('ai assistant shows immediate progress and queues without leaving the profi
   await expect(page).toHaveURL(/\/dependents\/\d+\/ai-assistant$/);
   const assistantPath = new URL(page.url()).pathname;
 
+  // This test deliberately resets queue state before reload; do not let periodic reconciliation start it first.
+  await page.locator('[data-controller~="ai-assistant-query"]').evaluate((element) => {
+    element.setAttribute('data-ai-assistant-query-reconcile-every-value', '60000');
+  });
+
   await page.route(/\/dependents\/\d+\/ai-assistant$/, async (route) => {
     if (route.request().method() === 'POST') {
       await new Promise((resolve) => setTimeout(resolve, 400));

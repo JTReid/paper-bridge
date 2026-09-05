@@ -50,7 +50,7 @@ const STEP_CONTENT = {
   choose_files: {
     selector: '[data-tour="choose-files"]',
     title: "Choose your files",
-    description: "Choose one file or several. You can add a description and change categories if you want.",
+    description: "Choose one file or several. PaperBridge will create a category and description for each document.",
     number: 4,
     side: "top",
     align: "center",
@@ -60,12 +60,12 @@ const STEP_CONTENT = {
   upload_submit: {
     selector: '[data-tour="upload-submit"]',
     title: "Ready to upload",
-    description: "Review any optional details, then select Upload. PaperBridge will prepare your files in the background.",
+    description: "Review your selected files, then select Upload. You can remove files or clear the selection before uploading.",
     number: 4,
     side: "left",
     align: "end",
-    actionLabel: "Review details",
-    focusSelector: '[data-testid="document-description-field"]'
+    actionLabel: "Review files",
+    focusSelector: '[data-testid="document-file-list"]'
   },
   open_ask: {
     selector: '[data-tour="open-ask"]',
@@ -141,13 +141,15 @@ export default class extends Controller {
   }
 
   filesSelected(event) {
-    if (!this.isActivePhase("choose_files")) return
-    if ((event.target.files?.length || 0) === 0) return
+    const hasFiles = (event.target.files?.length || 0) > 0
+    const nextPhase = hasFiles ? "upload_submit" : "choose_files"
+    const previousPhase = hasFiles ? "choose_files" : "upload_submit"
+    if (!this.isActivePhase(previousPhase)) return
 
-    if (!this.writeState(ACTIVE_STATUS, "upload_submit")) return
+    if (!this.writeState(ACTIVE_STATUS, nextPhase)) return
 
     this.destroyTour()
-    this.startFrame = window.requestAnimationFrame(() => this.showPhase("upload_submit"))
+    this.startFrame = window.requestAnimationFrame(() => this.showPhase(nextPhase))
   }
 
   pause(event) {

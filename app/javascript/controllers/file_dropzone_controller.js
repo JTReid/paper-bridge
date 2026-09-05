@@ -1,14 +1,12 @@
 import { Controller } from "@hotwired/stimulus"
 
 export default class extends Controller {
-  static targets = ["category", "dropzone", "input", "list", "summary"]
+  static targets = ["clear", "dropzone", "input", "list", "summary"]
   static values = {
-    categoryOptions: Array,
     emptyLabel: { type: String, default: "No files selected" }
   }
 
   connect() {
-    this.manualCategories = new Set()
     this.sync()
   }
 
@@ -16,16 +14,22 @@ export default class extends Controller {
     this.sync()
   }
 
-  categoryChanged() {
-    this.listTarget.querySelectorAll("select[data-file-dropzone-file-category]").forEach((select) => {
-      if (this.manualCategories.has(select.dataset.fileIndex)) return
+  remove(event) {
+    const files = Array.from(this.inputTarget.files || [])
+    const index = event.params.index
+    if (!Number.isInteger(index) || index < 0 || index >= files.length) return
 
-      select.value = this.defaultCategory
-    })
+    files.splice(index, 1)
+    this.setFiles(files)
+
+    const nextButton = this.listTarget.querySelector(`[data-file-dropzone-index-param="${Math.min(index, files.length - 1)}"]`)
+    const focusTarget = nextButton || this.inputTarget
+    focusTarget.focus({ preventScroll: true })
   }
 
-  fileCategoryChanged(event) {
-    this.manualCategories.add(event.target.dataset.fileIndex)
+  clear() {
+    this.setFiles([])
+    this.inputTarget.focus({ preventScroll: true })
   }
 
   dragOver(event) {
@@ -43,17 +47,24 @@ export default class extends Controller {
 
     if (event.dataTransfer.files.length === 0) return
 
-    this.inputTarget.files = event.dataTransfer.files
+    this.setFiles(Array.from(event.dataTransfer.files))
+  }
+
+  setFiles(files) {
+    const selection = new DataTransfer()
+    files.forEach((file) => selection.items.add(file))
+
+    this.inputTarget.files = selection.files
     this.inputTarget.dispatchEvent(new Event("change", { bubbles: true }))
   }
 
   sync() {
     const files = Array.from(this.inputTarget.files || [])
 
-    this.manualCategories = new Set([...this.manualCategories].filter((index) => Number(index) < files.length))
     this.summaryTarget.textContent = files.length === 0 ? this.emptyLabelValue : this.selectedLabel(files.length)
     this.listTarget.replaceChildren(...files.map((file, index) => this.fileItem(file, index)))
     this.listTarget.classList.toggle("hidden", files.length === 0)
+    this.clearTarget.classList.toggle("hidden", files.length === 0)
   }
 
   selectedLabel(count) {
@@ -62,7 +73,8 @@ export default class extends Controller {
 
   fileItem(file, index) {
     const item = document.createElement("li")
-    item.className = "grid gap-3 rounded-md border border-slate-200 bg-white px-3 py-3 text-sm sm:grid-cols-[minmax(0,1fr)_12rem] sm:items-center"
+    item.className = "flex items-center justify-between gap-3 rounded-md border border-slate-200 bg-white px-3 py-3 text-sm"
+    item.dataset.testid = "document-selected-file"
 
     const details = document.createElement("div")
     details.className = "min-w-0"
@@ -76,38 +88,20 @@ export default class extends Controller {
     size.textContent = this.formatSize(file.size)
 
     details.append(name, size)
-    item.append(details, this.categorySelect(index))
+    item.append(details, this.removeButton(file, index))
     return item
   }
 
-  categorySelect(index) {
-    const wrapper = document.createElement("label")
-    wrapper.className = "block"
-
-    const label = document.createElement("span")
-    label.className = "mb-1 block text-xs font-medium text-slate-600"
-    label.textContent = "Category"
-
-    const select = document.createElement("select")
-    select.name = "document[file_categories][]"
-    select.className = "block w-full rounded-md border border-slate-300 bg-white px-2.5 py-2 text-sm text-slate-900 shadow-sm outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100"
-    select.dataset.fileDropzoneFileCategory = "true"
-    select.dataset.fileIndex = index.toString()
-    select.dataset.testid = `document-file-category-${index}`
-    select.value = this.defaultCategory
-    select.addEventListener("change", (event) => this.fileCategoryChanged(event))
-
-    this.categoryOptionsValue.forEach((category) => {
-      const option = document.createElement("option")
-      option.value = category.value
-      option.textContent = category.label
-      select.append(option)
-    })
-
-    select.value = this.defaultCategory
-
-    wrapper.append(label, select)
-    return wrapper
+  removeButton(file, index) {
+    const button = document.createElement("button")
+    button.type = "button"
+    button.className = "shrink-0 rounded-md px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100"
+    button.textContent = "Remove"
+    button.setAttribute("aria-label", `Remove ${file.name}`)
+    button.dataset.action = "file-dropzone#remove"
+    button.dataset.fileDropzoneIndexParam = index.toString()
+    button.dataset.testid = `document-file-remove-${index}`
+    return button
   }
 
   formatSize(bytes) {
@@ -121,9 +115,5 @@ export default class extends Controller {
 
   clearDragState() {
     this.dropzoneTarget.classList.remove("border-emerald-500", "bg-emerald-50", "ring-2", "ring-emerald-100")
-  }
-
-  get defaultCategory() {
-    return this.categoryTarget.value
   }
 }

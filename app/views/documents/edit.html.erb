@@ -1,6 +1,7 @@
 <% content_for :title, "Edit Document | PaperBridge" %>
 
 <%= app_shell(active: :documents, dependent: @dependent) do %>
+  <%= turbo_stream_from @document %>
   <div class="mx-auto max-w-3xl space-y-8">
     <nav aria-label="Document navigation">
       <%= link_to document_path(@document), class: "inline-flex items-center text-sm font-medium text-slate-600 hover:text-slate-950" do %>

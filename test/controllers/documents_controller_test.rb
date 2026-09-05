@@ -227,37 +227,38 @@ class DocumentsControllerTest < ActionDispatch::IntegrationTest
     assert_includes response.body, dependent.name
     assert_includes response.body, dependent_documents_path(dependent)
     assert_includes response.body, "data-controller=\"file-dropzone\""
-    assert_includes response.body, "data-file-dropzone-category-options-value"
+    assert_not_includes response.body, "data-file-dropzone-category-options-value"
     assert_includes response.body, "name=\"document[files][]\""
     assert_includes response.body, "multiple=\"multiple\""
-    assert_select "input[type='file'][accept*='.heic'][accept*='.heif'][accept*='.tif'][accept*='.tiff']"
-    assert_select "input[type='file'][accept*='image/jpeg'][accept*='image/png'][accept*='image/webp']"
+    assert_select "input[type='file'][accept]", count: 0
+    assert_select "textarea[name='document[description]']", count: 0
+    assert_select "select[name='document[category]']", count: 0
     assert_select "form[data-testid='document-upload-form'][data-tour='upload-form'][data-action='input->product-tour#pause turbo:submit-end->product-tour#advanceAfterSubmit'][data-product-tour-from-phase-param='upload_submit'][data-product-tour-next-phase-param='open_ask']"
     assert_select "[data-tour='choose-files'] input[data-testid='document-file-field'][data-action='change->file-dropzone#changed change->product-tour#filesSelected']"
     assert_select "button[type='submit'][data-testid='document-upload-submit'][data-tour='upload-submit']", text: "Upload"
   end
 
-  test "preselects a valid category passed to the upload form" do
+  test "does not preselect a category passed to the upload form" do
     dependent = dependents(:emma)
     sign_in users(:family_admin)
 
     get new_dependent_document_path(dependent, category: "prescriptions")
 
     assert_response :success
-    assert_select "select[name='document[category]'] option[selected='selected'][value='prescriptions']", text: "Prescriptions"
+    assert_select "select[name='document[category]']", count: 0
   end
 
-  test "falls back to general when the upload category is unknown" do
+  test "ignores unknown upload category hints" do
     dependent = dependents(:emma)
     sign_in users(:family_admin)
 
     get new_dependent_document_path(dependent, category: "unknown")
 
     assert_response :success
-    assert_select "select[name='document[category]'] option[selected='selected'][value='general']", text: "General"
+    assert_select "select[name='document[category]']", count: 0
   end
 
-  test "filtered empty state carries its category to the upload form" do
+  test "filtered empty state links to automatic document upload without a category hint" do
     dependent = dependents(:emma)
     sign_in users(:family_admin)
 
@@ -265,8 +266,8 @@ class DocumentsControllerTest < ActionDispatch::IntegrationTest
 
     assert_response :success
     assert_includes response.body, "No insurance documents yet"
-    assert_includes response.body, "Add Insurance Document"
-    assert_select "a[data-testid='documents-empty-add-link'][href='#{new_dependent_document_path(dependent, category: "insurance")}']"
+    assert_includes response.body, "Add Documents"
+    assert_select "a[data-testid='documents-empty-add-link'][href='#{new_dependent_document_path(dependent)}']"
   end
 
   test "uploads a document into the signed in account" do
@@ -280,6 +281,7 @@ class DocumentsControllerTest < ActionDispatch::IntegrationTest
             title: "Medication Instructions",
             description: "Current prescription directions",
             category: "prescriptions",
+            initial_metadata_pending: false,
             files: [ Rack::Test::UploadedFile.new(file_fixture("sample.txt"), "text/plain") ]
           }
         }
@@ -287,10 +289,14 @@ class DocumentsControllerTest < ActionDispatch::IntegrationTest
     end
 
     document = Document.order(:created_at).last
-    assert_redirected_to document_path(document)
+    assert_redirected_to dependent_documents_path(dependents(:emma))
+    assert_equal "1 document uploaded and being prepared.", flash[:notice]
     assert_equal user.account, document.account
     assert_equal dependents(:emma), document.dependent
-    assert_equal "prescriptions", document.category
+    assert_equal "general", document.category
+    assert_nil document.description
+    assert_equal "sample", document.title
+    assert document.initial_metadata_pending?
     assert_equal user, document.user
     assert document.file.attached?
     assert_equal "sample.txt", document.original_filename
@@ -324,8 +330,9 @@ class DocumentsControllerTest < ActionDispatch::IntegrationTest
     documents = Document.order(:created_at).last(2)
     assert_equal [ "first-document", "second-document" ], documents.map(&:title)
     assert_equal [ "first-document.txt", "second-document.txt" ], documents.map(&:original_filename)
-    assert_equal [ "educational", "therapy" ], documents.map(&:category)
-    assert_equal [ "Shared context", "Shared context" ], documents.map(&:description)
+    assert_equal [ "general", "general" ], documents.map(&:category)
+    assert_equal [ nil, nil ], documents.map(&:description)
+    assert documents.all?(&:initial_metadata_pending?)
     assert_equal [ user.account, user.account ], documents.map(&:account)
     assert_equal [ dependent, dependent ], documents.map(&:dependent)
     assert_equal [ user, user ], documents.map(&:user)
@@ -378,7 +385,8 @@ class DocumentsControllerTest < ActionDispatch::IntegrationTest
     end
 
     document = Document.order(:created_at).last
-    assert_redirected_to document_path(document)
+    assert_redirected_to dependent_documents_path(dependent)
+    assert document.initial_metadata_pending?
     assert_equal "handwritten-prescription", document.title
     assert_equal "handwritten-prescription.jpg", document.original_filename
     assert_equal "image/jpeg", document.content_type
@@ -524,6 +532,41 @@ class DocumentsControllerTest < ActionDispatch::IntegrationTest
     assert_equal "processed", document.status
     assert_equal "prepared", document.preparation_status
     assert_equal "advance-directive.txt", document.original_filename
+  end
+
+  test "initial metadata fields are locked until completion and title editing stays available" do
+    document = create_attached_document(dependent: dependents(:emma), title: "Pending document", category: :general)
+    document.update_column(:initial_metadata_pending, true)
+    sign_in users(:family_admin)
+
+    get edit_document_path(document)
+
+    assert_response :success
+    assert_select "fieldset[data-testid='document-editable-metadata'][disabled]"
+    assert_select "input[data-testid='document-title-field']:not([disabled])"
+    assert_select "[data-testid='document-metadata-pending']"
+
+    patch document_path(document), params: {
+      document: { category: "medical", description: "Too soon", initial_metadata_pending: false }
+    }
+
+    assert_response :unprocessable_entity
+    assert document.reload.initial_metadata_pending?
+    assert_equal "general", document.category
+    assert_nil document.description
+
+    patch document_path(document), params: { document: { title: "A clearer title" } }
+
+    assert_redirected_to document_path(document)
+    assert_equal "A clearer title", document.reload.title
+
+    document.complete_initial_metadata!(category: "medical", description: "An automatically generated description.")
+    get edit_document_path(document)
+
+    assert_response :success
+    assert_select "fieldset[data-testid='document-editable-metadata']:not([disabled])"
+    assert_select "select[name='document[category]'] option[selected='selected'][value='medical']"
+    assert_select "textarea[name='document[description]']", text: "An automatically generated description."
   end
 
   test "does not edit documents from another account" do

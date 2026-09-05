@@ -19,7 +19,7 @@ class ProcessDocumentJob < ApplicationJob
 
     pipeline.execute
 
-    document.update!(
+    document.reload.update!(
       status: :processed
     )
   rescue Agentic::Errors::ConfigurationError => e

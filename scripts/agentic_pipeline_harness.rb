@@ -74,6 +74,7 @@ DOCUMENT_PIPELINE_FILES = %w[
   app/services/agents/timeline_event_extractor.rb
   app/services/agents/vector_retriever.rb
   app/services/documents/pdf_command_runner.rb
+  app/services/documents/metadata_schemas.rb
   app/services/documents/prepare.rb
   app/services/documents/prepare_pdf.rb
   app/services/documents/prepare_text.rb
@@ -83,11 +84,13 @@ DOCUMENT_PIPELINE_FILES = %w[
   app/services/documents/upload_normalizer.rb
   app/services/documents/vector_search.rb
   docs/runbooks/document-ingestion.md
+  docs/runbooks/document-uploads.md
   docs/runbooks/ai-assistant-search.md
   app/views/ai_assistant/_query_result.html.erb
   app/views/ai_assistant/create.turbo_stream.erb
   db/migrate/20260808000100_create_ai_assistant_queries.rb
   db/migrate/20260808000200_add_enqueued_at_to_ai_assistant_queries.rb
+  db/migrate/20260905000100_add_initial_metadata_pending_to_documents.rb
   db/migrate/20260614033907_add_summary_to_documents.rb
   db/migrate/20260614040236_create_document_pages.rb
   db/migrate/20260614040243_add_preparation_to_documents.rb
@@ -101,6 +104,8 @@ DOCUMENT_PIPELINE_FILES = %w[
   test/jobs/answer_ai_assistant_query_job_test.rb
   test/jobs/process_document_job_test.rb
   test/jobs/process_image_document_job_test.rb
+  test/scripts/update_document_metadata_schemas_test.rb
+  scripts/update_document_metadata_schemas.rb
   test/models/document_chunk_test.rb
   test/models/document_embedding_test.rb
   test/models/document_page_test.rb
@@ -315,6 +320,7 @@ COMMANDS = {
       "test/jobs/answer_ai_assistant_query_job_test.rb",
       "test/jobs/process_document_job_test.rb",
       "test/jobs/process_image_document_job_test.rb",
+      "test/scripts/update_document_metadata_schemas_test.rb",
       "test/services/documents/pdf_command_runner_test.rb",
       "test/services/documents/prepare_text_test.rb",
       "test/services/documents/prepare_pdf_test.rb",
@@ -375,6 +381,9 @@ COMMANDS = {
       "test/models/timeline_event_test.rb",
       "test/models/user_test.rb",
       "scripts/check_docs_index.rb",
+      "scripts/update_document_metadata_schemas.rb",
+      "test/scripts/update_document_metadata_schemas_test.rb",
+      "db/migrate/20260905000100_add_initial_metadata_pending_to_documents.rb",
       "scripts/agentic_pipeline_harness.rb"
     ]
   ],

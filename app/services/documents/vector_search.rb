@@ -31,7 +31,7 @@ module Documents
           .joins(document_chunk: :document)
           .where(
             document_chunks: { account_id: account.id, label: allowed_labels },
-            documents: { category: allowed_categories }
+            documents: { category: allowed_categories, initial_metadata_pending: false }
           )
           .includes(document_chunk: [ :document, :document_page ])
           .nearest_neighbors(:embedding, query_embedding, distance: DocumentEmbedding::DISTANCE_METRIC)

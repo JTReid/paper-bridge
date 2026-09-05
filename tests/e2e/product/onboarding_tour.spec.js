@@ -99,16 +99,28 @@ test('new customer completes the guided path from signup through their first que
   });
   await expectTourStep(page, 4, 'Ready to upload');
   await page.getByTestId('product-tour-action').click();
-  await expect(page.getByTestId('document-description-field')).toBeFocused();
-  await page.getByTestId('document-description-field').fill('Reviewed during the setup tour.');
+  await expect(page.getByTestId('document-file-list')).toBeFocused();
   await expect(page.getByTestId('document-file-summary')).toContainText('1 file selected');
 
-  await page.getByTestId('document-upload-submit').click();
-  await expect(page).toHaveURL(/\/documents\/\d+$/);
-  await expectTourStep(page, 5, 'Your document is uploaded');
+  let unexpectedFileChoosers = 0;
+  const countUnexpectedFileChooser = () => { unexpectedFileChoosers += 1; };
+  page.on('filechooser', countUnexpectedFileChooser);
+  await page.getByTestId('document-file-remove-0').click();
+  await expectTourStep(page, 4, 'Choose your files');
+  await expect.poll(async () => tourState(page)).toMatchObject({ status: 'active', phase: 'choose_files' });
+  await expect(page.getByTestId('document-file-summary')).toContainText('No files selected');
+  expect(unexpectedFileChoosers).toBe(0);
+  page.off('filechooser', countUnexpectedFileChooser);
 
-  await page.getByTestId('document-back-to-documents').click();
+  await page.getByTestId('document-file-field').setInputFiles({
+    name: 'onboarding-record.txt',
+    mimeType: 'text/plain',
+    buffer: sampleFile,
+  });
+  await expectTourStep(page, 4, 'Ready to upload');
+  await page.getByTestId('document-upload-submit').click();
   await expect(page).toHaveURL(/\/dependents\/\d+\/documents$/);
+  await expect(page.getByTestId('flash-notice')).toContainText('1 document uploaded and being prepared.');
   await expectTourStep(page, 5, 'Open Ask PaperBridge');
 
   await page.getByTestId('documents-ask-ai-link').click();
@@ -153,10 +165,21 @@ test('multiple files return directly to Documents and a suggested question compl
   await page.getByTestId('dependent-documents-link').click();
   await page.getByTestId('documents-add-link').click();
 
-  await page.getByTestId('document-file-field').setInputFiles([
+  const files = [
     { name: 'multi-one.txt', mimeType: 'text/plain', buffer: sampleFile },
     { name: 'multi-two.txt', mimeType: 'text/plain', buffer: sampleFile },
-  ]);
+  ];
+  await page.getByTestId('document-file-field').setInputFiles(files);
+  await expectTourStep(page, 4, 'Ready to upload');
+  await page.getByTestId('product-tour-action').click();
+  await expect(page.getByTestId('document-file-list')).toBeFocused();
+  await page.getByTestId('document-file-clear-selection').click();
+  await expectTourStep(page, 4, 'Choose your files');
+  await expect.poll(async () => tourState(page)).toMatchObject({ status: 'active', phase: 'choose_files' });
+  await expect(page.getByTestId('document-file-summary')).toContainText('No files selected');
+  expect(await page.getByTestId('document-file-field').evaluate((input) => input.files.length)).toBe(0);
+
+  await page.getByTestId('document-file-field').setInputFiles(files);
   await expectTourStep(page, 4, 'Ready to upload');
   await page.getByTestId('document-upload-submit').click();
 
