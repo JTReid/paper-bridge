@@ -27,7 +27,7 @@ class AppointmentTest < ActiveSupport::TestCase
   end
 
   test "is removed with its dependent" do
-    dependent = Dependent.create!(account: accounts(:greenfield), name: "Appointment Profile")
+    dependent = Dependent.create!(account: accounts(:greenfield), first_name: "Appointment", last_name: "Profile")
     appointment = dependent.appointments.create!(
       scheduled_at: Time.zone.local(2026, 7, 23, 9),
       description: "Annual review"

@@ -27,8 +27,12 @@ operational harness checks until matching implementation exists.
   add form with the current profile selected while still allowing another
   profile to be chosen.
 - Dependent profile listing, display, create, edit, update, and destroy paths,
-  including optional JPEG, PNG, or WebP avatar uploads up to 5 MB, initials
-  fallbacks, and account-scoped display through temporary storage URLs.
+  with a required first name and optional last name, grade/school fields on edit
+  only, and confirmed deletion from the edit page. Profiles with documents must
+  have those documents removed first. Includes optional JPEG, PNG, or WebP
+  avatar uploads up to 5 MB, initials fallbacks, and account-scoped display
+  through temporary storage URLs. See [Profile Management](profile-management.md)
+  for the separate legacy-name backfill and deletion behavior.
 - Document upload, listing, case-insensitive original-filename search, category
   filtering, filter-aware upload defaults, show, edit, update, and destroy
   paths. Intake supports text-like files, PDFs, and one JPEG, PNG, WebP, HEIC,
@@ -136,6 +140,7 @@ ruby scripts/paper_bridge_harness.rb static
 ruby scripts/paper_bridge_harness.rb calendar
 ruby scripts/paper_bridge_harness.rb document-ui
 ruby scripts/paper_bridge_harness.rb product
+ruby scripts/paper_bridge_qa_harness.rb workflow profiles
 ruby scripts/paper_bridge_qa_harness.rb workflow onboarding
 ```
 

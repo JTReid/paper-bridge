@@ -24,12 +24,12 @@ const STEP_CONTENT = {
   profile_form: {
     selector: '[data-tour="profile-form"]',
     title: "Add their details",
-    description: "Their name is required. Everything else is optional. Save the Profile when you’re ready.",
+    description: "Their first name is required. Everything else is optional. Save the Profile when you’re ready.",
     number: 1,
     side: "right",
     align: "start",
     actionLabel: "Add details",
-    focusSelector: "#dependent_name"
+    focusSelector: "#dependent_first_name"
   },
   open_documents: {
     selector: '[data-tour="open-documents"]',

@@ -23,9 +23,15 @@
     </div>
   <% end %>
 
-  <div>
-    <%= form.label :name, class: "block text-sm font-medium text-slate-700" %>
-    <%= form.text_field :name, autofocus: true, class: "mt-2 block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-950 shadow-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/10" %>
+  <div class="grid gap-4 sm:grid-cols-2">
+    <div>
+      <%= form.label :first_name, class: "block text-sm font-medium text-slate-700" %>
+      <%= form.text_field :first_name, required: true, autofocus: true, autocomplete: "given-name", class: "mt-2 block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-950 shadow-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/10" %>
+    </div>
+    <div>
+      <%= form.label :last_name, "Last name (optional)", class: "block text-sm font-medium text-slate-700" %>
+      <%= form.text_field :last_name, autocomplete: "family-name", class: "mt-2 block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-950 shadow-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/10" %>
+    </div>
   </div>
 
   <div>
@@ -46,22 +52,23 @@
     </div>
   </div>
 
-  <div class="grid gap-4 sm:grid-cols-2">
-    <div>
-      <%= form.label :grade, class: "block text-sm font-medium text-slate-700" %>
-      <%= form.text_field :grade, class: "mt-2 block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-950 shadow-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/10" %>
-    </div>
-
-    <div>
-      <%= form.label :date_of_birth, class: "block text-sm font-medium text-slate-700" %>
-      <%= form.date_field :date_of_birth, class: "mt-2 block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-950 shadow-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/10" %>
-    </div>
-  </div>
-
   <div>
-    <%= form.label :school, class: "block text-sm font-medium text-slate-700" %>
-    <%= form.text_field :school, class: "mt-2 block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-950 shadow-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/10" %>
+    <%= form.label :date_of_birth, class: "block text-sm font-medium text-slate-700" %>
+    <%= form.date_field :date_of_birth, class: "mt-2 block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-950 shadow-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/10" %>
   </div>
+
+  <% if dependent.persisted? %>
+    <div class="grid gap-4 sm:grid-cols-2">
+      <div>
+        <%= form.label :grade, class: "block text-sm font-medium text-slate-700" %>
+        <%= form.text_field :grade, class: "mt-2 block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-950 shadow-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/10" %>
+      </div>
+      <div>
+        <%= form.label :school, class: "block text-sm font-medium text-slate-700" %>
+        <%= form.text_field :school, class: "mt-2 block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-950 shadow-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/10" %>
+      </div>
+    </div>
+  <% end %>
 
   <div>
     <%= form.label :notes, class: "block text-sm font-medium text-slate-700" %>

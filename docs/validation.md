@@ -54,6 +54,7 @@ ruby scripts/paper_bridge_qa_harness.rb seed
 ruby scripts/paper_bridge_qa_harness.rb db
 ruby scripts/paper_bridge_qa_harness.rb assets
 ruby scripts/paper_bridge_qa_harness.rb smoke
+ruby scripts/paper_bridge_qa_harness.rb workflow profiles
 ruby scripts/paper_bridge_qa_harness.rb workflow all
 ruby scripts/paper_bridge_qa_harness.rb negative all
 ruby scripts/paper_bridge_qa_harness.rb accessibility all
@@ -90,7 +91,7 @@ mobile, or broader negative workflows.
 
 The intended Phase 3 workflow selector is
 `ruby scripts/paper_bridge_qa_harness.rb workflow MODE`. Use it for named,
-deterministic product scenarios such as `billing`, `sharing`, `documents`,
+deterministic product scenarios such as `profiles`, `billing`, `sharing`, `documents`,
 `care-team`, `ai`, `calendar`, `onboarding`, or `all`. Workflow modes sit between `smoke` and
 `browser`:
 they submit real browser workflows in `RAILS_ENV=test`, but they do not imply

@@ -176,7 +176,8 @@ module QaHarnessSeed
         upsert_membership!(account, admin, :admin)
 
         dependent = account.dependents.create!(
-          name: "Avery Morgan",
+          first_name: "Avery",
+          last_name: "Morgan",
           date_of_birth: Date.new(2017, 4, 12),
           grade: "3",
           school: "QA Elementary",

@@ -1,6 +1,7 @@
 emma:
   account: greenfield
-  name: Emma Greenfield
+  first_name: Emma
+  last_name: Greenfield
   date_of_birth: 2016-04-12
   grade: 3rd Grade
   school: Maplewood Elementary
@@ -8,11 +9,13 @@ emma:
 
 noah:
   account: greenfield
-  name: Noah Greenfield
+  first_name: Noah
+  last_name: Greenfield
   date_of_birth: 2018-09-03
   grade: 1st Grade
   school: Maplewood Elementary
 
 other_dependent:
   account: other
-  name: Other Dependent
+  first_name: Other
+  last_name: Dependent

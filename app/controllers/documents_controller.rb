@@ -91,7 +91,7 @@ class DocumentsController < ApplicationController
     end
 
     def set_form_options
-      @dependents = current_account.dependents.order(:name)
+      @dependents = current_account.dependents.order(:first_name, :last_name)
     end
 
     def set_document

@@ -13,8 +13,16 @@ class Dependent < ApplicationRecord
   has_many :care_team_memberships, dependent: :destroy
   has_many :care_team_users, through: :care_team_memberships, source: :user
 
-  validates :name, presence: true
+  normalizes :first_name, :last_name, with: ->(value) { value.strip }
+
+  validates :first_name, presence: true
   validate :acceptable_avatar
+
+  def name
+    return legacy_name.to_s if first_name.nil?
+
+    [ first_name, last_name ].compact_blank.join(" ")
+  end
 
   private
 

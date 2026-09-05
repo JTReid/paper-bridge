@@ -56,12 +56,28 @@ class DependentsControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_select "form[data-testid='profile-create-form'][data-tour='profile-form'][data-action='input->product-tour#pause turbo:submit-end->product-tour#advanceAfterSubmit'][data-product-tour-from-phase-param='profile_form'][data-product-tour-next-phase-param='open_documents']"
     assert_select "input[data-testid='profile-create-submit']"
+    assert_select "input[name='dependent[first_name]'][required]"
+    assert_select "input[name='dependent[last_name]']"
+    assert_select "input[name='dependent[last_name]'][required]", count: 0
+    assert_select "input[name='dependent[name]']", count: 0
+    assert_select "input[name='dependent[grade]']", count: 0
+    assert_select "input[name='dependent[school]']", count: 0
+    assert_select "[data-testid='profile-delete-button']", count: 0
 
     get edit_dependent_path(dependents(:emma))
 
     assert_response :success
     assert_select "form[data-tour='profile-form']", count: 0
     assert_select "input[data-testid='profile-save-submit']"
+    assert_select "input[name='dependent[first_name]'][value='Emma']"
+    assert_select "input[name='dependent[last_name]'][value='Greenfield']"
+    assert_select "input[name='dependent[grade]'][value='3rd Grade']"
+    assert_select "input[name='dependent[school]'][value='Maplewood Elementary']"
+    assert_select "form[action='#{dependent_path(dependents(:emma))}'][method='post']" do
+      assert_select "input[name='_method'][value='delete']"
+      assert_select "button[data-testid='profile-delete-button']", text: "Delete profile"
+    end
+    assert_select "[data-turbo-confirm]"
   end
 
   test "renders initials when the selected dependent has no avatar" do
@@ -82,9 +98,13 @@ class DependentsControllerTest < ActionDispatch::IntegrationTest
     assert_difference -> { Dependent.count } do
       post dependents_path, params: {
         dependent: {
-          name: "Jackie Gibbson",
+          first_name: "Jackie",
+          last_name: "Gibbson",
+          account_id: accounts(:other).id,
           grade: "4th",
           school: "Walton County Middle School",
+          date_of_birth: "2017-04-12",
+          notes: "Prefers morning appointments.",
           avatar: uploaded_avatar
         }
       }
@@ -93,9 +113,146 @@ class DependentsControllerTest < ActionDispatch::IntegrationTest
     dependent = Dependent.order(:created_at).last
     assert_redirected_to dependent_path(dependent)
     assert_equal users(:family_admin).account, dependent.account
+    assert_equal "Jackie Gibbson", dependent.name
+    assert_nil dependent.grade
+    assert_nil dependent.school
+    assert_equal Date.new(2017, 4, 12), dependent.date_of_birth
+    assert_equal "Prefers morning appointments.", dependent.notes
     assert dependent.avatar.attached?
     assert_equal "icon.png", dependent.avatar.filename.to_s
     assert_equal "image/png", dependent.avatar.content_type
+  end
+
+  test "renders a failed create with separate names and without initial school fields" do
+    sign_in users(:family_admin)
+
+    assert_no_difference -> { Dependent.count } do
+      post dependents_path, params: { dependent: { first_name: " ", last_name: "Greenfield" } }
+    end
+
+    assert_response :unprocessable_entity
+    assert_select "[role='alert']", text: /First name can't be blank/
+    assert_select "input[name='dependent[last_name]'][value='Greenfield']"
+    assert_select "input[name='dependent[grade]']", count: 0
+    assert_select "input[name='dependent[school]']", count: 0
+  end
+
+  test "updates separate names and optional profile details within the current account" do
+    dependent = dependents(:emma)
+    sign_in users(:family_admin)
+
+    patch dependent_path(dependent), params: {
+      dependent: {
+        first_name: "  Emilia  ",
+        last_name: "  de la Cruz  ",
+        account_id: accounts(:other).id,
+        grade: "4th Grade",
+        school: "New Elementary",
+        date_of_birth: "2016-04-13",
+        notes: "Updated support needs."
+      }
+    }
+
+    assert_redirected_to dependent_path(dependent)
+    dependent.reload
+    assert_equal accounts(:greenfield), dependent.account
+    assert_equal "Emilia", dependent.first_name
+    assert_equal "de la Cruz", dependent.last_name
+    assert_equal "Emilia de la Cruz", dependent.name
+    assert_equal "4th Grade", dependent.grade
+    assert_equal "New Elementary", dependent.school
+    assert_equal Date.new(2016, 4, 13), dependent.date_of_birth
+    assert_equal "Updated support needs.", dependent.notes
+  end
+
+  test "cannot edit another account's profile" do
+    dependent = dependents(:other_dependent)
+    sign_in users(:family_admin)
+
+    get edit_dependent_path(dependent)
+
+    assert_response :not_found
+  end
+
+  test "cannot update another account's profile" do
+    dependent = dependents(:other_dependent)
+    sign_in users(:family_admin)
+
+    patch dependent_path(dependent), params: { dependent: { first_name: "Changed" } }
+
+    assert_response :not_found
+    assert_equal "Other", dependent.reload.first_name
+  end
+
+  test "profile deletion requires authentication" do
+    dependent = dependents(:noah)
+
+    assert_no_difference -> { Dependent.count } do
+      delete dependent_path(dependent)
+    end
+
+    assert_redirected_to new_user_session_path
+    assert dependent.reload.persisted?
+  end
+
+  test "cannot delete another account's profile" do
+    sign_in users(:family_admin)
+
+    assert_no_difference -> { Dependent.count } do
+      delete dependent_path(dependents(:other_dependent))
+    end
+
+    assert_response :not_found
+  end
+
+  test "deletes a profile without documents and its dependent-owned records" do
+    dependent = dependents(:noah)
+    appointment = appointments(:noah_checkup)
+    membership = dependent.care_team_memberships.create!(
+      account: accounts(:greenfield),
+      user: users(:therapist),
+      invited_by: users(:family_admin),
+      role: :therapist,
+      status: :active
+    )
+    query = create_query(dependent)
+    sign_in users(:family_admin)
+
+    assert_difference -> { Dependent.count }, -1 do
+      delete dependent_path(dependent)
+    end
+
+    assert_response :see_other
+    assert_redirected_to dependents_path
+    assert_equal "Profile deleted.", flash[:notice]
+    assert_not Dependent.exists?(dependent.id)
+    assert_not Appointment.exists?(appointment.id)
+    assert_not CareTeamMembership.exists?(membership.id)
+    assert_not AiAssistantQuery.exists?(query.id)
+    assert User.exists?(users(:therapist).id)
+    assert Dependent.exists?(dependents(:emma).id)
+  end
+
+  test "refuses to delete a profile with documents and preserves its related records" do
+    dependent = dependents(:emma)
+    document = documents(:advance_directive)
+    appointment = appointments(:emma_therapy)
+    membership = care_team_memberships(:emma_therapist)
+    query = create_query(dependent)
+    sign_in users(:family_admin)
+
+    assert_no_difference -> { Dependent.count } do
+      delete dependent_path(dependent)
+    end
+
+    assert_response :see_other
+    assert_redirected_to edit_dependent_path(dependent)
+    assert_equal "Remove this profile’s documents before deleting the profile.", flash[:alert]
+    assert dependent.reload.persisted?
+    assert_equal dependent.id, document.reload.dependent_id
+    assert_equal dependent.id, appointment.reload.dependent_id
+    assert_equal dependent.id, membership.reload.dependent_id
+    assert_equal dependent.id, query.reload.dependent_id
   end
 
   test "edit form accepts and updates a profile avatar" do
@@ -155,6 +312,14 @@ class DependentsControllerTest < ActionDispatch::IntegrationTest
   end
 
   private
+
+    def create_query(dependent)
+      dependent.ai_assistant_queries.create!(
+        account: accounts(:greenfield),
+        user: users(:family_admin),
+        question: "What support is documented?"
+      )
+    end
 
     def attach_avatar(dependent)
       dependent.avatar.attach(

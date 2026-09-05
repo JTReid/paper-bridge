@@ -31,6 +31,7 @@ BUGHUNT_EVIDENCE_FILES = {
 DoctorCheck = Struct.new(:label, :command, :env, :required, :hint, keyword_init: true)
 
 WORKFLOW_SPECS = {
+  "profiles" => [ "tests/e2e/product/profile_management.spec.js" ].freeze,
   "billing" => [ "tests/e2e/product/billing.spec.js" ].freeze,
   "sharing" => [ "tests/e2e/product/document_sharing.spec.js" ].freeze,
   "documents" => [ "tests/e2e/product/document_management.spec.js" ].freeze,
@@ -112,6 +113,7 @@ STATIC_FILES = %w[
   tests/e2e/smoke/auth.spec.js
   tests/e2e/smoke/product_shape.spec.js
   tests/e2e/product/dependent_workspace.spec.js
+  tests/e2e/product/profile_management.spec.js
   tests/e2e/product/document_sharing.spec.js
   tests/e2e/product/document_sharing_mailpit.spec.js
   tests/e2e/product/password_reset_mailpit.spec.js
@@ -182,6 +184,7 @@ def workflow_usage
     Available modes: #{WORKFLOW_MODES.join(", ")}
 
     Modes:
+      profiles   Run profile creation, editing, and deletion checks
       billing    Run billing access and subscription state workflow checks
       sharing    Run document sharing workflow checks without Mailpit
       documents  Run document upload and metadata workflow checks

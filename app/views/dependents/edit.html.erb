@@ -11,5 +11,20 @@
     </header>
 
     <%= render "form", dependent: @dependent %>
+
+    <section class="space-y-3 rounded-2xl border border-red-200 bg-white p-6" aria-labelledby="delete-profile-heading">
+      <h2 id="delete-profile-heading" class="text-base font-semibold text-red-900">Delete profile</h2>
+      <p class="text-sm text-muted-foreground">Deleting this profile also removes its appointments, saved questions, and care team access. This cannot be undone.</p>
+      <% if @dependent.documents.exists? %>
+        <p class="text-sm text-muted-foreground">
+          Remove this profile’s documents before deleting the profile.
+          <%= link_to "View documents", dependent_documents_path(@dependent), class: "font-medium text-primary underline", data: { testid: "profile-delete-documents-link" } %>
+        </p>
+      <% end %>
+      <%= button_to "Delete profile", dependent_path(@dependent), method: :delete,
+          class: "rounded-full border border-red-300 px-4 py-2 text-sm font-medium text-red-700 hover:bg-red-50",
+          data: { testid: "profile-delete-button" },
+          form: { data: { turbo_confirm: "Delete #{@dependent.name}’s profile and its appointments, saved questions, and care team access? This cannot be undone." } } %>
+    </section>
   </div>
 <% end %>

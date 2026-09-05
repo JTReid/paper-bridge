@@ -43,7 +43,12 @@ class DependentsController < ApplicationController
     if @dependent.destroy
       redirect_to dependents_path, notice: "Profile deleted.", status: :see_other
     else
-      redirect_to @dependent, alert: @dependent.errors.full_messages.to_sentence, status: :see_other
+      message = if @dependent.documents.exists?
+        "Remove this profile’s documents before deleting the profile."
+      else
+        @dependent.errors.full_messages.to_sentence
+      end
+      redirect_to edit_dependent_path(@dependent), alert: message, status: :see_other
     end
   end
 
@@ -60,6 +65,8 @@ class DependentsController < ApplicationController
     end
 
     def dependent_params
-      params.require(:dependent).permit(:name, :date_of_birth, :avatar, :grade, :school, :notes)
+      permitted = %i[first_name last_name date_of_birth avatar notes]
+      permitted.concat(%i[grade school]) if action_name == "update"
+      params.require(:dependent).permit(*permitted)
     end
 end

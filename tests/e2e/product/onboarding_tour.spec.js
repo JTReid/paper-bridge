@@ -53,6 +53,8 @@ test('new customer completes the guided path from signup through their first que
   await expect(page).toHaveURL(/\/dependents\/new$/);
   await expectTourStep(page, 1, 'Add their details');
 
+  // Exercise server validation and tour recovery despite the browser's required-field check.
+  await page.getByTestId('profile-create-form').evaluate((form) => form.setAttribute('novalidate', ''));
   await page.getByTestId('profile-create-submit').click();
   await expect(page).toHaveURL(/\/dependents\/new$/);
   await expect(page.getByRole('alert')).toContainText('prevented this profile from saving');
@@ -60,8 +62,9 @@ test('new customer completes the guided path from signup through their first que
   await expect.poll(async () => (await tourState(page))?.phase).toBe('profile_form');
 
   await page.getByTestId('product-tour-action').click();
-  await expect(page.locator('#dependent_name')).toBeFocused();
-  await page.locator('#dependent_name').fill('Jamie Tour');
+  await expect(page.locator('#dependent_first_name')).toBeFocused();
+  await page.locator('#dependent_first_name').fill('Jamie');
+  await page.locator('#dependent_last_name').fill('Tour');
   await page.getByTestId('profile-create-submit').click();
   await expect(page).toHaveURL(/\/dependents\/\d+$/);
   await expectTourStep(page, 2, 'Open Documents');
@@ -144,7 +147,8 @@ test('new customer completes the guided path from signup through their first que
 test('multiple files return directly to Documents and a suggested question completes the tour', async ({ page }) => {
   await registerAndOpenDashboard(page, ACCOUNTS.multi);
   await page.getByTestId('dashboard-add-profile').click();
-  await page.locator('#dependent_name').fill('Morgan Multi');
+  await page.locator('#dependent_first_name').fill('Morgan');
+  await page.locator('#dependent_last_name').fill('Multi');
   await page.getByTestId('profile-create-submit').click();
   await page.getByTestId('dependent-documents-link').click();
   await page.getByTestId('documents-add-link').click();

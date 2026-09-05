@@ -12,7 +12,7 @@ module CalendarWorkspace
       @month = month || requested_calendar_month
       @calendar_start = @month.beginning_of_month.beginning_of_week(:sunday)
       @calendar_end = @month.end_of_month.end_of_week(:sunday)
-      @dependents = current_account.dependents.order(:name)
+      @dependents = current_account.dependents.order(:first_name, :last_name)
       @appointments = current_account.appointments
         .includes(:dependent)
         .where(scheduled_at: @calendar_start.beginning_of_day..@calendar_end.end_of_day)

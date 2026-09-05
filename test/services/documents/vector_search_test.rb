@@ -107,7 +107,7 @@ class Documents::VectorSearchTest < ActiveSupport::TestCase
   end
 
   test "filters by dependent before ranking" do
-    other_dependent = Dependent.create!(account: @account, name: "Other Dependent")
+    other_dependent = Dependent.create!(account: @account, first_name: "Other", last_name: "Dependent")
     other_document = Document.create!(
       account: @account,
       dependent: other_dependent,
