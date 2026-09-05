@@ -5,9 +5,9 @@ lifecycle.
 
 ## Contract
 
-- `GET /dependents/:dependent_id/ai-assistant` is authenticated and read-only.
+- `GET /profiles/:dependent_id/ai-assistant` is authenticated and read-only.
   Query-string parameters never start AI work.
-- `POST /dependents/:dependent_id/ai-assistant` strips and saves the question as
+- `POST /profiles/:dependent_id/ai-assistant` strips and saves the question as
   a queued `AiAssistantQuery` owned by the current account, dependent, and user.
   For Turbo submissions, the browser installs that durable result first and
   then calls the query's idempotent start endpoint to enqueue

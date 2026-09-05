@@ -91,7 +91,7 @@ Use that command when changing document upload normalization or callbacks,
 `Agents::DocumentEmbedder`, `Agents::TimelineEventExtractor`, prompt/schema
 seeds, chunk persistence, embedding persistence, or chunk-sourced timeline event
 persistence. The same command also covers the dependent-scoped AI assistant:
-read-only `GET /dependents/:dependent_id/ai-assistant`, durable POST submission
+read-only `GET /profiles/:dependent_id/ai-assistant`, durable POST submission
 through `AiAssistantQuery`, background execution through
 `AnswerAiAssistantQueryJob`, OpenAI SSE parsing, progressive plain-text drafts,
 final Turbo delivery,

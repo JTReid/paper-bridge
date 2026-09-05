@@ -54,7 +54,7 @@ test('document sharing with no selected documents does not send email', async ({
   await page.getByTestId('dependent-documents-link').click();
   await expect(page.getByRole('heading', { name: "Emma Greenfield's Documents" })).toBeVisible();
 
-  const dependentId = page.url().match(/\/dependents\/(\d+)\/documents/)?.[1];
+  const dependentId = page.url().match(/\/profiles\/(\d+)\/documents/)?.[1];
   expect(dependentId).toBeTruthy();
 
   const response = await page.request.post(`/share_events?dependent_id=${dependentId}`, {
@@ -86,7 +86,7 @@ test('document sharing with malformed recipient is rejected before email deliver
   await page.getByTestId('dependent-documents-link').click();
 
   const documentId = await page.locator('[data-testid^="document-share-checkbox-"]').first().inputValue();
-  const dependentId = page.url().match(/\/dependents\/(\d+)\/documents/)?.[1];
+  const dependentId = page.url().match(/\/profiles\/(\d+)\/documents/)?.[1];
   expect(dependentId).toBeTruthy();
 
   const response = await page.request.post(`/share_events?dependent_id=${dependentId}`, {

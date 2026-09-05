@@ -29,7 +29,7 @@ test('a corrupt supported image is still rejected after choosing from all file t
   });
   await page.getByTestId('document-upload-submit').click();
 
-  await expect(page).toHaveURL(/\/dependents\/\d+\/documents\/new$/);
+  await expect(page).toHaveURL(/\/profiles\/\d+\/documents\/new$/);
   await expect(page.getByRole('heading', { name: 'Upload Document' })).toBeVisible();
   await expect(page.getByTestId('document-form-errors')).toContainText('does not contain a valid image');
   await expect(page.getByTestId('document-file-summary')).toContainText('No files selected');
@@ -47,7 +47,7 @@ test('partially successful uploads return to Documents with both success and fai
   ]);
   await page.getByTestId('document-upload-submit').click();
 
-  await expect(page).toHaveURL(/\/dependents\/\d+\/documents$/);
+  await expect(page).toHaveURL(/\/profiles\/\d+\/documents$/);
   await expect(page.getByRole('heading', { name: "Emma Greenfield's Documents" })).toBeVisible();
   await expect(page.getByTestId('flash-notice')).toContainText('1 document uploaded and being prepared.');
   await expect(page.getByTestId('flash-alert')).toContainText('1 file could not be uploaded');
@@ -70,7 +70,7 @@ test('the server rejects all 51 files when browser batch validation is bypassed'
   );
 
   const rejectedUpload = page.waitForResponse((response) =>
-    response.request().method() === 'POST' && /\/dependents\/\d+\/documents$/.test(response.url()),
+    response.request().method() === 'POST' && /\/profiles\/\d+\/documents$/.test(response.url()),
   );
   // Native form.submit bypasses both constraint validation and the Stimulus submit guard.
   await page.getByTestId('document-upload-form').evaluate((form) => HTMLFormElement.prototype.submit.call(form));
@@ -80,7 +80,7 @@ test('the server rejects all 51 files when browser batch validation is bypassed'
   await expect(page.getByRole('heading', { name: 'Upload Document' })).toBeVisible();
   await expect(page.getByTestId('document-form-errors')).toContainText('50');
   await page.getByRole('link', { name: 'Cancel', exact: true }).click();
-  await expect(page).toHaveURL(/\/dependents\/\d+\/documents$/);
+  await expect(page).toHaveURL(/\/profiles\/\d+\/documents$/);
   await expect(page.locator('[data-testid^="document-row-"]').filter({ hasText: 'browser-server-limit-' })).toHaveCount(0);
 });
 
@@ -99,7 +99,7 @@ test('duplicate bytes are rejected without replacing originals while new content
     { ...originalFile, name: 'browser-duplicate-same-batch.txt' },
   ]);
   await page.getByTestId('document-upload-submit').click();
-  await expect(page).toHaveURL(/\/dependents\/\d+\/documents$/);
+  await expect(page).toHaveURL(/\/profiles\/\d+\/documents$/);
   await expect(page.getByTestId('flash-notice')).toContainText('1 document uploaded');
   await expect(page.getByTestId('flash-alert')).toContainText('browser-duplicate-same-batch.txt');
   await expect(page.getByTestId('flash-alert')).toContainText(/already|duplicate/i);
@@ -111,7 +111,7 @@ test('duplicate bytes are rejected without replacing originals while new content
   await page.getByTestId('documents-add-link').click();
   await page.getByTestId('document-file-field').setInputFiles({ ...originalFile, name: 'browser-duplicate-renamed.txt' });
   await page.getByTestId('document-upload-submit').click();
-  await expect(page).toHaveURL(/\/dependents\/\d+\/documents\/new$/);
+  await expect(page).toHaveURL(/\/profiles\/\d+\/documents\/new$/);
   await expect(page.getByTestId('document-form-errors')).toContainText(/already|duplicate/i);
 
   await page.getByTestId('document-file-field').setInputFiles({
@@ -119,7 +119,7 @@ test('duplicate bytes are rejected without replacing originals while new content
     buffer: Buffer.from('Different bytes under the same duplicate-boundary filename.'),
   });
   await page.getByTestId('document-upload-submit').click();
-  await expect(page).toHaveURL(/\/dependents\/\d+\/documents$/);
+  await expect(page).toHaveURL(/\/profiles\/\d+\/documents$/);
   await expect(page.getByTestId('flash-notice')).toContainText('1 document uploaded');
   await expect(page.getByRole('link', { name: /browser-duplicate-original/ })).toHaveCount(2);
   await expect(page.getByRole('link', { name: /browser-duplicate-renamed/ })).toHaveCount(0);
@@ -145,7 +145,7 @@ test('duplicate bytes are rejected without replacing originals while new content
 test('editing document with blank title shows a validation error', async ({ page }) => {
   await openDependentWorkspace(page);
   await page.getByTestId('dependent-documents-link').click();
-  await expect(page).toHaveURL(/\/dependents\/\d+\/documents$/);
+  await expect(page).toHaveURL(/\/profiles\/\d+\/documents$/);
   await expect(page.getByRole('heading', { name: "Emma Greenfield's Documents" })).toBeVisible();
   await page.getByRole('link', { name: /Advance Directive|QA Planning Document/ }).first().click();
   await page.getByTestId('document-edit-link').click();

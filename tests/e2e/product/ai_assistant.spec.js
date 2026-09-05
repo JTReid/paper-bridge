@@ -26,7 +26,7 @@ test('ai assistant loads without submitting a query', async ({ page }) => {
 test('ai assistant shows immediate progress and queues without leaving the profile', async ({ page }) => {
   await openDependentWorkspace(page);
   await page.getByTestId('dependent-ai-assistant-link').click();
-  await expect(page).toHaveURL(/\/dependents\/\d+\/ai-assistant$/);
+  await expect(page).toHaveURL(/\/profiles\/\d+\/ai-assistant$/);
   const assistantPath = new URL(page.url()).pathname;
 
   // This test deliberately resets queue state before reload; do not let periodic reconciliation start it first.
@@ -34,7 +34,7 @@ test('ai assistant shows immediate progress and queues without leaving the profi
     element.setAttribute('data-ai-assistant-query-reconcile-every-value', '60000');
   });
 
-  await page.route(/\/dependents\/\d+\/ai-assistant$/, async (route) => {
+  await page.route(/\/profiles\/\d+\/ai-assistant$/, async (route) => {
     if (route.request().method() === 'POST') {
       await new Promise((resolve) => setTimeout(resolve, 400));
     }
@@ -147,7 +147,7 @@ test('ai assistant ignores a stale status response after a newer update', async 
   const statusReleased = new Promise((resolve) => { releaseStaleStatus = resolve; });
   let heldFirstStatus = false;
 
-  await page.route(/\/dependents\/\d+\/ai-assistant\/\d+\/status$/, async (route) => {
+  await page.route(/\/profiles\/\d+\/ai-assistant\/\d+\/status$/, async (route) => {
     if (heldFirstStatus) {
       await route.continue();
       return;
@@ -171,7 +171,7 @@ test('ai assistant ignores a stale status response after a newer update', async 
     if (status) status.textContent = 'A newer update is already on screen.';
   });
 
-  const statusResponse = page.waitForResponse(/\/dependents\/\d+\/ai-assistant\/\d+\/status$/);
+  const statusResponse = page.waitForResponse(/\/profiles\/\d+\/ai-assistant\/\d+\/status$/);
   releaseStaleStatus();
   await statusResponse;
   await page.waitForTimeout(100);

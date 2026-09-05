@@ -11,12 +11,12 @@ test('category filters lead to a file-only upload form with an unfiltered picker
   await openDependentWorkspace(page);
   await page.getByTestId('dependent-category-prescriptions').click();
 
-  await expect(page).toHaveURL(/\/dependents\/\d+\/documents\?category=prescriptions$/);
+  await expect(page).toHaveURL(/\/profiles\/\d+\/documents\?category=prescriptions$/);
   await expect(page.getByTestId('documents-category-filter-prescriptions')).toHaveAttribute('aria-current', 'page');
   await expect(page.getByRole('heading', { name: 'No prescription documents yet' })).toBeVisible();
 
   await page.getByTestId('documents-category-filter-all').click();
-  await expect(page).toHaveURL(/\/dependents\/\d+\/documents$/);
+  await expect(page).toHaveURL(/\/profiles\/\d+\/documents$/);
   await expect(page.getByRole('link', { name: /Advance Directive/ })).toBeVisible();
 
   await page.getByTestId('documents-category-filter-prescriptions').click();
@@ -36,7 +36,7 @@ test('filename search stays on the document index and composes with category fil
   await page.getByTestId('documents-search-field').fill('ADVANCE-DIRECTIVE');
   await page.getByTestId('documents-search-field').press('Enter');
 
-  await expect(page).toHaveURL(/\/dependents\/\d+\/documents\?q=ADVANCE-DIRECTIVE$/);
+  await expect(page).toHaveURL(/\/profiles\/\d+\/documents\?q=ADVANCE-DIRECTIVE$/);
   await expect(page.getByRole('heading', { name: "Emma Greenfield's Documents" })).toBeVisible();
   await expect(page.getByTestId('documents-search-field')).toHaveValue('ADVANCE-DIRECTIVE');
   await expect(page.getByRole('link', { name: /Advance Directive/ })).toBeVisible();
@@ -51,7 +51,7 @@ test('filename search stays on the document index and composes with category fil
     input.dispatchEvent(new Event('search', { bubbles: true }));
   });
 
-  await expect(page).toHaveURL(/\/dependents\/\d+\/documents\?category=insurance$/);
+  await expect(page).toHaveURL(/\/profiles\/\d+\/documents\?category=insurance$/);
   await expect(page.getByRole('heading', { name: 'No insurance documents yet' })).toBeVisible();
 });
 
@@ -71,7 +71,7 @@ test('admin can upload multiple documents at once', async ({ page }) => {
   await expect(page.getByTestId('document-file-list').getByRole('combobox')).toHaveCount(0);
   await page.getByTestId('document-upload-submit').click();
 
-  await expect(page).toHaveURL(/\/dependents\/\d+\/documents$/);
+  await expect(page).toHaveURL(/\/profiles\/\d+\/documents$/);
   await expect(page.getByRole('heading', { name: "Emma Greenfield's Documents" })).toBeVisible();
   await expect(page.getByTestId('flash-notice')).toContainText('2 documents uploaded and being prepared.');
   await expect(page.getByRole('link', { name: /browser-multi-one/ })).toBeVisible();
@@ -116,7 +116,7 @@ test('removing and clearing pending files changes the submitted selection', asyn
   expect(await selectedFileNames(fileField)).toEqual(['browser-keep-selected.txt']);
   await page.getByTestId('document-upload-submit').click();
 
-  await expect(page).toHaveURL(/\/dependents\/\d+\/documents$/);
+  await expect(page).toHaveURL(/\/profiles\/\d+\/documents$/);
   await expect(page.getByTestId('flash-notice')).toContainText('1 document uploaded and being prepared.');
   await expect(page.getByRole('link', { name: /browser-keep-selected/ })).toBeVisible();
   await expect(page.getByRole('link', { name: /browser-remove-before-upload/ })).toHaveCount(0);
@@ -133,7 +133,7 @@ test('initial processing unlocks metadata editing and never replaces later corre
   });
   await page.getByTestId('document-upload-submit').click();
 
-  await expect(page).toHaveURL(/\/dependents\/\d+\/documents$/);
+  await expect(page).toHaveURL(/\/profiles\/\d+\/documents$/);
   await expect(page.getByTestId('flash-notice')).toContainText('1 document uploaded and being prepared.');
   await page.getByRole('link', { name: /browser-initial-metadata/ }).click();
   await expect(page).toHaveURL(/\/documents\/\d+$/);
@@ -200,7 +200,7 @@ test('Word and ZIP uploads remain downloadable and immediately editable without 
   ];
   await page.getByTestId('document-file-field').setInputFiles(files);
   await page.getByTestId('document-upload-submit').click();
-  await expect(page).toHaveURL(/\/dependents\/\d+\/documents$/);
+  await expect(page).toHaveURL(/\/profiles\/\d+\/documents$/);
 
   for (const file of files) {
     const row = page.locator('[data-testid^="document-row-"]').filter({ hasText: file.name });
@@ -234,7 +234,7 @@ test('Word and ZIP uploads remain downloadable and immediately editable without 
     await expect(page.getByText(`My saved original: ${file.name}`)).toBeVisible();
     await expect(page.getByTestId('document-processing-status')).toContainText('Stored—not processed');
     await page.getByTestId('document-back-to-documents').click();
-    await expect(page).toHaveURL(/\/dependents\/\d+\/documents$/);
+    await expect(page).toHaveURL(/\/profiles\/\d+\/documents$/);
   }
 });
 
@@ -255,7 +255,7 @@ test('a selection over 50 files can be reduced to the supported batch size and u
   await expect(fileField).toHaveAttribute('aria-invalid', 'true');
   expect(await fileField.evaluate((input) => input.validity.customError)).toBe(true);
   await page.getByTestId('document-upload-submit').click();
-  await expect(page).toHaveURL(/\/dependents\/\d+\/documents\/new$/);
+  await expect(page).toHaveURL(/\/profiles\/\d+\/documents\/new$/);
   await expect(page.getByTestId('document-selected-file')).toHaveCount(51);
 
   await page.getByTestId('document-file-remove-50').click();
@@ -264,7 +264,7 @@ test('a selection over 50 files can be reduced to the supported batch size and u
   expect(await fileField.evaluate((input) => input.validity.valid)).toBe(true);
   await page.getByTestId('document-upload-submit').click();
 
-  await expect(page).toHaveURL(/\/dependents\/\d+\/documents$/);
+  await expect(page).toHaveURL(/\/profiles\/\d+\/documents$/);
   await expect(page.getByTestId('flash-notice')).toContainText('50 documents uploaded');
   await expect(page.locator('[data-testid^="document-row-"]').filter({ hasText: 'browser-limit-recovery-' })).toHaveCount(50);
   await expect(page.getByRole('link', { name: /browser-limit-recovery-51/ })).toHaveCount(0);
@@ -273,7 +273,7 @@ test('a selection over 50 files can be reduced to the supported batch size and u
 test('document details link to the original file without showing extracted text', async ({ page }) => {
   await openDependentWorkspace(page);
   await page.getByTestId('dependent-documents-link').click();
-  await expect(page).toHaveURL(/\/dependents\/\d+\/documents$/);
+  await expect(page).toHaveURL(/\/profiles\/\d+\/documents$/);
   await expect(page.getByRole('heading', { name: "Emma Greenfield's Documents" })).toBeVisible();
   await page.getByRole('link', { name: /Advance Directive/ }).click();
 
@@ -289,7 +289,7 @@ test('document details link to the original file without showing extracted text'
 test('admin can edit document metadata', async ({ page }) => {
   await openDependentWorkspace(page);
   await page.getByTestId('dependent-documents-link').click();
-  await expect(page).toHaveURL(/\/dependents\/\d+\/documents$/);
+  await expect(page).toHaveURL(/\/profiles\/\d+\/documents$/);
   await expect(page.getByRole('heading', { name: "Emma Greenfield's Documents" })).toBeVisible();
   await page.getByRole('link', { name: /Advance Directive/ }).click();
   await expect(page).toHaveURL(/\/documents\/\d+$/);

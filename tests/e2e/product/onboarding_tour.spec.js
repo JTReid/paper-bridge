@@ -50,13 +50,13 @@ test('new customer completes the guided path from signup through their first que
   await expectAccessible(page);
 
   await page.getByTestId('dashboard-add-profile').click();
-  await expect(page).toHaveURL(/\/dependents\/new$/);
+  await expect(page).toHaveURL(/\/profiles\/new$/);
   await expectTourStep(page, 1, 'Add their details');
 
   // Exercise server validation and tour recovery despite the browser's required-field check.
   await page.getByTestId('profile-create-form').evaluate((form) => form.setAttribute('novalidate', ''));
   await page.getByTestId('profile-create-submit').click();
-  await expect(page).toHaveURL(/\/dependents\/new$/);
+  await expect(page).toHaveURL(/\/profiles\/new$/);
   await expect(page.getByRole('alert')).toContainText('prevented this profile from saving');
   await expectTourStep(page, 1, 'Add their details');
   await expect.poll(async () => (await tourState(page))?.phase).toBe('profile_form');
@@ -66,14 +66,14 @@ test('new customer completes the guided path from signup through their first que
   await page.locator('#dependent_first_name').fill('Jamie');
   await page.locator('#dependent_last_name').fill('Tour');
   await page.getByTestId('profile-create-submit').click();
-  await expect(page).toHaveURL(/\/dependents\/\d+$/);
+  await expect(page).toHaveURL(/\/profiles\/\d+$/);
   await expectTourStep(page, 2, 'Open Documents');
 
   await page.getByTestId('dependent-documents-link').click();
   await expectTourStep(page, 3, 'Add documents');
 
   await page.getByTestId('documents-add-link').click();
-  await expect(page).toHaveURL(/\/dependents\/\d+\/documents\/new$/);
+  await expect(page).toHaveURL(/\/profiles\/\d+\/documents\/new$/);
   await expectTourStep(page, 4, 'Choose your files');
 
   const fileChooserPromise = page.waitForEvent('filechooser');
@@ -87,7 +87,7 @@ test('new customer completes the guided path from signup through their first que
   await expectTourStep(page, 4, 'Ready to upload');
   await expect(page.getByTestId('document-upload-submit')).toHaveClass(/driver-active-element/);
   await page.getByTestId('document-upload-submit').click();
-  await expect(page).toHaveURL(/\/dependents\/\d+\/documents\/new$/);
+  await expect(page).toHaveURL(/\/profiles\/\d+\/documents\/new$/);
   await expect(page.getByTestId('document-form-errors')).toBeVisible();
   await expectTourStep(page, 4, 'Choose your files');
   await expect.poll(async () => (await tourState(page))?.phase).toBe('choose_files');
@@ -119,12 +119,12 @@ test('new customer completes the guided path from signup through their first que
   });
   await expectTourStep(page, 4, 'Ready to upload');
   await page.getByTestId('document-upload-submit').click();
-  await expect(page).toHaveURL(/\/dependents\/\d+\/documents$/);
+  await expect(page).toHaveURL(/\/profiles\/\d+\/documents$/);
   await expect(page.getByTestId('flash-notice')).toContainText('1 document uploaded and being prepared.');
   await expectTourStep(page, 5, 'Open Ask PaperBridge');
 
   await page.getByTestId('documents-ask-ai-link').click();
-  await expect(page).toHaveURL(/\/dependents\/\d+\/ai-assistant$/);
+  await expect(page).toHaveURL(/\/profiles\/\d+\/ai-assistant$/);
   await expectTourStep(page, 6, 'Ask your first question');
 
   await page.getByTestId('ai-assistant-submit').click();
@@ -183,7 +183,7 @@ test('multiple files return directly to Documents and a suggested question compl
   await expectTourStep(page, 4, 'Ready to upload');
   await page.getByTestId('document-upload-submit').click();
 
-  await expect(page).toHaveURL(/\/dependents\/\d+\/documents$/);
+  await expect(page).toHaveURL(/\/profiles\/\d+\/documents$/);
   await expectTourStep(page, 5, 'Open Ask PaperBridge');
   await page.getByTestId('documents-ask-ai-link').click();
   await expectTourStep(page, 6, 'Ask your first question');

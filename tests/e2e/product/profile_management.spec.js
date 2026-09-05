@@ -6,7 +6,7 @@ import { openDependentWorkspace, signIn } from '../helpers/auth';
 test('admin can create, edit, and delete a profile with separate name fields', async ({ page }) => {
   const lastName = `Morgan ${randomUUID()}`;
   await signIn(page);
-  await page.goto('/dependents/new');
+  await page.goto('/profiles/new');
 
   await expect(page.locator('#dependent_first_name')).toBeVisible();
   await expect(page.locator('#dependent_last_name')).toBeVisible();
@@ -45,7 +45,7 @@ test('admin can create, edit, and delete a profile with separate name fields', a
   page.once('dialog', (dialog) => dialog.accept());
   await page.getByTestId('profile-delete-button').click();
 
-  await expect(page).toHaveURL(/\/dependents$/);
+  await expect(page).toHaveURL(/\/profiles$/);
   await expect(page.getByTestId('flash-notice')).toContainText('Profile deleted.');
   await expect(page.getByRole('link', { name: new RegExp(lastName) })).toHaveCount(0);
 });

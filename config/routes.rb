@@ -4,19 +4,28 @@ Rails.application.routes.draw do
   resource :calendar, only: :show, controller: :calendar
   resources :appointments, only: :create
   resources :appointment_emails, only: :create, path: "appointment-emails"
-  resources :dependents do
+  # Dependents are exposed as "profiles" in URLs. Controllers, models, and the
+  # dependent_* route helpers keep their existing names.
+  resources :dependents, path: "profiles" do
     get :avatar, on: :member
-  end
-  get "dependents/:dependent_id/documents" => "documents#index", as: :dependent_documents
-  get "dependents/:dependent_id/documents/new" => "documents#new", as: :new_dependent_document
-  post "dependents/:dependent_id/documents" => "documents#create"
-  get "dependents/:dependent_id/ai-assistant" => "ai_assistant#index", as: :dependent_ai_assistant
-  post "dependents/:dependent_id/ai-assistant" => "ai_assistant#create"
-  post "dependents/:dependent_id/ai-assistant/:id/start" => "ai_assistant#start", as: :start_dependent_ai_assistant_query
-  get "dependents/:dependent_id/ai-assistant/:id/status" => "ai_assistant#status", as: :status_dependent_ai_assistant_query
-  resources :dependents, only: [] do
     resources :care_team_memberships, path: "care-team", except: :show
   end
+  get "profiles/:dependent_id/documents" => "documents#index", as: :dependent_documents
+  get "profiles/:dependent_id/documents/new" => "documents#new", as: :new_dependent_document
+  post "profiles/:dependent_id/documents" => "documents#create"
+  get "profiles/:dependent_id/ai-assistant" => "ai_assistant#index", as: :dependent_ai_assistant
+  post "profiles/:dependent_id/ai-assistant" => "ai_assistant#create"
+  post "profiles/:dependent_id/ai-assistant/:id/start" => "ai_assistant#start", as: :start_dependent_ai_assistant_query
+  get "profiles/:dependent_id/ai-assistant/:id/status" => "ai_assistant#status", as: :status_dependent_ai_assistant_query
+
+  # Legacy /dependents URLs (bookmarks, shared links, sent emails) redirect to
+  # /profiles, preserving any query string such as document filters.
+  get "dependents(/*path)", to: redirect { |params, request|
+    target = "/profiles"
+    target += "/#{params[:path]}" if params[:path].present?
+    target += "?#{request.query_string}" if request.query_string.present?
+    target
+  }
   resources :share_events, only: :create
   resources :documents, only: %i[show edit update destroy] do
     get :original, on: :member
