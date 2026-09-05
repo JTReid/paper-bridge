@@ -1,6 +1,21 @@
 require "test_helper"
 
 class BillingSubscriptionTest < ActiveSupport::TestCase
+  test "profile allowance is optional for legacy subscriptions and at least five when managed" do
+    subscription = billing_subscriptions(:greenfield_active)
+    assert subscription.valid?
+    assert_nil subscription.profile_limit
+
+    [ 0, 4, 5.5 ].each do |limit|
+      subscription.profile_limit = limit
+      assert_not subscription.valid?
+    end
+    [ 5, 8 ].each do |limit|
+      subscription.profile_limit = limit
+      assert subscription.valid?
+    end
+  end
+
   test "active and trialing subscriptions grant access" do
     subscription = BillingSubscription.new(status: :active)
     assert subscription.active_for_access?

@@ -77,6 +77,6 @@
 
   <div class="flex items-center justify-end gap-3 border-t border-border/50 pt-5">
     <%= link_to "Cancel", dependent.persisted? ? dependent_path(dependent) : dependents_path, class: "rounded-full px-4 py-2 text-sm font-medium text-muted-foreground hover:bg-muted" %>
-    <%= form.submit dependent.persisted? ? "Save changes" : "Create Profile", class: "rounded-full bg-primary px-5 py-2 text-sm font-medium text-white shadow-sm hover:bg-primary/90", data: { testid: dependent.persisted? ? "profile-save-submit" : "profile-create-submit" } %>
+    <%= form.submit dependent.persisted? ? "Save changes" : "Create Profile", disabled: !dependent.persisted? && current_account.profile_limit_reached?, class: "rounded-full bg-primary px-5 py-2 text-sm font-medium text-white shadow-sm hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50", data: { testid: dependent.persisted? ? "profile-save-submit" : "profile-create-submit" } %>
   </div>
 <% end %>

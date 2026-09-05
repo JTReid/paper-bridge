@@ -1,6 +1,18 @@
 require "test_helper"
 
 class DashboardControllerTest < ActionDispatch::IntegrationTest
+  test "shows managed profile allowance beside the existing profile workflow" do
+    accounts(:greenfield).billing_subscription.update!(profile_limit: 5)
+    sign_in users(:family_admin)
+
+    get dashboard_path
+
+    assert_response :success
+    assert_select "[data-testid='profile-allowance']", text: /2 of 5 managed profiles in use/
+    assert_select "[data-testid='profile-limit-reached']", count: 0
+    assert_select "a[data-testid='dashboard-add-profile'][href='#{new_dependent_path}']"
+  end
+
   test "requires authentication" do
     get dashboard_path
 

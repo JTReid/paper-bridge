@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_09_05_000100) do
+ActiveRecord::Schema[8.1].define(version: 2026_09_05_000200) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "vector"
@@ -110,9 +110,11 @@ ActiveRecord::Schema[8.1].define(version: 2026_09_05_000100) do
     t.datetime "current_period_end"
     t.string "latest_event_id"
     t.jsonb "metadata", default: {}, null: false
+    t.integer "profile_limit"
     t.string "status", default: "incomplete", null: false
     t.string "stripe_customer_id"
     t.string "stripe_price_id"
+    t.datetime "stripe_subscription_event_created_at"
     t.string "stripe_subscription_id"
     t.datetime "trial_end"
     t.datetime "updated_at", null: false
@@ -120,6 +122,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_09_05_000100) do
     t.index ["status", "current_period_end"], name: "index_billing_subscriptions_on_status_and_current_period_end"
     t.index ["stripe_customer_id"], name: "index_billing_subscriptions_on_stripe_customer_id", unique: true
     t.index ["stripe_subscription_id"], name: "index_billing_subscriptions_on_stripe_subscription_id", unique: true
+    t.check_constraint "profile_limit IS NULL OR profile_limit >= 5", name: "billing_subscriptions_profile_limit_minimum"
   end
 
   create_table "care_team_memberships", force: :cascade do |t|

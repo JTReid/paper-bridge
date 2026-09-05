@@ -17,6 +17,9 @@ class Dependent < ApplicationRecord
 
   validates :first_name, presence: true
   validate :acceptable_avatar
+  validate :profile_allowance_available, on: :create
+
+  before_create :enforce_profile_allowance
 
   def name
     return legacy_name.to_s if first_name.nil?
@@ -25,6 +28,25 @@ class Dependent < ApplicationRecord
   end
 
   private
+
+    def profile_allowance_available(account_to_check = account)
+      return true unless account_to_check&.profile_limit_reached?
+
+      errors.add(:base, "Your managed profile allowance is full. Increase it in Billing before adding another profile.")
+      false
+    end
+
+    def enforce_profile_allowance
+      return unless account_id
+
+      # Save's transaction holds this account lock through the profile INSERT.
+      # The fresh account and uncached reads also see allowance changes made by
+      # webhooks or profile creations that completed while this save waited.
+      Account.uncached do
+        locked_account = Account.lock.find(account_id)
+        throw :abort unless profile_allowance_available(locked_account)
+      end
+    end
 
     def acceptable_avatar
       return unless avatar.attached?

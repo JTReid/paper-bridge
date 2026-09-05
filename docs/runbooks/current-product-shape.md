@@ -67,6 +67,12 @@ operational harness checks until matching implementation exists.
   an account-scoped Turbo broadcast, signed-in account subscription enforcement,
   a reusable `require_subscription!` controller gate, and a super-admin account
   billing overview.
+- Managed-profile subscription pricing: $25 USD/month includes five profiles,
+  plus $5/month each beyond five, selected in hosted Checkout. Dedicated hosted
+  Portal configuration handles prorated increases and renewal-time decreases.
+  Webhook-synchronized allowances block only new profile creation at capacity;
+  legacy subscriptions and existing over-limit data are preserved. See
+  [Billing](billing.md) for test setup and the separate production rollout.
 
 ## Family-Facing Language
 
@@ -124,7 +130,7 @@ quiet, and Turbo page caching removes any active overlay before caching.
 These areas are product requirements or future shape, but they are not current
 operational harness contracts because the app does not implement them yet:
 
-- Product/package pricing strategy, multi-plan entitlements, invoice history
+- Additional pricing plans, multi-plan entitlements, invoice history
   screens, taxes, coupons, and dunning workflows beyond Stripe's hosted pages.
 - Appointment editing, deletion, reminders, recurring events, and external
   calendar integrations.

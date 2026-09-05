@@ -2,6 +2,7 @@ require Rails.root.join("app/services/billing/stripe_config").to_s
 require Rails.root.join("app/services/billing/stripe_webhook_handler").to_s
 
 Stripe.api_key = Billing::StripeConfig.secret_key
+Stripe.api_version = "2026-06-24.dahlia"
 StripeEvent.signing_secret = Billing::StripeConfig.webhook_secret
 
 StripeEvent.configure do |events|

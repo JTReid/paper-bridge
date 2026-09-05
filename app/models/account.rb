@@ -21,4 +21,13 @@ class Account < ApplicationRecord
   def stripe_customer_id
     billing_subscription&.stripe_customer_id
   end
+
+  def profile_limit
+    billing_subscription&.profile_limit
+  end
+
+  def profile_limit_reached?
+    limit = profile_limit
+    limit.present? && dependents.count >= limit
+  end
 end

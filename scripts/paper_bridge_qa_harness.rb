@@ -21,6 +21,13 @@ MAILPIT_SMTP_PORT = ENV.fetch("MAILPIT_SMTP_PORT", "1025")
 MAILPIT_API_URL = ENV.fetch("QA_MAILPIT_API_URL", "http://127.0.0.1:8025")
 ARTIFACT_ROOT = ROOT.join("tmp/qa-artifacts")
 SERVER_LOG = ARTIFACT_ROOT.join("logs/rails-test-server.log")
+# Deterministic browser workflows never use account credentials or call Stripe.
+# Hosted test-mode checks are separate, explicit opt-in commands.
+BROWSER_BILLING_ENV = {
+  "STRIPE_SECRET_KEY" => "sk_test_qa_browser",
+  "STRIPE_PROFILE_PRICE_ID" => "price_qa_profiles",
+  "STRIPE_PROFILE_PORTAL_CONFIGURATION_ID" => "bpc_qa_profiles"
+}.freeze
 BUGHUNT_EVIDENCE_SCHEMA = "paper_bridge.bughunt_evidence.v1"
 BUGHUNT_EVIDENCE_FILES = {
   manifest: "manifest.json",
@@ -381,7 +388,7 @@ def start_server(env: {})
   log.flush
 
   spawn(
-    { "RAILS_ENV" => "test", "PORT" => QA_PORT }.merge(env),
+    { "RAILS_ENV" => "test", "PORT" => QA_PORT }.merge(BROWSER_BILLING_ENV).merge(env),
     "bin/rails", "server", "-p", QA_PORT, "-b", QA_HOST,
     chdir: ROOT.to_s,
     out: log,
@@ -918,7 +925,7 @@ def doctor_passed?
       command: [ "bin/rails", "runner", "abort('stripe checkout is not configured') unless Billing::StripeConfig.checkout_ready?; puts 'stripe-checkout-config-ok'" ],
       env: { "RAILS_ENV" => "test" },
       required: false,
-      hint: "Only required for live Stripe Checkout QA. Configure stripe.secret_key and stripe.standard_price, or STRIPE_SECRET_KEY and STRIPE_PRICE_ID."
+      hint: "Only required for live Stripe Checkout QA. Configure stripe.secret_key, stripe.profile_price and stripe.profile_portal_configuration, or the matching STRIPE_SECRET_KEY, STRIPE_PROFILE_PRICE_ID and STRIPE_PROFILE_PORTAL_CONFIGURATION_ID overrides."
     )
   ]
 
@@ -986,7 +993,7 @@ def run_server_foreground
 
   puts "Starting Rails test server at #{QA_BASE_URL}"
   exec(
-    { "RAILS_ENV" => "test", "PORT" => QA_PORT },
+    { "RAILS_ENV" => "test", "PORT" => QA_PORT }.merge(BROWSER_BILLING_ENV),
     "bin/rails", "server", "-p", QA_PORT, "-b", QA_HOST,
     chdir: ROOT.to_s
   )

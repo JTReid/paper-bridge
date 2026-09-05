@@ -1,5 +1,8 @@
 module Billing
   class StripeConfig
+    INCLUDED_PROFILES = 5
+    MAXIMUM_PROFILES = 999_999
+
     class << self
       def secret_key
         ENV["STRIPE_SECRET_KEY"].presence || credentials[:secret_key].presence
@@ -20,11 +23,25 @@ module Billing
       end
 
       def checkout_ready?
-        secret_key.present? && price_id.present?
+        secret_key.present? && profile_price_id.present? && profile_portal_configuration_id.present?
+      end
+
+      def profile_price_id
+        ENV["STRIPE_PROFILE_PRICE_ID"].presence || credentials[:profile_price].presence
+      end
+
+      def profile_portal_configuration_id
+        ENV["STRIPE_PROFILE_PORTAL_CONFIGURATION_ID"].presence || credentials[:profile_portal_configuration].presence
+      end
+
+      def profile_plan?(subscription)
+        subscription.present? && (subscription.profile_limit.present? ||
+          (profile_price_id.present? && subscription.stripe_price_id == profile_price_id))
       end
 
       def portal_ready?(account)
-        secret_key.present? && account&.stripe_customer_id.present?
+        secret_key.present? && account&.stripe_customer_id.present? &&
+          (!profile_plan?(account.billing_subscription) || profile_portal_configuration_id.present?)
       end
 
       private

@@ -1,6 +1,10 @@
 require "test_helper"
 
 class BillingCheckoutSessionsControllerTest < ActionDispatch::IntegrationTest
+  setup do
+    accounts(:greenfield).billing_subscription.update!(status: :incomplete)
+  end
+
   test "requires an account admin" do
     sign_in users(:account_member)
 
@@ -34,21 +38,25 @@ class BillingCheckoutSessionsControllerTest < ActionDispatch::IntegrationTest
     sign_in users(:family_admin)
 
     stripe_customer = Struct.new(:id).new("cus_test_123")
-    checkout_session = Struct.new(:url).new("https://checkout.stripe.test/session")
-    checkout_session_creator = lambda do |**params|
+    checkout_session = stripe_checkout_session
+    checkout_session_creator = lambda do |params, options|
       assert_equal "subscription", params[:mode]
       assert_equal "cus_test_123", params[:customer]
-      assert_equal [ { price: "price_test_123", quantity: 1 } ], params[:line_items]
+      assert_equal [ {
+        price: "price_profile_123", quantity: 5,
+        adjustable_quantity: { enabled: true, minimum: 5, maximum: 999_999 }
+      } ], params[:line_items]
       assert_equal dashboard_url(checkout: "success"), params[:success_url]
       assert_equal billing_url(checkout: "cancel"), params[:cancel_url]
       assert_equal({ account_id: accounts(:greenfield).id.to_s }, params[:metadata])
       assert_not_includes params, :payment_method_types
+      assert_match(/\Apaperbridge_checkout_[\h-]+\z/, options[:idempotency_key])
 
       checkout_session
     end
 
     with_stubbed_singleton_method(Billing::StripeConfig, :checkout_ready?, true) do
-      with_stubbed_singleton_method(Billing::StripeConfig, :price_id, "price_test_123") do
+      with_stubbed_singleton_method(Billing::StripeConfig, :profile_price_id, "price_profile_123") do
         with_stubbed_singleton_method(Stripe::Customer, :create, stripe_customer) do
           with_stubbed_singleton_method(Stripe::Checkout::Session, :create, checkout_session_creator) do
             post billing_checkout_session_path
@@ -61,16 +69,17 @@ class BillingCheckoutSessionsControllerTest < ActionDispatch::IntegrationTest
     subscription = accounts(:greenfield).reload.billing_subscription
     assert_equal "cus_test_123", subscription.stripe_customer_id
     assert subscription.checkout_pending?
+    assert_equal "cs_test_123", subscription.checkout_attempt.fetch("session_id")
   end
 
   test "clears the pending marker when Stripe cannot create checkout" do
     sign_in users(:family_admin)
 
     stripe_customer = Struct.new(:id).new("cus_test_123")
-    checkout_failure = ->(**) { raise Stripe::APIError, "Stripe is unavailable" }
+    checkout_failure = ->(*) { raise Stripe::APIError, "Stripe is unavailable" }
 
     with_stubbed_singleton_method(Billing::StripeConfig, :checkout_ready?, true) do
-      with_stubbed_singleton_method(Billing::StripeConfig, :price_id, "price_test_123") do
+      with_stubbed_singleton_method(Billing::StripeConfig, :profile_price_id, "price_profile_123") do
         with_stubbed_singleton_method(Stripe::Customer, :create, stripe_customer) do
           with_stubbed_singleton_method(Stripe::Checkout::Session, :create, checkout_failure) do
             post billing_checkout_session_path
@@ -81,6 +90,275 @@ class BillingCheckoutSessionsControllerTest < ActionDispatch::IntegrationTest
 
     assert_redirected_to billing_path
     assert_equal "We couldn’t start checkout. Please try again.", flash[:alert]
-    assert_not accounts(:greenfield).reload.billing_subscription.checkout_pending?
+    subscription = accounts(:greenfield).reload.billing_subscription
+    assert_not subscription.checkout_pending?
+    assert subscription.checkout_attempt.fetch("token").present?
   end
+
+  test "starts checkout with enough quantity for existing managed profiles" do
+    account = accounts(:greenfield)
+    account.billing_subscription.update!(stripe_customer_id: "cus_test_123")
+    (7 - account.dependents.count).times { |i| account.dependents.create!(first_name: "Profile #{i}") }
+    sign_in users(:family_admin)
+
+    creator = lambda do |params, _options|
+      assert_equal 7, params[:line_items].first[:quantity]
+      stripe_checkout_session
+    end
+
+    with_stubbed_singleton_method(Billing::StripeConfig, :checkout_ready?, true) do
+      with_stubbed_singleton_method(Billing::StripeConfig, :profile_price_id, "price_profile_123") do
+        with_stubbed_singleton_method(Stripe::Checkout::Session, :create, creator) do
+          post billing_checkout_session_path
+        end
+      end
+    end
+
+    assert_redirected_to "https://checkout.stripe.test/session"
+  end
+
+  test "existing subscriptions must use the portal instead of buying a second subscription" do
+    sign_in users(:family_admin)
+    subscription = accounts(:greenfield).billing_subscription
+
+    %w[active trialing past_due unpaid paused incomplete].each do |status|
+      subscription.update!(stripe_customer_id: "cus_test_123", stripe_subscription_id: "sub_existing", status: status)
+      with_stubbed_singleton_method(Stripe::Checkout::Session, :create, ->(*) { flunk "Must not create duplicate checkout" }) do
+        post billing_checkout_session_path
+      end
+      assert_redirected_to billing_path
+      assert_equal "You already have a subscription. Use Manage billing to make changes.", flash[:alert]
+      assert_not subscription.reload.checkout_pending?
+    end
+  end
+
+  test "canceled and expired subscriptions can purchase a new plan" do
+    sign_in users(:family_admin)
+    subscription = accounts(:greenfield).billing_subscription
+
+    %w[canceled incomplete_expired].each do |status|
+      subscription.reload
+      subscription.clear_checkout_attempt
+      subscription.update!(stripe_customer_id: "cus_test_123", stripe_subscription_id: "sub_old", status: status)
+      with_stubbed_singleton_method(Billing::StripeConfig, :checkout_ready?, true) do
+        with_stubbed_singleton_method(Billing::StripeConfig, :profile_price_id, "price_profile_123") do
+          with_stubbed_singleton_method(Stripe::Checkout::Session, :create, stripe_checkout_session) do
+            post billing_checkout_session_path
+          end
+        end
+      end
+      assert_redirected_to "https://checkout.stripe.test/session"
+    end
+  end
+
+  test "active manually granted accounts cannot buy duplicate access" do
+    accounts(:greenfield).billing_subscription.update!(status: :active)
+    sign_in users(:family_admin)
+
+    post billing_checkout_session_path
+
+    assert_redirected_to billing_path
+    assert_equal "You already have a subscription. Use Manage billing to make changes.", flash[:alert]
+  end
+
+  test "repeated and canceled checkout attempts reuse the same open Stripe session" do
+    sign_in users(:family_admin)
+    subscription = accounts(:greenfield).billing_subscription
+    subscription.update!(stripe_customer_id: "cus_test_123")
+    creations = 0
+    creator = lambda do |*_args|
+      creations += 1
+      stripe_checkout_session
+    end
+    retriever = lambda do |id|
+      assert_equal "cs_test_123", id
+      stripe_checkout_session
+    end
+
+    with_checkout_config do
+      with_stubbed_singleton_method(Stripe::Checkout::Session, :create, creator) do
+        with_stubbed_singleton_method(Stripe::Checkout::Session, :retrieve, retriever) do
+          post billing_checkout_session_path
+          assert_redirected_to "https://checkout.stripe.test/session"
+          post billing_checkout_session_path
+          assert_redirected_to "https://checkout.stripe.test/session"
+          get billing_path(checkout: "cancel")
+          assert_not subscription.reload.checkout_pending?
+          post billing_checkout_session_path
+          assert_redirected_to "https://checkout.stripe.test/session"
+        end
+      end
+    end
+
+    assert_equal 1, creations
+    assert subscription.reload.checkout_pending?
+  end
+
+  test "uncertain checkout errors retain the token and exact pricing snapshot for retry" do
+    sign_in users(:family_admin)
+    account = accounts(:greenfield)
+    account.billing_subscription.update!(stripe_customer_id: "cus_test_123")
+    requests = []
+    creator = lambda do |params, options|
+      requests << [ params, options ]
+      raise Stripe::APIConnectionError, "Response lost" if requests.one?
+
+      stripe_checkout_session
+    end
+
+    with_checkout_config do
+      with_stubbed_singleton_method(Stripe::Checkout::Session, :create, creator) do
+        post billing_checkout_session_path
+        assert_redirected_to billing_path
+        first_attempt = account.reload.billing_subscription.checkout_attempt.deep_dup
+        assert first_attempt.fetch("token").present?
+        (7 - account.dependents.count).times { |index| account.dependents.create!(first_name: "Profile #{index}") }
+        with_stubbed_singleton_method(Billing::StripeConfig, :profile_price_id, "price_changed_after_request") do
+          post billing_checkout_session_path
+        end
+        assert_redirected_to "https://checkout.stripe.test/session"
+        assert_equal first_attempt.fetch("token"), account.reload.billing_subscription.checkout_attempt.fetch("token")
+      end
+    end
+
+    assert_equal 2, requests.size
+    assert_equal requests.first, requests.last
+  end
+
+  test "uncertain customer creation retries with the same idempotency key" do
+    sign_in users(:family_admin)
+    requests = []
+    customer_creator = lambda do |params, options|
+      requests << [ params, options ]
+      raise Stripe::APIConnectionError, "Response lost" if requests.one?
+
+      Struct.new(:id).new("cus_test_123")
+    end
+
+    with_checkout_config do
+      with_stubbed_singleton_method(Stripe::Customer, :create, customer_creator) do
+        with_stubbed_singleton_method(Stripe::Checkout::Session, :create, stripe_checkout_session) do
+          post billing_checkout_session_path
+          assert_redirected_to billing_path
+          post billing_checkout_session_path
+          assert_redirected_to "https://checkout.stripe.test/session"
+        end
+      end
+    end
+
+    assert_equal 2, requests.size
+    assert_equal requests.first, requests.last
+    assert_match(/\Apaperbridge_customer_/, requests.last.last.fetch(:idempotency_key))
+  end
+
+  test "completed checkout waits for webhooks instead of creating another subscription" do
+    sign_in users(:family_admin)
+    subscription = seed_checkout_attempt
+    subscription.update!(status: :canceled, stripe_subscription_id: "sub_old")
+
+    with_checkout_config do
+      with_stubbed_singleton_method(Stripe::Checkout::Session, :retrieve, stripe_checkout_session(status: "complete", subscription: "sub_new")) do
+        with_stubbed_singleton_method(Stripe::Checkout::Session, :create, ->(*) { flunk "Completed checkout must not be replaced" }) do
+          post billing_checkout_session_path
+        end
+      end
+    end
+
+    assert_redirected_to dashboard_url(checkout: "success")
+    assert subscription.reload.checkout_pending?
+    assert_equal "sub_old", subscription.stripe_subscription_id
+    assert_nil subscription.profile_limit
+  end
+
+  test "expired sessions get a new attempt and idempotency key" do
+    sign_in users(:family_admin)
+    subscription = seed_checkout_attempt
+    old_token = subscription.checkout_attempt.fetch("token")
+
+    with_checkout_config do
+      with_stubbed_singleton_method(Stripe::Checkout::Session, :retrieve, stripe_checkout_session(status: "expired")) do
+        with_stubbed_singleton_method(Stripe::Checkout::Session, :create, stripe_checkout_session(id: "cs_new")) do
+          post billing_checkout_session_path
+        end
+      end
+    end
+
+    assert_redirected_to "https://checkout.stripe.test/session"
+    assert_not_equal old_token, subscription.reload.checkout_attempt.fetch("token")
+    assert_equal "cs_new", subscription.checkout_attempt.fetch("session_id")
+  end
+
+  test "an incomplete subscription can resume its own open checkout after payment failure" do
+    sign_in users(:family_admin)
+    subscription = seed_checkout_attempt
+    subscription.update!(status: :incomplete, stripe_subscription_id: "sub_pending")
+
+    with_checkout_config do
+      with_stubbed_singleton_method(Stripe::Checkout::Session, :retrieve, stripe_checkout_session(subscription: "sub_pending")) do
+        with_stubbed_singleton_method(Stripe::Checkout::Session, :create, ->(*) { flunk "Must resume the existing session" }) do
+          post billing_checkout_session_path
+        end
+      end
+    end
+
+    assert_redirected_to "https://checkout.stripe.test/session"
+    assert subscription.reload.checkout_pending?
+  end
+
+  test "an expired checkout cannot start a second nonterminal subscription" do
+    sign_in users(:family_admin)
+    subscription = seed_checkout_attempt
+    subscription.update!(status: :incomplete, stripe_subscription_id: "sub_pending")
+
+    with_checkout_config do
+      with_stubbed_singleton_method(Stripe::Checkout::Session, :retrieve, stripe_checkout_session(status: "expired", subscription: "sub_pending")) do
+        with_stubbed_singleton_method(Stripe::Checkout::Session, :create, ->(*) { flunk "Must not create a second subscription" }) do
+          post billing_checkout_session_path
+        end
+      end
+    end
+
+    assert_redirected_to billing_path
+    assert_nil subscription.reload.checkout_attempt
+    assert_not subscription.checkout_pending?
+  end
+
+  test "a completed session for a canceled subscription does not prevent resubscribing" do
+    sign_in users(:family_admin)
+    subscription = seed_checkout_attempt
+    subscription.update!(status: :canceled, stripe_subscription_id: "sub_old")
+    old_token = subscription.checkout_attempt.fetch("token")
+
+    with_checkout_config do
+      with_stubbed_singleton_method(Stripe::Checkout::Session, :retrieve, stripe_checkout_session(status: "complete", subscription: "sub_old")) do
+        with_stubbed_singleton_method(Stripe::Checkout::Session, :create, stripe_checkout_session(id: "cs_new")) do
+          post billing_checkout_session_path
+        end
+      end
+    end
+
+    assert_redirected_to "https://checkout.stripe.test/session"
+    assert_not_equal old_token, subscription.reload.checkout_attempt.fetch("token")
+    assert_equal "cs_new", subscription.checkout_attempt.fetch("session_id")
+  end
+
+  private
+
+    def with_checkout_config(&block)
+      with_stubbed_singleton_method(Billing::StripeConfig, :checkout_ready?, true) do
+        with_stubbed_singleton_method(Billing::StripeConfig, :profile_price_id, "price_profile_123", &block)
+      end
+    end
+
+    def seed_checkout_attempt
+      subscription = accounts(:greenfield).billing_subscription
+      subscription.start_checkout_attempt(price_id: "price_profile_123", quantity: 5)
+      subscription.record_checkout_session("cs_test_123")
+      subscription.update!(stripe_customer_id: "cus_test_123")
+      subscription
+    end
+
+    def stripe_checkout_session(id: "cs_test_123", status: "open", subscription: nil)
+      Struct.new(:id, :url, :status, :subscription).new(id, "https://checkout.stripe.test/session", status, subscription)
+    end
 end

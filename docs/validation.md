@@ -41,8 +41,8 @@ foundation.
 Future product requirements that are not implemented yet, such as appointment
 editing, deletion, reminders, recurrence, and external calendar integrations;
 in-app notifications; audit-log exports; tokenized sharing links; document
-version history; multi-plan billing entitlements beyond
-`stripe.standard_price`, invoice history screens, and native mobile app
+version history; additional billing plans beyond the hosted managed-profile
+subscription, invoice history screens, and native mobile app
 behavior, are intentionally not product harness contracts yet.
 
 ## QA Troubleshooting Harness

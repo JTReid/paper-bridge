@@ -1,6 +1,61 @@
 require "test_helper"
 
 class DependentsControllerTest < ActionDispatch::IntegrationTest
+  test "shows allowance and billing link without accepting another profile at the limit" do
+    account = accounts(:greenfield)
+    account.billing_subscription.update!(profile_limit: 5)
+    3.times { |index| account.dependents.create!(first_name: "Profile #{index}") }
+    sign_in users(:family_admin)
+
+    get dependents_path
+
+    assert_response :success
+    assert_select "[data-testid='profile-allowance']", text: /5 of 5 managed profiles in use/
+    assert_select "a[data-testid='profile-allowance-billing-link'][href='#{billing_path}']"
+
+    get new_dependent_path
+
+    assert_response :success
+    assert_select "[data-testid='profile-limit-reached']", text: /Your existing profiles and documents stay available/
+    assert_select "input[data-testid='profile-create-submit'][disabled]"
+
+    assert_no_difference "Dependent.count" do
+      post dependents_path, params: { dependent: { first_name: "Sixth" } }
+    end
+
+    assert_response :unprocessable_entity
+    assert_includes response.body, "Your managed profile allowance is full."
+    assert_select "a[data-testid='profile-allowance-billing-link'][href='#{billing_path}']"
+  end
+
+  test "over-limit accounts can still view and edit all existing profiles" do
+    account = accounts(:greenfield)
+    4.times { |index| account.dependents.create!(first_name: "Profile #{index}") }
+    account.billing_subscription.update!(profile_limit: 5)
+    sign_in users(:family_admin)
+
+    get dependents_path
+
+    assert_response :success
+    assert_select "[data-testid='profile-allowance']", text: /6 of 5 managed profiles in use/
+    assert_select "[data-testid='profile-limit-reached']", text: /You're over your current profile allowance/
+
+    get dependent_path(dependents(:emma))
+
+    assert_response :success
+
+    get edit_dependent_path(dependents(:emma))
+
+    assert_response :success
+    assert_select "input[data-testid='profile-save-submit'][disabled]", count: 0
+
+    patch dependent_path(dependents(:emma)), params: { dependent: { first_name: "Emilia" } }
+
+    assert_redirected_to dependent_path(dependents(:emma))
+    assert_equal "Emilia", dependents(:emma).reload.first_name
+    assert_equal 6, account.dependents.count
+  end
+
   test "requires authentication" do
     get dependents_path
 

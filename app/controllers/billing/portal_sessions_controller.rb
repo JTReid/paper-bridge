@@ -10,10 +10,15 @@ module Billing
         return
       end
 
-      portal_session = Stripe::BillingPortal::Session.create(
+      session_options = {
         customer: current_account.stripe_customer_id,
         return_url: billing_url
-      )
+      }
+      if Billing::StripeConfig.profile_plan?(current_account.billing_subscription)
+        session_options[:configuration] = Billing::StripeConfig.profile_portal_configuration_id
+      end
+
+      portal_session = Stripe::BillingPortal::Session.create(**session_options)
 
       redirect_to portal_session.url, allow_other_host: true, status: :see_other
     rescue Stripe::StripeError => e

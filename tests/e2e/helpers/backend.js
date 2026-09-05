@@ -17,6 +17,34 @@ export function setAccountSubscription(accountName, attributes) {
   );
 }
 
+export function createAccountProfiles(accountName, profiles) {
+  runRailsRunner(
+    `
+      account = Account.find_by!(name: ENV.fetch("QA_ACCOUNT_NAME"))
+      JSON.parse(ENV.fetch("QA_PROFILES")).each do |attributes|
+        account.dependents.create!(attributes.slice("first_name", "last_name"))
+      end
+    `,
+    {
+      QA_ACCOUNT_NAME: accountName,
+      QA_PROFILES: JSON.stringify(profiles),
+    },
+  );
+}
+
+export function deleteAccountProfilesByLastName(accountName, lastName) {
+  runRailsRunner(
+    `
+      account = Account.find_by!(name: ENV.fetch("QA_ACCOUNT_NAME"))
+      account.dependents.where(last_name: ENV.fetch("QA_PROFILE_LAST_NAME")).find_each(&:destroy!)
+    `,
+    {
+      QA_ACCOUNT_NAME: accountName,
+      QA_PROFILE_LAST_NAME: lastName,
+    },
+  );
+}
+
 export function clearAiAssistantQueries(accountName) {
   runRailsRunner(
     `

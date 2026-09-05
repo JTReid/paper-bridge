@@ -4,6 +4,25 @@ require "openssl"
 class StripeWebhooksControllerTest < ActionDispatch::IntegrationTest
   WEBHOOK_SECRET = "whsec_test_secret"
 
+  test "a signed profile subscription event persists the actual purchased allowance" do
+    account = accounts(:greenfield)
+    account.billing_subscription.update!(status: :incomplete)
+    object = real_shape_subscription_object(account, period_end: 1.month.from_now.to_i)
+    object[:items][:data].first[:quantity] = 8
+    object[:items][:data].first[:price][:id] = "price_profiles"
+    payload = stripe_event_payload(id: "evt_signed_profile_quantity", type: "customer.subscription.created", object: object)
+
+    with_stubbed_singleton_method(Billing::StripeConfig, :profile_price_id, "price_profiles") do
+      with_stripe_webhook_secret(WEBHOOK_SECRET) do
+        post "/stripe/webhooks", params: payload, headers: stripe_headers(payload, WEBHOOK_SECRET)
+      end
+    end
+
+    assert_response :success
+    assert_equal 8, account.reload.billing_subscription.profile_limit
+    assert account.subscription_active?
+  end
+
   test "accepts a locally forwarded signed subscription webhook" do
     account = accounts(:greenfield)
     account.billing_subscription.update!(

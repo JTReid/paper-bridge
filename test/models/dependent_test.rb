@@ -68,7 +68,83 @@ class DependentTest < ActiveSupport::TestCase
     assert_includes dependent.errors[:avatar], "must be smaller than 5 MB"
   end
 
+  test "allows purchased extra profiles and rejects creation once the allowance is full" do
+    account = accounts(:greenfield)
+    account.billing_subscription.update!(profile_limit: 6)
+    fill_profile_allowance(account)
+
+    dependent = account.dependents.new(first_name: "Seventh")
+
+    assert_not dependent.valid?
+    assert_no_difference "Dependent.count" do
+      assert_not dependent.save
+    end
+    assert_includes dependent.errors[:base], "Your managed profile allowance is full. Increase it in Billing before adding another profile."
+    assert_equal 6, account.dependents.count
+  end
+
+  test "checks the profile allowance even when save skips validations" do
+    account = accounts(:greenfield)
+    account.billing_subscription.update!(profile_limit: 5)
+    fill_profile_allowance(account)
+    dependent = account.dependents.new(first_name: "Sixth")
+
+    assert_no_difference "Dependent.count" do
+      assert_not dependent.save(validate: false)
+    end
+    assert dependent.errors[:base].any?
+  end
+
+  test "rechecks the allowance under the account lock instead of trusting a cached subscription" do
+    account = accounts(:greenfield)
+    account.billing_subscription.update!(profile_limit: 6)
+    3.times { |index| account.dependents.create!(first_name: "Profile #{index}") }
+    assert_equal 6, account.profile_limit
+    BillingSubscription.find(account.billing_subscription.id).update!(profile_limit: 5)
+    dependent = account.dependents.new(first_name: "Sixth")
+
+    assert dependent.valid?, "The cached subscription still has room before the locked recheck"
+    assert_no_difference "Dependent.count" do
+      assert_not dependent.save
+    end
+    assert dependent.errors[:base].any?
+  end
+
+  test "retains and allows editing existing profiles and documents after a reduction" do
+    account = accounts(:greenfield)
+    account.billing_subscription.update!(profile_limit: 6)
+    fill_profile_allowance(account)
+    profile_ids = account.dependents.ids
+    document_ids = account.documents.ids
+
+    account.billing_subscription.update!(profile_limit: 5)
+
+    assert dependents(:emma).update(first_name: "Emilia")
+    assert_equal profile_ids.sort, account.dependents.ids.sort
+    assert_equal document_ids.sort, account.documents.ids.sort
+    assert_not account.dependents.new(first_name: "Another").save
+    assert dependents(:noah).destroy
+    assert account.profile_limit_reached?, "Five remaining profiles still fill a five-profile allowance"
+    account.dependents.find_by!(first_name: "Profile 2").destroy!
+    assert account.dependents.create!(first_name: "Replacement").persisted?
+  end
+
+  test "preserves unlimited profile creation for legacy subscriptions" do
+    account = accounts(:greenfield)
+
+    5.times { |index| account.dependents.create!(first_name: "Legacy #{index}") }
+
+    assert_equal 7, account.dependents.count
+    assert_nil account.profile_limit
+  end
+
   private
+
+    def fill_profile_allowance(account)
+      while account.dependents.count < account.profile_limit
+        account.dependents.create!(first_name: "Profile #{account.dependents.count}")
+      end
+    end
 
     def attach_avatar(dependent)
       dependent.avatar.attach(

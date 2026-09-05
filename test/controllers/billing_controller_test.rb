@@ -1,6 +1,69 @@
 require "test_helper"
 
 class BillingControllerTest < ActionDispatch::IntegrationTest
+  test "new subscriptions show monthly profile pricing" do
+    accounts(:greenfield).billing_subscription.update!(status: :canceled)
+    sign_in users(:family_admin)
+
+    get billing_path
+
+    assert_select "[data-testid='profile-plan-pricing']", text: /\$25 USD\/month covers up to five managed profiles/
+    assert_includes response.body, "Each additional profile is $5 USD/month."
+  end
+
+  test "legacy active subscribers are not shown a replacement price" do
+    sign_in users(:family_admin)
+    get billing_path
+
+    assert_select "[data-testid='profile-plan-pricing']", count: 0
+  end
+
+  test "an existing unpaid subscription must be managed rather than purchased again" do
+    accounts(:greenfield).billing_subscription.update!(status: :past_due, stripe_customer_id: "cus_existing", stripe_subscription_id: "sub_existing")
+    sign_in users(:family_admin)
+    with_stubbed_singleton_method(Billing::StripeConfig, :checkout_ready?, true) do
+      get billing_path
+    end
+
+    assert_select "[data-testid='subscribe-button']", count: 0
+    assert_select "[data-testid='manage-subscription-button']", count: 1
+  end
+
+  test "an incomplete subscription can resume its own checkout attempt" do
+    subscription = accounts(:greenfield).billing_subscription
+    subscription.update!(status: :incomplete, stripe_subscription_id: "sub_incomplete")
+    subscription.start_checkout_attempt(price_id: "price_profiles", quantity: 5)
+    subscription.record_checkout_session("cs_open")
+    subscription.save!
+    sign_in users(:family_admin)
+    with_stubbed_singleton_method(Billing::StripeConfig, :checkout_ready?, true) do
+      get billing_path
+    end
+
+    assert_select "[data-testid='subscribe-button']", text: "Continue Checkout"
+  end
+
+  test "shows purchased profile allowance without counting care team users" do
+    accounts(:greenfield).billing_subscription.update!(profile_limit: 8)
+    sign_in users(:family_admin)
+
+    get billing_path
+
+    assert_response :success
+    assert_select "[data-testid='profile-allowance']", text: /2 of 8 managed profiles in use/
+    assert_includes response.body, "Care team members and account logins do not count toward this allowance."
+    assert_select "[data-testid='profile-allowance-billing-link']", count: 0
+  end
+
+  test "does not retroactively show an allowance for a legacy subscription" do
+    sign_in users(:family_admin)
+
+    get billing_path
+
+    assert_response :success
+    assert_select "[data-testid='profile-allowance']", count: 0
+  end
+
   test "requires authentication" do
     get billing_path
 

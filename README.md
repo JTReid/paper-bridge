@@ -79,10 +79,16 @@ stripe:
   publishable_key: pk_test_...
   webhook_secret: whsec_...
   standard_price: price_...
+  profile_price: price_...
+  profile_portal_configuration: bpc_...
 ```
 
-`webhook_secret` and `standard_price` can be added after the initial billing
-foundation is deployed. Checkout remains disabled until a price is present, and
-Stripe webhooks require `webhook_secret` before StripeEvent can verify incoming
-events. `stripe.price_id` and `STRIPE_PRICE_ID` are also supported aliases for
-the subscription price.
+New subscriptions use hosted Checkout for managed-profile quantities: $25
+USD/month includes five profiles, then $5/month per additional profile. Checkout
+requires `profile_price` and `profile_portal_configuration`, with
+`STRIPE_PROFILE_PRICE_ID` and `STRIPE_PROFILE_PORTAL_CONFIGURATION_ID` environment
+overrides. Existing subscriptions are not automatically migrated.
+Stripe webhooks require `webhook_secret` before StripeEvent can verify events.
+`standard_price`, `stripe.price_id`, and `STRIPE_PRICE_ID` are retained for legacy
+compatibility. See [Billing](docs/runbooks/billing.md) for the safe test-only
+setup command, schema migration, and production rollout boundary.

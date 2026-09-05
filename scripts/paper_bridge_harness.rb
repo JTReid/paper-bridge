@@ -178,13 +178,19 @@ SHARING_TESTS = %w[
 
 BILLING_TESTS = %w[
   test/models/billing_subscription_test.rb
+  test/models/account_test.rb
+  test/models/dependent_test.rb
+  test/models/dependent_profile_allowance_concurrency_test.rb
+  test/controllers/dependents_controller_test.rb
   test/controllers/dashboard_controller_test.rb
   test/controllers/billing_controller_test.rb
   test/controllers/billing_checkout_sessions_controller_test.rb
+  test/controllers/billing_checkout_concurrency_test.rb
   test/controllers/billing_portal_sessions_controller_test.rb
   test/controllers/admin_accounts_controller_test.rb
   test/controllers/stripe_webhooks_controller_test.rb
   test/services/billing/stripe_config_test.rb
+  test/services/billing/profile_plan_setup_test.rb
   test/services/billing/checkout_return_broadcaster_test.rb
   test/services/billing/stripe_webhook_handler_test.rb
 ].freeze
