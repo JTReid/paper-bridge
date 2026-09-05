@@ -43,7 +43,7 @@
     <div>
       <%= form.label :files, "Files", class: "block text-sm font-medium text-slate-700" %>
       <div class="relative mt-2 rounded-lg border border-dashed border-slate-300 bg-slate-50/70 p-6 text-center transition-colors hover:border-emerald-500 hover:bg-emerald-50/70" data-file-dropzone-target="dropzone" data-action="dragover->file-dropzone#dragOver dragleave->file-dropzone#dragLeave drop->file-dropzone#drop" data-tour="choose-files">
-        <%= form.file_field :files, multiple: true, required: true, class: "absolute inset-0 h-full w-full cursor-pointer opacity-0", data: { testid: "document-file-field", file_dropzone_target: "input", action: "change->file-dropzone#changed change->product-tour#filesSelected" }, aria: { describedby: "document-files-summary document-supported-formats document-files-error" } %>
+        <%= form.file_field :files, multiple: true, required: true, class: "absolute inset-0 h-full w-full cursor-pointer opacity-0", data: { testid: "document-file-field", file_dropzone_target: "input", action: "change->file-dropzone#changed change->product-tour#filesSelected" }, aria: { describedby: "document-files-summary document-files-error" } %>
         <div class="pointer-events-none flex flex-col items-center gap-3">
           <span class="flex h-12 w-12 items-center justify-center rounded-full border border-emerald-100 bg-white text-emerald-700 shadow-sm">
             <%= pb_icon("upload", class_name: "h-5 w-5") %>
@@ -55,7 +55,6 @@
         </div>
       </div>
       <p class="mt-3 text-sm text-slate-600">You can store any file type. Upload up to <%= Document::MAX_UPLOAD_FILES %> files at a time.</p>
-      <p id="document-supported-formats" class="mt-2 text-xs leading-5 text-slate-500">PaperBridge processes PDF, text, CSV, Markdown, JSON, and JPG, PNG, WebP, HEIC, HEIF, or TIFF images. Other types, including Word documents, are stored for download only and are not used by Ask PaperBridge.</p>
       <p class="mt-2 text-sm text-slate-600">Processed files receive an automatic category and short description that you can edit afterward. For stored-only files, you can enter those details yourself.</p>
       <p id="document-files-error" class="mt-3 hidden rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700" role="alert" data-file-dropzone-target="error" data-testid="document-file-limit-error"></p>
       <ul class="mt-3 hidden space-y-2" tabindex="-1" aria-label="Selected files" data-file-dropzone-target="list" data-testid="document-file-list"></ul>
