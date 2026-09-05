@@ -114,6 +114,7 @@ STATIC_FILES = %w[
   tests/e2e/product/dependent_workspace.spec.js
   tests/e2e/product/document_sharing.spec.js
   tests/e2e/product/document_sharing_mailpit.spec.js
+  tests/e2e/product/password_reset_mailpit.spec.js
   tests/e2e/product/billing.spec.js
   tests/e2e/product/document_management.spec.js
   tests/e2e/product/calendar.spec.js
@@ -804,6 +805,7 @@ end
 def mailpit_server_env
   {
     "QA_MAILPIT" => "true",
+    "QA_BASE_URL" => QA_BASE_URL,
     "MAILPIT_SMTP_ADDRESS" => MAILPIT_SMTP_ADDRESS,
     "MAILPIT_SMTP_PORT" => MAILPIT_SMTP_PORT
   }
@@ -811,6 +813,7 @@ end
 
 def mailpit_playwright_env
   {
+    "QA_WORKERS" => "1",
     "QA_MAILPIT_API_URL" => MAILPIT_API_URL
   }
 end
@@ -1018,7 +1021,10 @@ when "accessibility"
 when "mobile"
   mobile_command(args)
 when "mailpit"
-  paths = args.any? ? args : [ "tests/e2e/product/document_sharing_mailpit.spec.js" ]
+  paths = args.any? ? args : %w[
+    tests/e2e/product/document_sharing_mailpit.spec.js
+    tests/e2e/product/password_reset_mailpit.spec.js
+  ]
   ensure_mailpit_ready &&
     with_server(env: mailpit_server_env) do
       run_playwright(paths: paths, env: mailpit_playwright_env)

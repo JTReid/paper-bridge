@@ -168,6 +168,11 @@ mailpit --smtp 127.0.0.1:1025 --listen 127.0.0.1:8025
 ruby scripts/paper_bridge_qa_harness.rb mailpit
 ```
 
+This captures single- and multiple-document shares, checks original attachment
+contents, and follows a password-reset email through changing the password and
+signing in. Reset links target `QA_BASE_URL`. These checks use local SMTP;
+they do not verify SES identities, sandbox status, or external inbox delivery.
+
 ## Agentic Pipeline Harness
 
 ```bash

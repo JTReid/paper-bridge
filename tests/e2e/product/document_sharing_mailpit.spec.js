@@ -101,3 +101,54 @@ test('document sharing with malformed recipient is rejected before email deliver
   expect(response.ok()).toBeTruthy();
   await expectNoMailpitMessages(request);
 });
+
+test('sharing multiple selected documents delivers both original attachments through Mailpit', async ({ page, request }) => {
+  const attemptId = Date.now();
+  const subject = `QA Mailpit bulk share ${attemptId}`;
+  const files = [
+    { name: `qa-mailpit-bulk-first-${attemptId}.txt`, mimeType: 'text/plain', buffer: Buffer.from('First original document for bulk sharing.\r\n') },
+    { name: `qa-mailpit-bulk-second-${attemptId}.txt`, mimeType: 'text/plain', buffer: Buffer.from('Second original document for bulk sharing.\r\n') },
+  ];
+
+  await openDependentWorkspace(page);
+  await page.getByTestId('dependent-documents-link').click();
+  await page.getByTestId('documents-add-link').click();
+  await page.getByTestId('document-file-field').setInputFiles(files);
+  await page.getByTestId('document-upload-submit').click();
+  await expect(page.getByTestId('flash-notice')).toContainText('2 documents uploaded and being prepared.');
+
+  for (const file of files) {
+    const row = page.locator('[data-testid^="document-row-"]').filter({ hasText: file.name });
+    await row.getByRole('checkbox').check();
+  }
+  const firstSelectedRow = page.locator('[data-testid^="document-row-"]').filter({ hasText: files[0].name });
+  await firstSelectedRow.locator('[data-testid^="document-share-button-"]').click();
+  await expect(page.locator('[data-document-share-target="selectedSummary"]')).toHaveText('2 documents selected');
+  await page.getByTestId('document-share-recipient-select').selectOption('therapist@example.test');
+  await page.getByTestId('document-share-subject').fill(subject);
+  await page.getByTestId('document-share-submit').click();
+
+  await expect(page.getByTestId('flash-notice')).toContainText('Documents shared with therapist@example.test');
+  const email = await waitForMailpitMessage(
+    request,
+    (candidate) => (
+      candidate.Subject === subject &&
+      candidate.To?.some((recipient) => recipient.Address === 'therapist@example.test')
+    ),
+    { timeoutMs: 8000 },
+  );
+  expect(email.Attachments).toBe(2);
+
+  const messageUrl = `${process.env.QA_MAILPIT_API_URL}/api/v1/message/${email.ID}`;
+  const response = await request.get(messageUrl);
+  expect(response.ok()).toBeTruthy();
+  const message = await response.json();
+  expect(message.Attachments.map((attachment) => attachment.FileName).sort()).toEqual(files.map((file) => file.name).sort());
+
+  for (const file of files) {
+    const attachment = message.Attachments.find((candidate) => candidate.FileName === file.name);
+    const download = await request.get(`${messageUrl}/part/${attachment.PartID}`);
+    expect(download.ok()).toBeTruthy();
+    expect(await download.body()).toEqual(file.buffer);
+  }
+});

@@ -25,9 +25,9 @@ Things you may want to cover:
 
 ## Production Email
 
-Document sharing uses ActionMailer. Production is configured for Amazon SES
-through SMTP. Store the SES SMTP username and password in encrypted Rails
-credentials:
+Document sharing and password resets use ActionMailer with the same configured
+`mailer_from` sender. Production is configured for Amazon SES through SMTP.
+Store the SES SMTP username and password in encrypted Rails credentials:
 
 ```yaml
 mailer_from: PaperBridge <no-reply@paperbridge.example.com>

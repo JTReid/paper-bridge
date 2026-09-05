@@ -520,6 +520,19 @@ mailpit --smtp 127.0.0.1:1025 --listen 127.0.0.1:8025
 ruby scripts/paper_bridge_qa_harness.rb mailpit
 ```
 
+By default, this runs both document sharing and password reset SMTP checks.
+Mailpit mode uses one browser worker because the scenarios share an inbox.
+The password reset scenario creates a temporary test account, follows the
+captured email's real reset link, changes the password, and confirms the old
+password no longer signs in while the new one does. Mailpit-mode email links
+use `QA_BASE_URL` so the browser stays on the local QA server. The temporary
+account is removed after the scenario.
+
+Single- and multiple-document sharing checks verify captured mail and original
+attachments; validation failures verify that no email was sent. Local SMTP
+success does not prove SES sandbox status, verified identities, or external
+inbox delivery.
+
 ## Artifact Policy
 
 Playwright writes screenshots, videos, traces, reports, and logs under
@@ -556,8 +569,11 @@ main signed-in product surfaces.
 - Smoke verifies the AI assistant page opens without submitting a query.
 - Smoke verifies the billing page renders the active subscription state.
 - Document sharing can submit to a care team recipient.
-- Mailpit mode verifies document sharing sends an email with the expected
-  recipient, subject, body, and attachment count.
+- Mailpit mode verifies single- and multiple-document sharing sends email with
+  the expected recipient, subject, body, and attachments, including the exact
+  original contents for a multiple-document share.
+- Mailpit mode verifies the password-reset sender, local email link, password
+  update, and sign-in with the replacement password.
 - Browser-native upload form validation guards missing files.
 - Document metadata can be edited.
 - Document negative coverage verifies blank-title validation.

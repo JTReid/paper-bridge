@@ -50,7 +50,12 @@ Rails.application.configure do
   end
 
   # Set host to be used by links generated in mailer templates.
-  config.action_mailer.default_url_options = { host: "example.com" }
+  if ENV["QA_MAILPIT"].present?
+    qa_url = URI.parse(ENV.fetch("QA_BASE_URL", "http://127.0.0.1:3100"))
+    config.action_mailer.default_url_options = { host: qa_url.host, port: qa_url.port, protocol: qa_url.scheme }
+  else
+    config.action_mailer.default_url_options = { host: "example.com" }
+  end
 
   # Print deprecation notices to the stderr.
   config.active_support.deprecation = :stderr

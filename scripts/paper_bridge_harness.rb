@@ -86,6 +86,7 @@ CURRENT_PRODUCT_FILES = %w[
   test/controllers/home_controller_test.rb
   test/controllers/devise_registrations_controller_test.rb
   test/controllers/devise_sessions_controller_test.rb
+  test/controllers/devise_passwords_controller_test.rb
   test/controllers/dashboard_controller_test.rb
   test/controllers/calendar_controller_test.rb
   test/controllers/appointments_controller_test.rb
@@ -141,6 +142,7 @@ FOUNDATION_TESTS = %w[
   test/controllers/home_controller_test.rb
   test/controllers/devise_registrations_controller_test.rb
   test/controllers/devise_sessions_controller_test.rb
+  test/controllers/devise_passwords_controller_test.rb
   test/controllers/dashboard_controller_test.rb
   test/controllers/dependents_controller_test.rb
 ].freeze
@@ -238,6 +240,7 @@ RUBOCOP_PATHS = %w[
   test/controllers/home_controller_test.rb
   test/controllers/devise_registrations_controller_test.rb
   test/controllers/devise_sessions_controller_test.rb
+  test/controllers/devise_passwords_controller_test.rb
   test/controllers/dashboard_controller_test.rb
   test/controllers/calendar_controller_test.rb
   test/controllers/appointments_controller_test.rb
