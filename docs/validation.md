@@ -206,6 +206,11 @@ It also covers one-time category/description generation, retry preservation,
 pending-document search exclusion, edit-field completion broadcasts, and the
 separate document-schema updater described in
 [Document Uploads](runbooks/document-uploads.md).
+Upload coverage also checks the 50-file batch limit, profile-scoped duplicate
+rejection without overwrites, storage-only originals/downloads/editing, no
+pipeline or attachment analysis for non-processable files, and the unchanged
+CSV/text/PDF/image processing allowlist. Browser document workflows exercise
+these upload states without live AI.
 The browser `workflow ai` check owns immediate progress, queued-state delivery,
 profile-workspace continuity, duplicate-submit locking, same-query start
 retries, missed-Cable reconciliation from durable state, and targeted axe

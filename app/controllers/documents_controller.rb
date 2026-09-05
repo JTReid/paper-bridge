@@ -45,6 +45,13 @@ class DocumentsController < ApplicationController
     upload_params = document_upload_params
     files = uploaded_files(upload_params)
 
+    if files.size > Document::MAX_UPLOAD_FILES
+      @document = build_document
+      @document.errors.add(:base, "You can upload up to #{Document::MAX_UPLOAD_FILES} files at a time. No files were uploaded. Please select fewer files.")
+      render :new, status: :unprocessable_entity
+      return
+    end
+
     if files.empty?
       @document = build_document
       @document.validate
@@ -56,9 +63,10 @@ class DocumentsController < ApplicationController
 
     if uploaded_documents.empty?
       @document = failed_uploads.first.fetch(:document)
+      flash.now[:alert] = upload_failure_message(failed_uploads)
       render :new, status: :unprocessable_entity
     else
-      flash[:notice] = upload_success_message(uploaded_documents.count) if uploaded_documents.any?
+      flash[:notice] = upload_success_message(uploaded_documents)
       flash[:alert] = upload_failure_message(failed_uploads) if failed_uploads.any?
       redirect_to dependent_documents_path(@dependent)
     end
@@ -127,7 +135,7 @@ class DocumentsController < ApplicationController
           normalized_upload = Documents::UploadNormalizer.call(file)
           document.file.attach(normalized_upload.attachable)
 
-          if document.save
+          if save_unique_upload(document)
             uploaded_documents << document
           else
             failed_uploads << failed_upload_for(file, document)
@@ -146,6 +154,23 @@ class DocumentsController < ApplicationController
       end
 
       [ uploaded_documents, failed_uploads ]
+    end
+
+    def save_unique_upload(document)
+      # Serialize uploads for one profile so concurrent requests cannot both
+      # pass the duplicate check before either attachment is committed.
+      @dependent.with_lock do
+        blob = document.file.blob
+        duplicate = @dependent.documents.joins(file_attachment: :blob)
+          .where(active_storage_blobs: { checksum: blob.checksum, byte_size: blob.byte_size }).exists?
+
+        if duplicate
+          document.errors.add(:file, "is already saved in this profile. Duplicate files are not uploaded.")
+          false
+        else
+          document.save
+        end
+      end
     end
 
     def build_document
@@ -171,19 +196,25 @@ class DocumentsController < ApplicationController
       "Unnamed file"
     end
 
-    def upload_success_message(count)
-      "#{count} #{'document'.pluralize(count)} uploaded and being prepared."
+    def upload_success_message(documents)
+      stored_count = documents.count(&:stored?)
+      processing_count = documents.size - stored_count
+
+      [
+        ("#{processing_count} #{'document'.pluralize(processing_count)} uploaded and being prepared." if processing_count.positive?),
+        ("#{stored_count} #{'document'.pluralize(stored_count)} saved without processing." if stored_count.positive?)
+      ].compact.join(" ")
     end
 
     def upload_failure_message(failed_uploads)
       count = failed_uploads.count
-      filenames = failed_uploads.map { |failure| failure.fetch(:filename) }
-      visible_filenames = filenames.first(4)
-      hidden_count = count - visible_filenames.count
-      filename_summary = visible_filenames.to_sentence
-      filename_summary = "#{filename_summary}, and #{hidden_count} more" if hidden_count.positive?
+      details = failed_uploads.first(4).map do |failure|
+        "#{failure.fetch(:filename)}: #{failure.fetch(:errors).to_sentence}"
+      end
+      hidden_count = count - details.size
+      details << "and #{hidden_count} more" if hidden_count.positive?
 
-      "#{count} #{'file'.pluralize(count)} could not be uploaded: #{filename_summary}."
+      "#{count} #{'file'.pluralize(count)} could not be uploaded. #{details.join('; ')}"
     end
 
     def share_recipient_options

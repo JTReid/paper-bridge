@@ -80,9 +80,9 @@ test('new customer completes the guided path from signup through their first que
   await page.getByTestId('product-tour-action').click();
   const fileChooser = await fileChooserPromise;
   await fileChooser.setFiles({
-    name: 'unsupported-onboarding.svg',
-    mimeType: 'image/svg+xml',
-    buffer: Buffer.from('<svg xmlns="http://www.w3.org/2000/svg"></svg>'),
+    name: 'invalid-onboarding.png',
+    mimeType: 'image/png',
+    buffer: Buffer.from('This is not a valid PNG image.'),
   });
   await expectTourStep(page, 4, 'Ready to upload');
   await expect(page.getByTestId('document-upload-submit')).toHaveClass(/driver-active-element/);
@@ -166,8 +166,8 @@ test('multiple files return directly to Documents and a suggested question compl
   await page.getByTestId('documents-add-link').click();
 
   const files = [
-    { name: 'multi-one.txt', mimeType: 'text/plain', buffer: sampleFile },
-    { name: 'multi-two.txt', mimeType: 'text/plain', buffer: sampleFile },
+    { name: 'multi-one.txt', mimeType: 'text/plain', buffer: Buffer.concat([sampleFile, Buffer.from('\nFirst onboarding document.')]) },
+    { name: 'multi-two.txt', mimeType: 'text/plain', buffer: Buffer.concat([sampleFile, Buffer.from('\nSecond onboarding document.')]) },
   ];
   await page.getByTestId('document-file-field').setInputFiles(files);
   await expectTourStep(page, 4, 'Ready to upload');

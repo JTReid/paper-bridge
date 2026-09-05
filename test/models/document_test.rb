@@ -94,6 +94,45 @@ class DocumentTest < ActiveSupport::TestCase
     assert_equal "queued", document.reload.status
   end
 
+  test "stores non-processable files without waiting for metadata or enqueueing ingestion" do
+    document = build_document
+    document.initial_metadata_pending = true
+    document.file.attach(
+      io: StringIO.new("original Word document bytes"), filename: "record.docx",
+      content_type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document", identify: false,
+      metadata: { analyzed: true }
+    )
+
+    assert_no_enqueued_jobs do
+      document.save!
+    end
+
+    assert document.reload.stored?
+    assert_not document.processable?
+    assert_not document.initial_metadata_pending?
+    assert_nil document.description
+    assert_equal "general", document.category
+    assert document.update(category: "educational", description: "School notes")
+    assert_not document.complete_initial_metadata!(category: "medical", description: "Unwanted automatic result")
+    assert_equal "educational", document.reload.category
+    assert_equal "School notes", document.description
+    assert_empty document.pipeline_runs
+  end
+
+  test "every currently supported text format still queues ingestion" do
+    { "text/plain" => "txt", "text/csv" => "csv", "text/markdown" => "md", "application/json" => "json" }.each do |content_type, extension|
+      document = build_document
+      document.initial_metadata_pending = true
+      document.file.attach(io: StringIO.new("Source #{extension}"), filename: "record.#{extension}", content_type: content_type, identify: false)
+
+      assert_enqueued_with(job: ProcessDocumentJob) { document.save! }
+
+      assert document.reload.processable?, content_type
+      assert document.queued?, content_type
+      assert document.initial_metadata_pending?, content_type
+    end
+  end
+
   test "searches original filenames case insensitively by partial match" do
     assert_equal [ documents(:advance_directive) ], Document.search_by_filename("DIRECT").to_a
   end

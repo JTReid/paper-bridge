@@ -42,7 +42,7 @@ const STEP_CONTENT = {
   add_documents: {
     selector: '[data-tour="add-documents"]',
     title: "Add documents",
-    description: "Upload the records you want PaperBridge to organize and use for answers.",
+    description: "Keep records together. Supported file types can also be prepared for Ask PaperBridge.",
     number: 3,
     side: "bottom",
     align: "end"
@@ -50,7 +50,7 @@ const STEP_CONTENT = {
   choose_files: {
     selector: '[data-tour="choose-files"]',
     title: "Choose your files",
-    description: "Choose one file or several. PaperBridge will create a category and description for each document.",
+    description: "Choose one file or several. Supported types get an automatic category and description; other files are stored for download only.",
     number: 4,
     side: "top",
     align: "center",
@@ -71,9 +71,9 @@ const STEP_CONTENT = {
     selector: '[data-tour="open-ask"]',
     fallbackSelector: '[data-tour="back-to-documents"]',
     title: "Open Ask PaperBridge",
-    description: "For the best answer, wait until the records you need say Ready, then select Ask PaperBridge.",
+    description: "For the best answer, wait until the records you need say Ready, then select Ask PaperBridge. Files marked Stored—not processed are saved for download only.",
     fallbackTitle: "Your document is uploaded",
-    fallbackDescription: "PaperBridge is preparing it in the background. Go back to Documents to continue to Ask PaperBridge.",
+    fallbackDescription: "Go back to Documents to review file status or continue to Ask PaperBridge.",
     number: 5,
     side: "bottom",
     align: "end"

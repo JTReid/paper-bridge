@@ -268,6 +268,46 @@ class ProcessDocumentJobTest < ActiveJob::TestCase
     assert_includes template.text, "A short description of the uploaded document."
   end
 
+  test "storage-only documents are not enqueued and ignore a directly invoked document job" do
+    {
+      "record.docx" => "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      "record.zip" => "application/zip",
+      "record.svg" => "image/svg+xml"
+    }.each do |filename, content_type|
+      document = nil
+      assert_no_enqueued_jobs only: [ ProcessDocumentJob, ProcessImageDocumentJob ] do
+        document = create_storage_only_document(filename: filename, content_type: content_type)
+      end
+      before = document.reload.attributes
+
+      assert_no_difference -> { PipelineRun.count } do
+        ProcessDocumentJob.perform_now(document)
+      end
+
+      assert_equal "stored", document.reload.status
+      assert_not document.initial_metadata_pending?
+      assert_equal before, document.attributes
+      assert_empty document.document_pages
+      assert_empty document.document_chunks
+      assert_empty document.document_embeddings
+      assert_empty FakeConnection.requests
+    end
+  end
+
+  test "the document job ignores an image intended for the image pipeline" do
+    document = create_storage_only_document(filename: "record.png", content_type: "image/png", bytes: ONE_BY_ONE_PNG)
+    clear_enqueued_jobs
+    before = document.reload.attributes
+
+    assert_no_difference -> { PipelineRun.count } do
+      ProcessDocumentJob.perform_now(document)
+    end
+
+    assert_equal before, document.reload.attributes
+    assert_empty document.document_pages
+    assert_empty FakeConnection.requests
+  end
+
   test "prepares PDFs before chunking and embedding them" do
     ProcessDocumentJob.pdf_command_runner = FakePdfCommandRunner.new
     document = create_pdf_document
@@ -393,6 +433,24 @@ class ProcessDocumentJobTest < ActiveJob::TestCase
   end
 
   private
+
+    def create_storage_only_document(filename:, content_type:, bytes: "Stored document bytes")
+      Document.create!(
+        account: accounts(:greenfield),
+        dependent: dependents(:emma),
+        user: users(:family_admin),
+        title: "Stored document",
+        category: :general,
+        initial_metadata_pending: true,
+        file: {
+          io: StringIO.new(bytes),
+          filename: filename,
+          content_type: content_type,
+          identify: false,
+          metadata: { analyzed: true }
+        }
+      )
+    end
 
     def create_document(initial_metadata_pending: true)
       Document.create!(

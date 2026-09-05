@@ -150,6 +150,14 @@ class Documents::VectorSearchTest < ActiveSupport::TestCase
     assert_empty search(query_embedding: unit_vector(0))
   end
 
+  test "storage-only documents are never returned even if stale embeddings exist" do
+    chunk = create_chunk!("Stored-only record", label: "medical", chunk_index: 2)
+    create_embedding!(chunk, unit_vector(0))
+    @document.update_column(:status, "stored")
+
+    assert_empty search(query_embedding: unit_vector(0))
+  end
+
   test "initial metadata must finish before document contents are searchable" do
     chunk = create_chunk!("Medical record", label: "medical", chunk_index: 2)
     create_embedding!(chunk, unit_vector(0))

@@ -1,6 +1,9 @@
 class Document < ApplicationRecord
+  MAX_UPLOAD_FILES = 50
+
   STATUSES = {
     uploaded: "uploaded",
+    stored: "stored",
     queued: "queued",
     processing: "processing",
     processed: "processed",
@@ -45,7 +48,8 @@ class Document < ApplicationRecord
 
   before_validation :default_title_from_file
   before_validation :cache_file_metadata
-  after_create_commit :enqueue_processing_pipeline, if: :file_attached?
+  before_validation :mark_storage_only_upload, on: :create
+  after_create_commit :enqueue_processing_pipeline, if: :processable_file_attached?
   after_update_commit :broadcast_processing_update_for_change, if: :processing_broadcastable_change?
 
   validates :title, :status, :preparation_status, :category, presence: true
@@ -53,6 +57,10 @@ class Document < ApplicationRecord
   validate :account_matches_user
   validate :account_matches_dependent
   validate :initial_metadata_finished_before_edit, on: :update
+
+  def processable?
+    Documents::UploadNormalizer.processable_content_type?(content_type)
+  end
 
   def complete_initial_metadata!(category:, description:)
     with_lock do
@@ -175,8 +183,15 @@ class Document < ApplicationRecord
       errors.add(:file, "must be attached") unless file.attached?
     end
 
-    def file_attached?
-      file.attached?
+    def mark_storage_only_upload
+      return unless file.attached? && !processable?
+
+      self.status = :stored
+      self.initial_metadata_pending = false
+    end
+
+    def processable_file_attached?
+      file.attached? && processable?
     end
 
     def enqueue_processing_pipeline

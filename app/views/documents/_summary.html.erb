@@ -5,12 +5,16 @@
   <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
     <div>
       <h2 class="text-xl font-semibold text-slate-950">Summary</h2>
-      <% if document.summarized_at.present? %>
+      <% if document.summarized_at.present? && !document.stored? %>
         <p class="mt-1 text-xs text-slate-500">Generated <%= l document.summarized_at, format: :short %></p>
       <% end %>
     </div>
 
-    <% if document.processing? || document.queued? %>
+    <% if document.stored? %>
+      <span class="inline-flex w-fit items-center rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700">
+        Not supported
+      </span>
+    <% elsif document.processing? || document.queued? %>
       <span class="inline-flex w-fit items-center rounded-full bg-sky-50 px-2.5 py-1 text-xs font-medium text-sky-700">
         Preparing
       </span>
@@ -25,7 +29,9 @@
     <% end %>
   </div>
 
-  <% if summary[:summary].present? %>
+  <% if document.stored? %>
+    <p class="mt-4 text-sm leading-6 text-slate-600" data-testid="document-storage-only-notice">Your original file is saved and available to download. PaperBridge does not process this file type, so it has no generated summary and its contents are not included in Ask PaperBridge searches. You can still find it by file name and edit its category and description.</p>
+  <% elsif summary[:summary].present? %>
     <p class="mt-4 text-sm leading-6 text-slate-700"><%= summary[:summary] %></p>
 
     <% if key_points.any? %>

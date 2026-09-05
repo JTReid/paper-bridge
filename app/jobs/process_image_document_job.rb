@@ -11,6 +11,8 @@ class ProcessImageDocumentJob < ApplicationJob
   discard_on ActiveJob::DeserializationError
 
   def perform(document)
+    return unless document.processable? && Documents::UploadNormalizer::IMAGE_CONTENT_TYPES.include?(document.content_type)
+
     document.processing!
     prepared_payload = prepare_image(document)
     pipeline_run = create_pipeline_run(document, prepared_payload)

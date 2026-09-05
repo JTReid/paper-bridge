@@ -8,6 +8,8 @@ class ProcessDocumentJob < ApplicationJob
   discard_on ActiveJob::DeserializationError
 
   def perform(document)
+    return unless document.processable? && Documents::UploadNormalizer::PASS_THROUGH_CONTENT_TYPES.include?(document.content_type)
+
     document.processing!
     prepared_payload = Documents::Prepare.call(document, pdf_command_runner: pdf_command_runner)
 

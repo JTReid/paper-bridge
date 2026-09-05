@@ -1,9 +1,10 @@
 import { Controller } from "@hotwired/stimulus"
 
 export default class extends Controller {
-  static targets = ["clear", "dropzone", "input", "list", "summary"]
+  static targets = ["clear", "dropzone", "error", "input", "list", "summary"]
   static values = {
-    emptyLabel: { type: String, default: "No files selected" }
+    emptyLabel: { type: String, default: "No files selected" },
+    maxFiles: Number
   }
 
   connect() {
@@ -12,6 +13,13 @@ export default class extends Controller {
 
   changed() {
     this.sync()
+  }
+
+  validateSubmission(event) {
+    if (this.validateSelection()) return
+
+    event.preventDefault()
+    this.inputTarget.reportValidity()
   }
 
   remove(event) {
@@ -65,6 +73,26 @@ export default class extends Controller {
     this.listTarget.replaceChildren(...files.map((file, index) => this.fileItem(file, index)))
     this.listTarget.classList.toggle("hidden", files.length === 0)
     this.clearTarget.classList.toggle("hidden", files.length === 0)
+    this.validateSelection()
+  }
+
+  validateSelection() {
+    const count = this.inputTarget.files?.length || 0
+    const excess = count - this.maxFilesValue
+    const error = excess > 0 ?
+      `You selected ${count} files. Upload up to ${this.maxFilesValue} files at a time. Remove ${excess} ${excess === 1 ? "file" : "files"} or clear the selection.` :
+      ""
+
+    this.inputTarget.setCustomValidity(error)
+    this.errorTarget.textContent = error
+    this.errorTarget.classList.toggle("hidden", !error)
+    if (error) {
+      this.inputTarget.setAttribute("aria-invalid", "true")
+    } else {
+      this.inputTarget.removeAttribute("aria-invalid")
+    }
+
+    return !error
   }
 
   selectedLabel(count) {

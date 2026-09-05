@@ -52,6 +52,10 @@ module Documents
       new(upload).call
     end
 
+    def self.processable_content_type?(content_type)
+      PASS_THROUGH_CONTENT_TYPES.include?(content_type) || IMAGE_CONTENT_TYPES.include?(content_type)
+    end
+
     def initialize(upload)
       @upload = upload
     end
@@ -60,16 +64,14 @@ module Documents
       validate_upload!
       content_type = detected_content_type
 
-      if image_upload? && !IMAGE_CONTENT_TYPES.include?(content_type)
-        raise UnsupportedTypeError, "has an unsupported image type" if content_type.start_with?("image/")
-
+      if supported_image_upload? && !IMAGE_CONTENT_TYPES.include?(content_type)
         raise InvalidImageError, "does not contain a valid image"
       end
 
       return Result.new(attachable: upload) if PASS_THROUGH_CONTENT_TYPES.include?(content_type)
 
       unless IMAGE_CONTENT_TYPES.include?(content_type)
-        raise UnsupportedTypeError, "has an unsupported file type"
+        return Result.new(attachable: file_attachable(content_type).merge(metadata: { analyzed: true }))
       end
 
       validate_source_size!(content_type)
@@ -82,7 +84,7 @@ module Documents
       else
         verify_pixels!(image)
         validate_stored_size!(upload_byte_size)
-        Result.new(attachable: image_attachable(content_type))
+        Result.new(attachable: file_attachable(content_type))
       end
     rescue Vips::Error
       raise InvalidImageError, "does not contain a valid image"
@@ -111,8 +113,8 @@ module Documents
         upload.content_type.to_s.downcase.split(";", 2).first if upload.respond_to?(:content_type)
       end
 
-      def image_upload?
-        declared_content_type.to_s.start_with?("image/") || IMAGE_EXTENSIONS.include?(File.extname(original_filename).downcase)
+      def supported_image_upload?
+        IMAGE_CONTENT_TYPES.include?(declared_content_type) || IMAGE_EXTENSIONS.include?(File.extname(original_filename).downcase)
       end
 
       def load_image
@@ -163,12 +165,13 @@ module Documents
         raise
       end
 
-      def image_attachable(content_type)
+      def file_attachable(content_type)
         rewind_io
         {
           io: upload_io,
           filename: original_filename,
-          content_type: content_type
+          content_type: content_type,
+          identify: false
         }
       end
 

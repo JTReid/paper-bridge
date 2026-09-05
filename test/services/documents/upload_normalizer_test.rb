@@ -8,6 +8,8 @@ module Documents
       [
         [ "%PDF-1.4\n% test", "record.pdf", "application/pdf" ],
         [ "plain text", "record.txt", "text/plain" ],
+        [ "date,event\n2026-09-05,Review", "record.csv", "text/csv" ],
+        [ "# Review\nCare notes", "record.md", "text/markdown" ],
         [ '{"kind":"record"}', "record.json", "application/json" ]
       ].each do |bytes, filename, content_type|
         with_upload(bytes, filename: filename, content_type: content_type) do |upload|
@@ -15,6 +17,7 @@ module Documents
 
           assert_same upload, result.attachable
           assert_nil result.temporary_file
+          assert UploadNormalizer.processable_content_type?(content_type)
         end
       end
     end
@@ -83,21 +86,60 @@ module Documents
       end
     end
 
-    test "rejects image formats outside the allowlist" do
-      svg = '<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10"></svg>'
+    test "preserves storage-only files without image parsing or later attachment analysis" do
+      [
+        [ '<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10"></svg>', "record.svg", "image/svg+xml" ],
+        [ "GIF89a\x01\x00\x01\x00", "record.gif", "image/gif" ],
+        [ "PK\x03\x04archive-content", "record.zip", "application/zip" ],
+        [ "PK\x03\x04word-content", "record.docx", "application/vnd.openxmlformats-officedocument.wordprocessingml.document" ],
+        [ "word-document-content", "record.doc", "application/msword" ],
+        [ "\x00\x01unknown-content", "record.custom", "application/octet-stream" ]
+      ].each do |bytes, filename, content_type|
+        with_upload(bytes, filename: filename, content_type: content_type) do |upload|
+          normalizer = UploadNormalizer.new(upload)
+          normalizer.define_singleton_method(:load_image) { raise "Storage-only uploads must not be decoded" }
 
-      with_upload(svg, filename: "prescription.svg", content_type: "image/svg+xml") do |upload|
-        error = assert_raises(UploadNormalizer::UnsupportedTypeError) { UploadNormalizer.call(upload) }
+          result = normalizer.call
 
-        assert_equal "has an unsupported image type", error.message
+          assert_equal filename, result.attachable.fetch(:filename)
+          assert_equal content_type, result.attachable.fetch(:content_type)
+          assert_same upload.tempfile, result.attachable.fetch(:io)
+          assert_equal bytes.b, result.attachable.fetch(:io).read
+          assert_equal false, result.attachable.fetch(:identify)
+          assert_equal true, result.attachable.dig(:metadata, :analyzed)
+          assert_nil result.temporary_file
+          assert_not UploadNormalizer.processable_content_type?(content_type)
+        end
       end
     end
 
-    test "rejects unsupported non-image files synchronously" do
-      with_upload("PK\x03\x04not-a-real-archive", filename: "record.zip", content_type: "application/zip") do |upload|
-        error = assert_raises(UploadNormalizer::UnsupportedTypeError) { UploadNormalizer.call(upload) }
+    test "uses detected storage-only MIME instead of the upload declared type" do
+      bytes = "PK\x03\x04archive-content"
 
-        assert_equal "has an unsupported file type", error.message
+      with_upload(bytes, filename: "record.zip", content_type: "application/octet-stream") do |upload|
+        result = UploadNormalizer.call(upload)
+
+        assert_equal "application/zip", result.attachable.fetch(:content_type)
+        assert_equal false, result.attachable.fetch(:identify)
+        assert_equal bytes, result.attachable.fetch(:io).read
+      end
+    end
+
+    test "does not treat unsupported image bytes as a valid supported image upload" do
+      svg = '<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10"></svg>'
+
+      with_upload(svg, filename: "record.png", content_type: "image/png") do |upload|
+        assert_raises(UploadNormalizer::InvalidImageError) { UploadNormalizer.call(upload) }
+      end
+    end
+
+    test "only the existing PDF text and image types are processable" do
+      (UploadNormalizer::PASS_THROUGH_CONTENT_TYPES + UploadNormalizer::IMAGE_CONTENT_TYPES).each do |content_type|
+        assert UploadNormalizer.processable_content_type?(content_type)
+      end
+
+      [ nil, "", "image/svg+xml", "image/gif", "application/zip", "application/msword", "video/mp4", "audio/mpeg" ].each do |content_type|
+        assert_not UploadNormalizer.processable_content_type?(content_type)
       end
     end
 

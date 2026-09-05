@@ -35,14 +35,18 @@ operational harness checks until matching implementation exists.
   for the separate legacy-name backfill and deletion behavior.
 - Document upload, listing, case-insensitive original-filename search, category
   filtering, file-only upload, show, edit, update, and destroy
-  paths. Intake supports text-like files, PDFs, and one JPEG, PNG, WebP, HEIC,
+  paths. Processing supports text-like files, PDFs, and one JPEG, PNG, WebP, HEIC,
   HEIF, or TIFF image per document; HEIC/HEIF and TIFF uploads are converted to
   JPEG before Active Storage persistence.
-- Upload selection supports individual removal and Clear selection. Single and
-  batch uploads return to the profile's Documents list. Category and description are
-  generated once during initial processing and editable afterward; retries
-  preserve them. See [Document Uploads](document-uploads.md).
-- Document processing status, summary, readiness, file-detail rendering, and an
+- Upload selection supports individual removal, Clear selection, and a 50-file
+  per-batch limit enforced in both browser and server. Duplicate contents in the
+  same profile are rejected without overwrites; unique files still upload.
+  Single and batch uploads return to the profile's Documents list. Category and
+  description are generated once during initial processing and editable
+  afterward; retries preserve them. Other file types, including Word, are saved
+  as Stored—not processed, downloadable with immediately editable metadata,
+  without entering the AI pipeline. See [Document Uploads](document-uploads.md).
+- Document processing status, summary, readiness, file-detail rendering, and a
   prominent original-file action that opens PDFs in a new tab and downloads
   other formats.
 - Separate GPT-backed image ingestion that extracts text, classifies the

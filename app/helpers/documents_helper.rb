@@ -13,6 +13,7 @@ module DocumentsHelper
     "queued" => "Getting ready",
     "processing" => "Preparing",
     "processed" => "Ready",
+    "stored" => "Stored—not processed",
     "failed" => "Needs attention"
   }.freeze
 
@@ -21,6 +22,7 @@ module DocumentsHelper
     "queued" => "border-amber-200 bg-amber-50 text-amber-800",
     "processing" => "border-sky-200 bg-sky-50 text-sky-800",
     "processed" => "border-emerald-200 bg-emerald-50 text-emerald-800",
+    "stored" => "border-slate-200 bg-slate-100 text-slate-700",
     "failed" => "border-red-200 bg-red-50 text-red-800"
   }.freeze
 
@@ -63,6 +65,8 @@ module DocumentsHelper
       stat_indicator("check", "#{label} ready", "bg-emerald-50 text-emerald-700 ring-emerald-200")
     when :failed
       stat_indicator("x", "#{label} unavailable", "bg-red-50 text-red-700 ring-red-200")
+    when :unsupported
+      stat_indicator("file-text", "#{label} not supported", "bg-slate-100 text-slate-600 ring-slate-200")
     when :working
       content_tag(
         :span,
@@ -78,6 +82,7 @@ module DocumentsHelper
   private
 
     def page_state(document, page_count)
+      return :unsupported if document.stored?
       return :failed if document.failed? || document.preparation_failed?
       return :complete if document.prepared? && page_count.positive?
       return :working if processing_active?(document)
@@ -86,6 +91,7 @@ module DocumentsHelper
     end
 
     def question_state(document, chunk_count, embedding_count)
+      return :unsupported if document.stored?
       return :failed if document.failed? || document.preparation_failed?
       return :complete if chunk_count.positive? && embedding_count >= chunk_count
       return :working if processing_active?(document)
@@ -94,6 +100,7 @@ module DocumentsHelper
     end
 
     def summary_state(document)
+      return :unsupported if document.stored?
       return :failed if document.failed? || document.preparation_failed?
       return :complete if document.summarized_at.present?
       return :working if processing_active?(document)
@@ -105,6 +112,7 @@ module DocumentsHelper
       {
         complete: "Ready",
         failed: "Unavailable",
+        unsupported: "Not supported",
         working: "Getting ready",
         idle: "Not ready"
       }.fetch(state)

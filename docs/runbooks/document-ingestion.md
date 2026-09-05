@@ -10,12 +10,15 @@ documents.
 - Each `Document` has one Active Storage attachment named `file`.
 - Multi-file upload requests create one `Document` record per uploaded file;
   one image is always one document.
-- New web uploads receive a category and short description once during initial
+- New processable web uploads receive a category and short description once during initial
   processing, before becoming searchable. Existing documents and later edits
   are preserved. See [Document Uploads](document-uploads.md) for completion,
   edit-lock, retry, and schema-update behavior.
-- Document intake accepts text-like uploads, PDFs, and JPEG, PNG, WebP, HEIC,
-  HEIF, or TIFF images. Unsupported file types are rejected before enqueueing.
+- Document intake processes text-like uploads, PDFs, and JPEG, PNG, WebP, HEIC,
+  HEIF, or TIFF images. Other file types, including Word, are saved as
+  storage-only without processing. Upload batches are limited to 50 files;
+  identical stored contents within the same profile are rejected without
+  overwriting existing files. See [Document Uploads](document-uploads.md).
 - `Documents::UploadNormalizer` decodes image uploads before document creation.
   HEIC, HEIF, and TIFF sources are converted to JPEG before the normalized file
   is attached to Active Storage, so those source formats are never served to a
@@ -23,9 +26,11 @@ documents.
   byte size and decoded pixel count are bounded before persistence and GPT
   processing.
 - Active Storage upload completion is followed by `Document.after_create_commit`.
-- The callback marks the document `queued` and routes image documents to
+- For processable types, the callback marks the document `queued` and routes image documents to
   `ProcessImageDocumentJob`; PDFs and text-like documents continue through
-  `ProcessDocumentJob`.
+  `ProcessDocumentJob`. Storage-only records stay `stored`, with metadata
+  editable immediately and no ingestion job. Both jobs also guard against
+  unsupported types or delivery to the wrong pipeline family.
 - Development and production use Solid Queue for Active Job-backed document
   processing. Development queue records live in `paper_bridge_development_queue`.
 - `ProcessDocumentJob` prepares the document before running the ingestion

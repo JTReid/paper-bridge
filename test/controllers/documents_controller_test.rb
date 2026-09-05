@@ -233,7 +233,8 @@ class DocumentsControllerTest < ActionDispatch::IntegrationTest
     assert_select "input[type='file'][accept]", count: 0
     assert_select "textarea[name='document[description]']", count: 0
     assert_select "select[name='document[category]']", count: 0
-    assert_select "form[data-testid='document-upload-form'][data-tour='upload-form'][data-action='input->product-tour#pause turbo:submit-end->product-tour#advanceAfterSubmit'][data-product-tour-from-phase-param='upload_submit'][data-product-tour-next-phase-param='open_ask']"
+    assert_select "form[data-testid='document-upload-form'][data-tour='upload-form'][data-action='input->product-tour#pause submit->file-dropzone#validateSubmission turbo:submit-end->product-tour#advanceAfterSubmit'][data-product-tour-from-phase-param='upload_submit'][data-product-tour-next-phase-param='open_ask']"
+    assert_select "form[data-file-dropzone-max-files-value='50']"
     assert_select "[data-tour='choose-files'] input[data-testid='document-file-field'][data-action='change->file-dropzone#changed change->product-tour#filesSelected']"
     assert_select "button[type='submit'][data-testid='document-upload-submit'][data-tour='upload-submit']", text: "Upload"
   end
@@ -317,7 +318,7 @@ class DocumentsControllerTest < ActionDispatch::IntegrationTest
             file_categories: [ "educational", "therapy" ],
             files: [
               Rack::Test::UploadedFile.new(file_fixture("sample.txt"), "text/plain", original_filename: "first-document.txt"),
-              Rack::Test::UploadedFile.new(file_fixture("sample.txt"), "text/plain", original_filename: "second-document.txt")
+              Rack::Test::UploadedFile.new(StringIO.new("A different document."), "text/plain", original_filename: "second-document.txt")
             ]
           }
         }
@@ -360,7 +361,8 @@ class DocumentsControllerTest < ActionDispatch::IntegrationTest
 
     assert_redirected_to dependent_documents_path(dependent)
     assert_equal "1 document uploaded and being prepared.", flash[:notice]
-    assert_equal "1 file could not be uploaded: Unnamed file.", flash[:alert]
+    assert_includes flash[:alert], "1 file could not be uploaded."
+    assert_includes flash[:alert], "Unnamed file:"
 
     document = Document.order(:created_at).last
     assert_equal "partial-valid", document.title
@@ -399,7 +401,7 @@ class DocumentsControllerTest < ActionDispatch::IntegrationTest
 
     with_uploaded_files(
       { bytes: "valid notes", filename: "valid-notes.txt", content_type: "text/plain" },
-      { bytes: '<svg xmlns="http://www.w3.org/2000/svg"></svg>', filename: "unsupported.svg", content_type: "image/svg+xml" }
+      { bytes: "not really an image", filename: "invalid.png", content_type: "image/png" }
     ) do |files|
       assert_difference -> { Document.count }, 1 do
         post dependent_documents_path(dependent), params: {
@@ -413,8 +415,182 @@ class DocumentsControllerTest < ActionDispatch::IntegrationTest
 
     assert_redirected_to dependent_documents_path(dependent)
     assert_equal "1 document uploaded and being prepared.", flash[:notice]
-    assert_equal "1 file could not be uploaded: unsupported.svg.", flash[:alert]
+    assert_includes flash[:alert], "invalid.png: File does not contain a valid image"
     assert_equal "valid-notes.txt", Document.order(:created_at).last.original_filename
+  end
+
+  test "stores Word and other non-processable files unchanged with immediate metadata editing" do
+    dependent = dependents(:emma)
+    sign_in users(:family_admin)
+    files_to_store = [
+      { bytes: "PK\x03\x04word document", filename: "school.docx", content_type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document" },
+      { bytes: "PK\x03\x04archive", filename: "records.zip", content_type: "application/zip" },
+      { bytes: '<svg xmlns="http://www.w3.org/2000/svg"><script>alert(1)</script></svg>', filename: "drawing.svg", content_type: "image/svg+xml" }
+    ]
+
+    with_uploaded_files(*files_to_store) do |files|
+      assert_no_enqueued_jobs do
+        assert_difference -> { Document.count }, 3 do
+          post dependent_documents_path(dependent), params: { document: { files: files, category: "medical", description: "Ignored", status: "processed" } }
+        end
+      end
+    end
+
+    assert_redirected_to dependent_documents_path(dependent)
+    assert_equal "3 documents saved without processing.", flash[:notice]
+
+    files_to_store.each do |specification|
+      document = dependent.documents.find_by!(original_filename: specification[:filename])
+      assert_equal specification[:bytes], document.file.download
+      assert document.stored?
+      assert_not document.initial_metadata_pending?
+      assert_equal "general", document.category
+      assert_nil document.description
+      assert_empty document.pipeline_runs
+
+      get original_document_path(document)
+      follow_redirect!
+      assert_response :success
+      assert_match(/attachment/, response.headers.fetch("Content-Disposition"))
+      assert_equal specification[:bytes], response.body
+
+      get edit_document_path(document)
+      assert_select "fieldset[data-testid='document-editable-metadata']:not([disabled])"
+      patch document_path(document), params: { document: { category: "educational", description: "Added by family" } }
+      assert_redirected_to document_path(document)
+      assert_equal "Added by family", document.reload.description
+      assert document.stored?
+    end
+  end
+
+  test "mixed batches distinguish processing uploads from storage-only files" do
+    sign_in users(:family_admin)
+    with_uploaded_files(
+      { bytes: "name,value\nheight,110", filename: "measurements.csv", content_type: "text/csv" },
+      { bytes: "PK\x03\x04archive", filename: "records.zip", content_type: "application/zip" }
+    ) do |files|
+      assert_enqueued_jobs 1, only: [ ProcessDocumentJob, ProcessImageDocumentJob ] do
+        assert_difference -> { Document.count }, 2 do
+          post dependent_documents_path(dependents(:emma)), params: { document: { files: files } }
+        end
+      end
+    end
+
+    assert_redirected_to dependent_documents_path(dependents(:emma))
+    assert_equal "1 document uploaded and being prepared. 1 document saved without processing.", flash[:notice]
+    assert dependents(:emma).documents.find_by!(original_filename: "measurements.csv").queued?
+    assert dependents(:emma).documents.find_by!(original_filename: "records.zip").stored?
+  end
+
+  test "rejects more than 50 files before creating documents blobs or jobs" do
+    sign_in users(:family_admin)
+    files = Array.new(51) { |index| Rack::Test::UploadedFile.new(StringIO.new("Document #{index}"), "text/plain", original_filename: "record-#{index}.txt") }
+
+    assert_no_enqueued_jobs do
+      assert_no_difference [ -> { Document.count }, -> { ActiveStorage::Blob.count }, -> { ActiveStorage::Attachment.count } ] do
+        post dependent_documents_path(dependents(:emma)), params: { document: { files: files } }
+      end
+    end
+
+    assert_response :unprocessable_entity
+    assert_includes response.body, "You can upload up to 50 files at a time. No files were uploaded."
+  ensure
+    files&.each(&:close)
+  end
+
+  test "accepts exactly 50 distinct files" do
+    sign_in users(:family_admin)
+    files = Array.new(50) { |index| Rack::Test::UploadedFile.new(StringIO.new("Document #{index}"), "text/plain", original_filename: "record-#{index}.txt") }
+
+    assert_enqueued_jobs 50, only: ProcessDocumentJob do
+      assert_difference -> { Document.count }, 50 do
+        post dependent_documents_path(dependents(:emma)), params: { document: { files: files } }
+      end
+    end
+
+    assert_redirected_to dependent_documents_path(dependents(:emma))
+    assert_equal "50 documents uploaded and being prepared.", flash[:notice]
+  ensure
+    files&.each(&:close)
+  end
+
+  test "rejects renamed duplicates of existing files without overwriting or creating orphan blobs" do
+    dependent = dependents(:emma)
+    original = create_attached_document(dependent: dependent, title: "Original", category: "medical")
+    original.update!(description: "Keep this description")
+    original_attributes = original.reload.attributes
+    sign_in users(:family_admin)
+    clear_enqueued_jobs
+
+    assert_no_enqueued_jobs do
+      assert_no_difference [ -> { Document.count }, -> { ActiveStorage::Blob.count }, -> { ActiveStorage::Attachment.count } ] do
+        post dependent_documents_path(dependent), params: {
+          document: { files: [ Rack::Test::UploadedFile.new(file_fixture("sample.txt"), "text/plain", original_filename: "renamed.txt") ] }
+        }
+      end
+    end
+
+    assert_response :unprocessable_entity
+    assert_includes response.body, "is already saved in this profile"
+    assert_equal original_attributes, original.reload.attributes
+  end
+
+  test "duplicates in a batch are rejected while unique files continue" do
+    sign_in users(:family_admin)
+    with_uploaded_files(
+      { bytes: "same content", filename: "first.txt", content_type: "text/plain" },
+      { bytes: "same content", filename: "renamed.txt", content_type: "text/plain" },
+      { bytes: "different content", filename: "third.txt", content_type: "text/plain" }
+    ) do |files|
+      assert_enqueued_jobs 2, only: ProcessDocumentJob do
+        assert_difference [ -> { Document.count }, -> { ActiveStorage::Blob.count } ], 2 do
+          post dependent_documents_path(dependents(:emma)), params: { document: { files: files } }
+        end
+      end
+    end
+
+    assert_redirected_to dependent_documents_path(dependents(:emma))
+    assert_equal "2 documents uploaded and being prepared.", flash[:notice]
+    assert_includes flash[:alert], "renamed.txt: File is already saved in this profile"
+    assert_not dependents(:emma).documents.exists?(original_filename: "renamed.txt")
+  end
+
+  test "allows identical filenames with different contents and identical content in another profile" do
+    dependent = dependents(:emma)
+    create_attached_document(dependent: dependent, title: "Original", category: "medical", filename: "record.txt")
+    other_profile = Dependent.create!(account: accounts(:greenfield), first_name: "Another", last_name: "Profile")
+    sign_in users(:family_admin)
+
+    with_uploaded_files({ bytes: "different content", filename: "record.txt", content_type: "text/plain" }) do |files|
+      assert_difference -> { dependent.documents.count } do
+        post dependent_documents_path(dependent), params: { document: { files: files } }
+      end
+    end
+    assert_redirected_to dependent_documents_path(dependent)
+
+    assert_difference -> { other_profile.documents.count } do
+      post dependent_documents_path(other_profile), params: {
+        document: { files: [ Rack::Test::UploadedFile.new(file_fixture("sample.txt"), "text/plain", original_filename: "record.txt") ] }
+      }
+    end
+    assert_redirected_to dependent_documents_path(other_profile)
+  end
+
+  test "duplicates are detected after supported image normalization" do
+    sign_in users(:family_admin)
+    with_uploaded_files(
+      { bytes: test_image.write_to_buffer(".tiff"), filename: "photo.tiff", content_type: "image/tiff" },
+      { bytes: test_image.write_to_buffer(".tiff"), filename: "renamed.tiff", content_type: "image/tiff" }
+    ) do |files|
+      assert_enqueued_jobs 1, only: ProcessImageDocumentJob do
+        assert_difference -> { Document.count } do
+          post dependent_documents_path(dependents(:emma)), params: { document: { files: files } }
+        end
+      end
+    end
+
+    assert_redirected_to dependent_documents_path(dependents(:emma))
+    assert_includes flash[:alert], "renamed.tiff: File is already saved in this profile"
   end
 
   test "failed scoped upload preserves dependent workspace" do
