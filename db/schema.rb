@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_09_05_000200) do
+ActiveRecord::Schema[8.1].define(version: 2026_09_05_000300) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "vector"
@@ -109,6 +109,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_09_05_000200) do
     t.datetime "created_at", null: false
     t.datetime "current_period_end"
     t.string "latest_event_id"
+    t.datetime "launch_trial_used_at"
     t.jsonb "metadata", default: {}, null: false
     t.integer "profile_limit"
     t.string "status", default: "incomplete", null: false

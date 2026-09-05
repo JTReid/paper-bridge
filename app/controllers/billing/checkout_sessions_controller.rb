@@ -23,7 +23,7 @@ module Billing
         redirect_to checkout_destination(billing_subscription), allow_other_host: true, status: :see_other
       rescue Stripe::StripeError => e
         clear_checkout_pending(billing_subscription)
-        Rails.logger.error("stripe_checkout_failed account_id=#{current_account.id} error_class=#{e.class.name} error_message=#{e.message.to_s.squish}")
+        Rails.logger.error("stripe_checkout_failed account_id=#{current_account.id} error_class=#{e.class.name}")
         redirect_to billing_path, alert: "We couldn’t start checkout. Please try again."
       end
     end
@@ -37,6 +37,14 @@ module Billing
       end
 
       def checkout_destination(subscription)
+        attempt = subscription.checkout_attempt
+        if attempt && attempt["session_id"].blank? && attempt["trial_period_days"] &&
+            (subscription.launch_trial_used_at.present? || subscription.trial_end.present?)
+          # A trusted webhook can outlive a lost Checkout response. Do not replay
+          # that consumed trial after Stripe's idempotency retention expires.
+          subscription.clear_checkout_attempt
+        end
+
         if (session_id = subscription.checkout_attempt&.fetch("session_id", nil)).present?
           session = Stripe::Checkout::Session.retrieve(session_id)
           case session.status
@@ -69,7 +77,9 @@ module Billing
         unless subscription.checkout_attempt
           subscription.start_checkout_attempt(
             price_id: Billing::StripeConfig.profile_price_id,
-            quantity: [ Billing::StripeConfig::INCLUDED_PROFILES, current_account.dependents.count ].max
+            quantity: [ Billing::StripeConfig::INCLUDED_PROFILES, current_account.dependents.count ].max,
+            trial_period_days: (Billing::StripeConfig::LAUNCH_TRIAL_DAYS if subscription.launch_trial_available?),
+            payment_method_configuration_id: Billing::StripeConfig.payment_method_configuration_id
           )
         end
         subscription.mark_checkout_pending
@@ -78,7 +88,7 @@ module Billing
 
         subscription.stripe_customer_id ||= create_stripe_customer(attempt.fetch("token")).id
         subscription.save! if subscription.changed?
-        session = Stripe::Checkout::Session.create({
+        parameters = {
           mode: "subscription",
           customer: subscription.stripe_customer_id,
           client_reference_id: current_account.id.to_s,
@@ -95,7 +105,18 @@ module Billing
           cancel_url: billing_url(checkout: "cancel"),
           metadata: stripe_metadata,
           subscription_data: { metadata: stripe_metadata }
-        }, { idempotency_key: "paperbridge_checkout_#{attempt.fetch('token')}" })
+        }
+        if attempt["trial_period_days"]
+          parameters[:payment_method_collection] = "always"
+          parameters[:subscription_data].merge!(
+            trial_period_days: attempt.fetch("trial_period_days"),
+            trial_settings: { end_behavior: { missing_payment_method: "cancel" } }
+          )
+        end
+        if attempt["payment_method_configuration_id"].present?
+          parameters[:payment_method_configuration] = attempt.fetch("payment_method_configuration_id")
+        end
+        session = Stripe::Checkout::Session.create(parameters, { idempotency_key: "paperbridge_checkout_#{attempt.fetch('token')}" })
         subscription.record_checkout_session(session.id)
         subscription.save!
         session.url

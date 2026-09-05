@@ -2,12 +2,12 @@ require "test_helper"
 
 class Billing::StripeConfigTest < ActiveSupport::TestCase
   setup do
-    @stripe_environment = ENV.to_h.slice("STRIPE_PRICE_ID", "STRIPE_PROFILE_PRICE_ID", "STRIPE_PROFILE_PORTAL_CONFIGURATION_ID", "STRIPE_SECRET_KEY")
-    %w[STRIPE_PRICE_ID STRIPE_PROFILE_PRICE_ID STRIPE_PROFILE_PORTAL_CONFIGURATION_ID STRIPE_SECRET_KEY].each { |key| ENV.delete(key) }
+    @stripe_environment = ENV.to_h.slice("STRIPE_PRICE_ID", "STRIPE_PROFILE_PRICE_ID", "STRIPE_PROFILE_PORTAL_CONFIGURATION_ID", "STRIPE_SECRET_KEY", "STRIPE_LAUNCH_TRIAL_ENABLED", "STRIPE_PAYMENT_METHOD_CONFIGURATION_ID")
+    %w[STRIPE_PRICE_ID STRIPE_PROFILE_PRICE_ID STRIPE_PROFILE_PORTAL_CONFIGURATION_ID STRIPE_SECRET_KEY STRIPE_LAUNCH_TRIAL_ENABLED STRIPE_PAYMENT_METHOD_CONFIGURATION_ID].each { |key| ENV.delete(key) }
   end
 
   teardown do
-    %w[STRIPE_PRICE_ID STRIPE_PROFILE_PRICE_ID STRIPE_PROFILE_PORTAL_CONFIGURATION_ID STRIPE_SECRET_KEY].each { |key| ENV.delete(key) }
+    %w[STRIPE_PRICE_ID STRIPE_PROFILE_PRICE_ID STRIPE_PROFILE_PORTAL_CONFIGURATION_ID STRIPE_SECRET_KEY STRIPE_LAUNCH_TRIAL_ENABLED STRIPE_PAYMENT_METHOD_CONFIGURATION_ID].each { |key| ENV.delete(key) }
     ENV.update(@stripe_environment)
   end
 
@@ -16,6 +16,46 @@ class Billing::StripeConfigTest < ActiveSupport::TestCase
 
     with_stubbed_singleton_method(Billing::StripeConfig, :credentials, credentials) do
       assert_equal "price_standard_123", Billing::StripeConfig.price_id
+    end
+  end
+
+  test "the launch trial is ninety days and disabled unless explicitly enabled" do
+    assert_equal 90, Billing::StripeConfig::LAUNCH_TRIAL_DAYS
+    [ nil, false, "false", "", "invalid", "1" ].each do |value|
+      with_stubbed_singleton_method(Billing::StripeConfig, :credentials, { launch_trial_enabled: value }) do
+        assert_not Billing::StripeConfig.launch_trial_enabled?, value.inspect
+      end
+    end
+    [ true, "true", "TRUE" ].each do |value|
+      with_stubbed_singleton_method(Billing::StripeConfig, :credentials, { launch_trial_enabled: value }) do
+        assert Billing::StripeConfig.launch_trial_enabled?, value.inspect
+      end
+    end
+  end
+
+  test "an explicit environment override can enable or disable credential launch trials" do
+    with_stubbed_singleton_method(Billing::StripeConfig, :credentials, { launch_trial_enabled: true }) do
+      ENV["STRIPE_LAUNCH_TRIAL_ENABLED"] = "false"
+      assert_not Billing::StripeConfig.launch_trial_enabled?
+    end
+    with_stubbed_singleton_method(Billing::StripeConfig, :credentials, { launch_trial_enabled: false }) do
+      ENV["STRIPE_LAUNCH_TRIAL_ENABLED"] = "true"
+      assert Billing::StripeConfig.launch_trial_enabled?
+    end
+  end
+
+  test "the launch offer waits for its dedicated payment method configuration" do
+    credentials = {
+      secret_key: "rk_test_placeholder", profile_price: "price_profiles",
+      profile_portal_configuration: "bpc_profiles", launch_trial_enabled: true
+    }
+    with_stubbed_singleton_method(Billing::StripeConfig, :credentials, credentials) do
+      assert_not Billing::StripeConfig.checkout_ready?
+      credentials[:payment_method_configuration] = "pmc_cards"
+      assert_equal "pmc_cards", Billing::StripeConfig.payment_method_configuration_id
+      assert Billing::StripeConfig.checkout_ready?
+      ENV["STRIPE_PAYMENT_METHOD_CONFIGURATION_ID"] = "pmc_environment"
+      assert_equal "pmc_environment", Billing::StripeConfig.payment_method_configuration_id
     end
   end
 

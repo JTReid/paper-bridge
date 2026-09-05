@@ -87,4 +87,26 @@ class BillingPortalSessionsControllerTest < ActionDispatch::IntegrationTest
     assert_redirected_to billing_path
     assert_equal "Billing settings aren’t available right now.", flash[:alert]
   end
+
+  test "Stripe portal failures log their class without exposing the remote message" do
+    account = accounts(:greenfield)
+    account.billing_subscription.update!(stripe_customer_id: "cus_test_123")
+    sign_in users(:family_admin)
+    messages = []
+    remote_message = "Invalid API Key provided: sensitive-credential-placeholder"
+    failure = ->(*) { raise Stripe::AuthenticationError, remote_message }
+
+    with_stubbed_singleton_method(Billing::StripeConfig, :portal_ready?, true) do
+      with_stubbed_singleton_method(Stripe::BillingPortal::Session, :create, failure) do
+        with_stubbed_singleton_method(Rails.logger, :error, ->(message) { messages << message }) do
+          post billing_portal_session_path
+        end
+      end
+    end
+
+    assert_redirected_to billing_path
+    assert_equal "We couldn’t open billing settings. Please try again.", flash[:alert]
+    assert_equal [ "stripe_portal_failed account_id=#{account.id} error_class=Stripe::AuthenticationError" ], messages
+    assert_not_includes response.body, remote_message
+  end
 end

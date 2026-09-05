@@ -2,6 +2,7 @@ module Billing
   class StripeConfig
     INCLUDED_PROFILES = 5
     MAXIMUM_PROFILES = 999_999
+    LAUNCH_TRIAL_DAYS = 90
 
     class << self
       def secret_key
@@ -23,7 +24,17 @@ module Billing
       end
 
       def checkout_ready?
-        secret_key.present? && profile_price_id.present? && profile_portal_configuration_id.present?
+        secret_key.present? && profile_price_id.present? && profile_portal_configuration_id.present? &&
+          (!launch_trial_enabled? || payment_method_configuration_id.present?)
+      end
+
+      def launch_trial_enabled?
+        value = ENV.fetch("STRIPE_LAUNCH_TRIAL_ENABLED") { credentials[:launch_trial_enabled] }
+        value == true || value.to_s.casecmp?("true")
+      end
+
+      def payment_method_configuration_id
+        ENV["STRIPE_PAYMENT_METHOD_CONFIGURATION_ID"].presence || credentials[:payment_method_configuration].presence
       end
 
       def profile_price_id

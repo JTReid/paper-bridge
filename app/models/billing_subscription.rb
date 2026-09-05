@@ -36,6 +36,18 @@ class BillingSubscription < ApplicationRecord
     incomplete? && checkout_attempt.present?
   end
 
+  def launch_trial_eligible?
+    incomplete? && stripe_subscription_id.blank? && stripe_price_id.blank? &&
+      current_period_end.nil? && canceled_at.nil? && launch_trial_used_at.nil? && trial_end.nil?
+  end
+
+  def launch_trial_available?
+    return false if launch_trial_used_at.present? || trial_end.present?
+    return incomplete? && checkout_attempt["trial_period_days"] == Billing::StripeConfig::LAUNCH_TRIAL_DAYS if checkout_attempt
+
+    launch_trial_eligible? && Billing::StripeConfig.launch_trial_enabled?
+  end
+
   def stripe_linked?
     stripe_customer_id.present? || stripe_subscription_id.present?
   end
@@ -56,9 +68,11 @@ class BillingSubscription < ApplicationRecord
     metadata[CHECKOUT_ATTEMPT_KEY]
   end
 
-  def start_checkout_attempt(price_id:, quantity:)
+  def start_checkout_attempt(price_id:, quantity:, trial_period_days: nil, payment_method_configuration_id: nil)
     self.metadata = metadata.merge(CHECKOUT_ATTEMPT_KEY => {
-      "token" => SecureRandom.uuid, "price_id" => price_id, "quantity" => quantity
+      "token" => SecureRandom.uuid, "price_id" => price_id, "quantity" => quantity,
+      "trial_period_days" => trial_period_days,
+      "payment_method_configuration_id" => payment_method_configuration_id
     })
   end
 

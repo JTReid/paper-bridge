@@ -22,7 +22,7 @@ module Billing
 
       redirect_to portal_session.url, allow_other_host: true, status: :see_other
     rescue Stripe::StripeError => e
-      Rails.logger.error("stripe_portal_failed account_id=#{current_account.id} error_class=#{e.class.name} error_message=#{e.message.to_s.squish}")
+      Rails.logger.error("stripe_portal_failed account_id=#{current_account.id} error_class=#{e.class.name}")
       redirect_to billing_path, alert: "We couldn’t open billing settings. Please try again."
     end
 

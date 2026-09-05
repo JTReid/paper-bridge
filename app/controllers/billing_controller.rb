@@ -17,6 +17,7 @@ class BillingController < ApplicationController
     @checkout_ready = Billing::StripeConfig.checkout_ready?
     @portal_ready = Billing::StripeConfig.portal_ready?(current_account)
     @can_manage_billing = current_user.can_manage_account?(current_account) || current_user.super_admin?
+    @launch_trial_available = (@billing_subscription || BillingSubscription.new(account: current_account)).launch_trial_available?
   end
 
   private

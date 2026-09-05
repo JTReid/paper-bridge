@@ -407,7 +407,143 @@ class Billing::StripeWebhookHandlerTest < ActiveSupport::TestCase
     assert_equal 5, subscription.reload.profile_limit
   end
 
+  test "a trusted trial lifecycle records usage and activates the entire profile allowance" do
+    subscription = accounts(:greenfield).billing_subscription
+    subscription.update!(status: :incomplete, stripe_price_id: nil, metadata: { "checkout_pending" => true })
+    event = trial_event
+
+    with_stubbed_singleton_method(Billing::StripeConfig, :profile_price_id, "price_profiles") do
+      broadcasts = capture_turbo_stream_broadcasts([ subscription.account, :billing_checkout ]) do
+        Billing::StripeWebhookHandler.new.call(event)
+      end
+      assert_equal 1, broadcasts.size
+    end
+
+    subscription.reload
+    assert subscription.trialing?
+    assert subscription.active_for_access?
+    assert_equal 8, subscription.profile_limit
+    assert_equal Time.zone.at(event.created), subscription.launch_trial_used_at
+    assert_equal 90.days.to_i, subscription.trial_end.to_i - subscription.launch_trial_used_at.to_i
+    assert_equal subscription.trial_end, subscription.current_period_end
+    assert_not subscription.launch_trial_eligible?
+    assert_not subscription.checkout_pending?
+  end
+
+  test "checkout completion alone does not consume a trial or grant access" do
+    subscription = accounts(:greenfield).billing_subscription
+    subscription.update!(status: :incomplete, stripe_price_id: nil)
+    subscription.start_checkout_attempt(price_id: "price_profiles", quantity: 8, trial_period_days: 90)
+    subscription.save!
+    event = stripe_event("evt_checkout_trial", "checkout.session.completed", {
+      customer: "cus_profiles", subscription: "sub_profiles", metadata: { account_id: subscription.account_id.to_s }
+    })
+
+    Billing::StripeWebhookHandler.new.call(event)
+
+    assert_equal "sub_profiles", subscription.reload.stripe_subscription_id
+    assert_nil subscription.launch_trial_used_at
+    assert_nil subscription.trial_end
+    assert_not subscription.launch_trial_eligible?, "Linked subscription identity prevents buying a second trial"
+    assert_not subscription.active_for_access?
+  end
+
+  test "paid and canceled lifecycle events cannot erase consumed trial history" do
+    handler = Billing::StripeWebhookHandler.new
+    with_stubbed_singleton_method(Billing::StripeConfig, :profile_price_id, "price_profiles") do
+      handler.call(trial_event)
+      paid = profile_event(quantity: 8, created: 1_800_000_001)
+      handler.call(paid)
+      subscription = accounts(:greenfield).reload.billing_subscription
+      assert subscription.active?
+      assert_nil subscription.trial_end
+      assert_equal Time.zone.at(1_800_000_000), subscription.launch_trial_used_at
+
+      canceled = profile_event(quantity: 8, created: 1_800_000_002)
+      canceled.data.object["status"] = "canceled"
+      handler.call(canceled)
+    end
+
+    subscription = accounts(:greenfield).reload.billing_subscription
+    assert subscription.canceled?
+    assert_equal Time.zone.at(1_800_000_000), subscription.launch_trial_used_at
+    assert_not subscription.launch_trial_available?
+    assert_not subscription.launch_trial_eligible?
+  end
+
+  test "legacy trial evidence is remembered before a webhook clears its old trial end" do
+    subscription = accounts(:greenfield).billing_subscription
+    subscription.update!(trial_end: 1.day.ago)
+
+    with_stubbed_singleton_method(Billing::StripeConfig, :profile_price_id, "price_profiles") do
+      Billing::StripeWebhookHandler.new.call(profile_event(quantity: 8))
+    end
+
+    assert_nil subscription.reload.trial_end
+    assert_equal Time.zone.at(1_800_000_000), subscription.launch_trial_used_at
+    assert_not subscription.launch_trial_eligible?
+  end
+
+  test "trial end alone can establish historical trial usage on a nontrialing subscription" do
+    event = profile_event(quantity: 8)
+    event.data.object["trial_end"] = event.created - 30.days.to_i
+
+    with_stubbed_singleton_method(Billing::StripeConfig, :profile_price_id, "price_profiles") do
+      Billing::StripeWebhookHandler.new.call(event)
+    end
+
+    subscription = accounts(:greenfield).reload.billing_subscription
+    assert subscription.active?
+    assert_equal Time.zone.at(event.created), subscription.launch_trial_used_at
+  end
+
+  test "closing the launch offer and replaying stale events do not shorten an existing trial" do
+    handler = Billing::StripeWebhookHandler.new
+    with_stubbed_singleton_method(Billing::StripeConfig, :profile_price_id, "price_profiles") do
+      handler.call(trial_event)
+      with_stubbed_singleton_method(Billing::StripeConfig, :launch_trial_enabled?, false) do
+        handler.call(profile_event(quantity: 5, created: 1_799_999_999))
+        later = trial_event(created: 1_800_000_001)
+        later.data.object["trial_start"] = 1_800_000_000
+        later.data.object["trial_end"] = 1_800_000_000 + 90.days.to_i
+        handler.call(later)
+      end
+    end
+
+    subscription = accounts(:greenfield).reload.billing_subscription
+    assert subscription.trialing?
+    assert_equal 8, subscription.profile_limit
+    assert_equal Time.zone.at(1_800_000_000), subscription.launch_trial_used_at
+    assert_equal Time.zone.at(1_800_000_000 + 90.days.to_i), subscription.trial_end
+  end
+
+  test "a newly purchased subscription preserves the family account's consumed trial" do
+    subscription = accounts(:greenfield).billing_subscription
+    used_at = 100.days.ago.change(usec: 0)
+    subscription.update!(status: :canceled, stripe_subscription_id: "sub_previous", launch_trial_used_at: used_at,
+      metadata: { "checkout_pending" => true })
+
+    with_stubbed_singleton_method(Billing::StripeConfig, :profile_price_id, "price_profiles") do
+      Billing::StripeWebhookHandler.new.call(profile_event(quantity: 8))
+    end
+
+    assert_equal "sub_profiles", subscription.reload.stripe_subscription_id
+    assert_equal used_at, subscription.launch_trial_used_at
+    assert subscription.active?
+    assert_not subscription.launch_trial_eligible?
+  end
+
   private
+
+    def trial_event(created: 1_800_000_000)
+      event = profile_event(quantity: 8, created: created)
+      event.id = "evt_trial_#{created}"
+      event.data.object["status"] = "trialing"
+      event.data.object["trial_start"] = created
+      event.data.object["trial_end"] = created + 90.days.to_i
+      event.data.object["items"]["data"].first["current_period_end"] = created + 90.days.to_i
+      event
+    end
 
     def profile_event(quantity:, created: 1_800_000_000, price: "price_profiles")
       event = stripe_event("evt_profiles_#{created}_#{quantity}", "customer.subscription.updated", {

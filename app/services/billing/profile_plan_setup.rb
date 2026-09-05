@@ -5,6 +5,9 @@ module Billing
     class ConfigurationError < StandardError; end
 
     VERSION = "paperbridge_managed_profiles_monthly_v1"
+    # Portal policy changes must not replace the catalog Price or mutate an
+    # existing configuration that could still serve older subscriptions.
+    PORTAL_VERSION = "paperbridge_managed_profiles_trial_v2"
 
     def initialize(api_key: StripeConfig.secret_key)
       @api_key = api_key
@@ -52,16 +55,37 @@ module Billing
         configurations = Stripe::BillingPortal::Configuration.list({
           limit: 100, expand: [ "data.features.subscription_update.products" ]
         }, request_options)
-        existing = configurations.auto_paging_each.find do |configuration|
-          configuration.metadata["paperbridge_plan"] == VERSION && configuration.metadata["price_id"] == price.id
+        matching = configurations.auto_paging_each.select do |configuration|
+          contains_settings?(configuration.to_hash[:metadata], portal_metadata(price))
         end
+        dedicated = matching.reject(&:is_default)
+        raise ConfigurationError, "More than one profile portal matched; review the test configuration." if dedicated.size > 1
+        return dedicated.first if dedicated.any?
 
-        existing || Stripe::BillingPortal::Configuration.create({
-          name: "PaperBridge managed profiles",
+        # Stripe automatically makes the first configuration in a fresh account
+        # the default. Leave that object untouched and create a separate one for
+        # app sessions. A distinct key also survives a retry after that first
+        # object was created, without replaying its cached default response.
+        return create_portal(price, dedicated: true) if matching.any?(&:is_default)
+
+        portal = create_portal(price)
+        portal.is_default ? create_portal(price, dedicated: true) : portal
+      end
+
+      def create_portal(price, dedicated: false)
+        idempotency_key = "#{PORTAL_VERSION}_portal_#{price.id}"
+        idempotency_key += "_dedicated" if dedicated
+
+        Stripe::BillingPortal::Configuration.create({
+          name: "PaperBridge managed profiles — trial preserved",
           features: portal_features(price),
-          metadata: { paperbridge_plan: VERSION, price_id: price.id },
+          metadata: portal_metadata(price),
           expand: [ "features.subscription_update.products" ]
-        }, request_options(idempotency_key: "#{VERSION}_portal_#{price.id}"))
+        }, request_options(idempotency_key: idempotency_key))
+      end
+
+      def portal_metadata(price)
+        { paperbridge_plan: VERSION, paperbridge_portal: PORTAL_VERSION, price_id: price.id }
       end
 
       def portal_features(price)
@@ -81,6 +105,7 @@ module Billing
               }
             } ],
             proration_behavior: "always_invoice",
+            trial_update_behavior: "continue_trial",
             schedule_at_period_end: { conditions: [ { type: "decreasing_item_amount" } ] }
           }
         }
@@ -98,6 +123,7 @@ module Billing
 
       def validate_portal!(portal, price)
         valid = portal.livemode == false && portal.active && !portal.is_default &&
+          contains_settings?(portal.to_hash[:metadata], portal_metadata(price)) &&
           contains_settings?(portal.to_hash[:features], portal_features(price))
         raise ConfigurationError, "Profile portal differs from the approved test configuration; nothing existing was changed." unless valid
       end

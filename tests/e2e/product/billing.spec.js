@@ -12,6 +12,10 @@ const ACTIVE_SUBSCRIPTION = {
   stripe_subscription_id: 'sub_qa_browser',
   stripe_price_id: 'price_qa_browser',
   profile_limit: null,
+  trial_end: null,
+  launch_trial_used_at: null,
+  current_period_end: null,
+  cancel_at_period_end: false,
   stripe_subscription_event_created_at: null,
   metadata: {},
 };
@@ -73,6 +77,40 @@ test('active account can use product and billing portal form uses full-page navi
   await expectAccessible(page);
 });
 
+test('trial billing shows the future allowance price and removes the payment promise after cancellation', async ({ page }) => {
+  const trialEnd = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+  const trialSubscription = {
+    ...ACTIVE_SUBSCRIPTION,
+    status: 'trialing',
+    profile_limit: 6,
+    trial_end: trialEnd,
+    current_period_end: trialEnd,
+    launch_trial_used_at: new Date().toISOString(),
+  };
+  setAccountSubscription(ACCOUNT_NAME, trialSubscription);
+
+  await signIn(page);
+  await page.goto('/billing');
+
+  const trialDetails = page.getByTestId('billing-trial-details');
+  await expect(trialDetails).toContainText('$0 during your free trial.');
+  await expect(trialDetails).toContainText('After the trial: $30 USD/month for your current allowance of 6 managed profiles.');
+  await expect(trialDetails).toContainText('First payment is scheduled for');
+  await expect(page.getByTestId('manage-subscription-button')).toBeVisible();
+  await expect(page.getByTestId('subscribe-button')).toHaveCount(0);
+  await expect(page.getByTestId('launch-trial-offer')).toHaveCount(0);
+  await expectAccessible(page);
+
+  // Synthetic post-webhook state, not a request to Stripe's live portal.
+  setAccountSubscription(ACCOUNT_NAME, { ...trialSubscription, cancel_at_period_end: true });
+  await page.reload();
+
+  await expect(trialDetails).toContainText('Your subscription is set to cancel at the end of the trial and will not renew.');
+  await expect(trialDetails).not.toContainText('First payment is scheduled for');
+  await expect(trialDetails).not.toContainText('After the trial:');
+  await expect(page.getByText('Will not renew', { exact: true })).toBeVisible();
+});
+
 test('profile allowance blocks additions, permits purchased extras, and preserves profiles after a reduction', async ({ page }) => {
   test.setTimeout(60_000);
   const lastName = `Billing Allowance ${randomUUID()}`;
@@ -92,7 +130,7 @@ test('profile allowance blocks additions, permits purchased extras, and preserve
     await page.getByTestId('profile-create-submit').click();
     await expect(page.getByRole('heading', { name: `Allowance Fifth ${lastName}`, exact: true })).toBeVisible();
 
-    await page.goto('/dependents/new');
+    await page.goto('/profiles/new');
     await expect(page.getByTestId('profile-allowance')).toContainText('5 of 5 managed profiles in use.');
     await expect(page.getByTestId('profile-limit-reached')).toContainText('Your profile allowance is full.');
     await expect(page.getByTestId('profile-create-submit')).toBeDisabled();
@@ -105,7 +143,7 @@ test('profile allowance blocks additions, permits purchased extras, and preserve
     // Synthetic webhook state: Stripe has approved a sixth profile. This test
     // deliberately does not open hosted Checkout or perform a Stripe charge.
     setAccountSubscription(ACCOUNT_NAME, { ...ACTIVE_SUBSCRIPTION, profile_limit: 6 });
-    await page.goto('/dependents/new');
+    await page.goto('/profiles/new');
     await expect(page.getByTestId('profile-allowance')).toContainText('5 of 6 managed profiles in use.');
     await expect(page.getByTestId('profile-create-submit')).toBeEnabled();
     await page.locator('#dependent_first_name').fill('Allowance Sixth');
@@ -133,7 +171,7 @@ test('profile allowance blocks additions, permits purchased extras, and preserve
     await page.goto('/dashboard');
     await page.getByRole('link', { name: /Emma Greenfield/ }).first().click();
     await page.getByTestId('dependent-documents-link').click();
-    await expect(page).toHaveURL(/\/dependents\/\d+\/documents$/);
+    await expect(page).toHaveURL(/\/profiles\/\d+\/documents$/);
     await expect(page.getByRole('heading', { name: "Emma Greenfield's Documents" })).toBeVisible();
     await page.getByRole('link', { name: /Advance Directive/ }).click();
     await expect(page).toHaveURL(/\/documents\/\d+$/);
@@ -143,7 +181,7 @@ test('profile allowance blocks additions, permits purchased extras, and preserve
     expect(original.ok()).toBe(true);
     expect((await original.body()).length).toBeGreaterThan(0);
 
-    await page.goto('/dependents/new');
+    await page.goto('/profiles/new');
     await expect(page.getByTestId('profile-create-submit')).toBeDisabled();
     await expect(page.getByTestId('profile-allowance-billing-link')).toBeVisible();
   } finally {

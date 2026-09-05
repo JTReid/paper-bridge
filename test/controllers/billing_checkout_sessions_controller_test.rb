@@ -342,7 +342,216 @@ class BillingCheckoutSessionsControllerTest < ActionDispatch::IntegrationTest
     assert_equal "cs_new", subscription.checkout_attempt.fetch("session_id")
   end
 
+  test "eligible launch checkout requires payment details and applies ninety free days to every selected profile" do
+    subscription = accounts(:greenfield).billing_subscription
+    subscription.update!(stripe_customer_id: "cus_test_123", stripe_price_id: nil)
+    sign_in users(:family_admin)
+    creator = lambda do |params, _options|
+      assert_equal "always", params[:payment_method_collection]
+      assert_equal "pmc_cards", params[:payment_method_configuration]
+      assert_not_includes params, :payment_method_types
+      assert_equal 90, params[:subscription_data][:trial_period_days]
+      assert_not_includes params[:subscription_data], :trial_end
+      assert_equal({ end_behavior: { missing_payment_method: "cancel" } }, params[:subscription_data][:trial_settings])
+      assert_equal({ account_id: subscription.account_id.to_s }, params[:subscription_data][:metadata])
+      assert_equal 1, params[:line_items].size
+      assert_equal "price_profile_123", params[:line_items].first[:price]
+      assert params[:line_items].first[:adjustable_quantity][:enabled]
+      stripe_checkout_session
+    end
+
+    with_launch_checkout do
+      with_stubbed_singleton_method(Stripe::Checkout::Session, :create, creator) do
+        post billing_checkout_session_path
+      end
+    end
+
+    assert_redirected_to "https://checkout.stripe.test/session"
+    assert_equal 90, subscription.reload.checkout_attempt.fetch("trial_period_days")
+    assert_nil subscription.launch_trial_used_at
+    assert_not subscription.active_for_access?, "Only a signed lifecycle webhook activates trial access"
+  end
+
+  test "the launch switch disables the offer and ignores client supplied trial settings" do
+    subscription = accounts(:greenfield).billing_subscription
+    subscription.update!(stripe_customer_id: "cus_test_123", stripe_price_id: nil)
+    sign_in users(:family_admin)
+    creator = lambda do |params, _options|
+      assert_not_includes params[:subscription_data], :trial_period_days
+      assert_not_includes params[:subscription_data], :trial_settings
+      stripe_checkout_session
+    end
+
+    with_launch_checkout(enabled: false) do
+      with_stubbed_singleton_method(Stripe::Checkout::Session, :create, creator) do
+        post billing_checkout_session_path, params: { trial_period_days: 90, launch_trial_enabled: true }
+      end
+    end
+
+    assert_redirected_to "https://checkout.stripe.test/session"
+    assert_nil subscription.reload.checkout_attempt["trial_period_days"]
+  end
+
+  test "returning subscribers and previously used trials are not offered another launch trial" do
+    subscription = accounts(:greenfield).billing_subscription
+    sign_in users(:family_admin)
+    creator = lambda do |params, _options|
+      assert_not_includes params[:subscription_data], :trial_period_days
+      stripe_checkout_session
+    end
+
+    with_launch_checkout do
+      with_stubbed_singleton_method(Stripe::Checkout::Session, :create, creator) do
+        [
+          { status: :canceled, stripe_subscription_id: "sub_paid_before" },
+          { status: :incomplete_expired, stripe_subscription_id: "sub_expired_before" },
+          { status: :incomplete, stripe_subscription_id: nil, launch_trial_used_at: 90.days.ago },
+          { status: :incomplete, stripe_subscription_id: nil, trial_end: 1.day.ago },
+          { status: :incomplete, stripe_subscription_id: nil, stripe_price_id: "price_legacy" }
+        ].each do |history|
+          subscription.update!({
+            stripe_customer_id: "cus_test_123", stripe_price_id: nil,
+            launch_trial_used_at: nil, trial_end: nil, metadata: {}
+          }.merge(history))
+          post billing_checkout_session_path
+          assert_redirected_to "https://checkout.stripe.test/session"
+          assert_nil subscription.reload.checkout_attempt["trial_period_days"]
+        end
+      end
+    end
+  end
+
+  test "uncertain trial checkout retries preserve the full request after the offer closes" do
+    assert_trial_retry_preserves_request(initially_enabled: true)
+  end
+
+  test "uncertain paid checkout retries preserve the full request after the offer opens" do
+    assert_trial_retry_preserves_request(initially_enabled: false)
+  end
+
+  test "an expired uncompleted trial checkout does not consume the offer and a replacement follows the current switch" do
+    sign_in users(:family_admin)
+    subscription = accounts(:greenfield).billing_subscription
+    subscription.start_checkout_attempt(price_id: "price_profile_123", quantity: 5, trial_period_days: 90)
+    subscription.record_checkout_session("cs_test_123")
+    subscription.update!(stripe_customer_id: "cus_test_123", stripe_price_id: nil)
+    old_token = subscription.checkout_attempt.fetch("token")
+    creator = lambda do |params, _options|
+      assert_not_includes params[:subscription_data], :trial_period_days
+      stripe_checkout_session(id: "cs_replacement")
+    end
+
+    with_launch_checkout(enabled: false) do
+      with_stubbed_singleton_method(Stripe::Checkout::Session, :retrieve, stripe_checkout_session(status: "expired")) do
+        with_stubbed_singleton_method(Stripe::Checkout::Session, :create, creator) do
+          post billing_checkout_session_path
+        end
+      end
+    end
+
+    assert_redirected_to "https://checkout.stripe.test/session"
+    assert_nil subscription.reload.launch_trial_used_at
+    assert subscription.launch_trial_eligible?
+    assert_not_equal old_token, subscription.checkout_attempt.fetch("token")
+    assert_nil subscription.checkout_attempt["trial_period_days"]
+  end
+
+  test "preexisting paid attempts without a trial field keep their original Stripe parameters" do
+    sign_in users(:family_admin)
+    subscription = accounts(:greenfield).billing_subscription
+    subscription.update!(stripe_customer_id: "cus_test_123", stripe_price_id: nil, metadata: {
+      "checkout_attempt" => { "token" => "before-trials", "price_id" => "price_profile_123", "quantity" => 5 }
+    })
+    creator = lambda do |params, options|
+      assert_equal({ metadata: { account_id: subscription.account_id.to_s } }, params[:subscription_data])
+      assert_not_includes params, :payment_method_collection
+      assert_not_includes params, :payment_method_configuration
+      assert_equal "paperbridge_checkout_before-trials", options[:idempotency_key]
+      stripe_checkout_session
+    end
+
+    with_launch_checkout do
+      with_stubbed_singleton_method(Stripe::Checkout::Session, :create, creator) do
+        post billing_checkout_session_path
+      end
+    end
+
+    assert_redirected_to "https://checkout.stripe.test/session"
+  end
+
+  test "a consumed trial with a lost checkout response cannot be replayed when resubscribing" do
+    sign_in users(:family_admin)
+    subscription = accounts(:greenfield).billing_subscription
+
+    [ { launch_trial_used_at: 100.days.ago }, { trial_end: 10.days.ago } ].each do |trial_history|
+      subscription.update!({
+        status: :canceled, stripe_subscription_id: "sub_previous_trial", stripe_customer_id: "cus_test_123",
+        launch_trial_used_at: nil, trial_end: nil,
+        metadata: { checkout_attempt: {
+          token: "old_trial_response_lost", price_id: "price_profile_123", quantity: 5, trial_period_days: 90
+        } }
+      }.merge(trial_history))
+      creator = lambda do |params, options|
+        assert_not_includes params[:subscription_data], :trial_period_days
+        assert_not_includes params[:subscription_data], :trial_settings
+        assert_not_equal "paperbridge_checkout_old_trial_response_lost", options[:idempotency_key]
+        stripe_checkout_session
+      end
+
+      with_launch_checkout do
+        with_stubbed_singleton_method(Stripe::Checkout::Session, :create, creator) do
+          post billing_checkout_session_path
+        end
+      end
+
+      assert_redirected_to "https://checkout.stripe.test/session"
+      assert_not_equal "old_trial_response_lost", subscription.reload.checkout_attempt.fetch("token")
+      assert_nil subscription.checkout_attempt["trial_period_days"]
+      assert_not subscription.launch_trial_available?
+    end
+  end
+
   private
+
+    def with_launch_checkout(enabled: true, payment_method_configuration_id: "pmc_cards", &block)
+      with_checkout_config do
+        with_stubbed_singleton_method(Billing::StripeConfig, :launch_trial_enabled?, enabled) do
+          with_stubbed_singleton_method(Billing::StripeConfig, :payment_method_configuration_id, payment_method_configuration_id, &block)
+        end
+      end
+    end
+
+    def assert_trial_retry_preserves_request(initially_enabled:)
+      sign_in users(:family_admin)
+      subscription = accounts(:greenfield).billing_subscription
+      subscription.update!(stripe_customer_id: "cus_test_123", stripe_price_id: nil)
+      requests = []
+      creator = lambda do |params, options|
+        requests << [ params, options ]
+        raise Stripe::APIConnectionError, "Response lost" if requests.one?
+
+        stripe_checkout_session
+      end
+
+      with_stubbed_singleton_method(Stripe::Checkout::Session, :create, creator) do
+        with_launch_checkout(enabled: initially_enabled) { post billing_checkout_session_path }
+        assert_redirected_to billing_path
+        with_launch_checkout(enabled: !initially_enabled, payment_method_configuration_id: "pmc_changed") do
+          post billing_checkout_session_path
+        end
+      end
+
+      assert_redirected_to "https://checkout.stripe.test/session"
+      assert_equal 2, requests.size
+      assert_equal requests.first, requests.last
+      assert_equal "pmc_cards", requests.first.first[:payment_method_configuration]
+      if initially_enabled
+        assert_equal 90, requests.first.first[:subscription_data][:trial_period_days]
+      else
+        assert_nil requests.first.first[:subscription_data][:trial_period_days]
+      end
+      assert_nil subscription.reload.launch_trial_used_at
+    end
 
     def with_checkout_config(&block)
       with_stubbed_singleton_method(Billing::StripeConfig, :checkout_ready?, true) do

@@ -142,6 +142,54 @@ class StripeWebhooksControllerTest < ActionDispatch::IntegrationTest
     assert_equal "incomplete", account.reload.billing_subscription.status
   end
 
+  test "a signed trial lifecycle activates access and records the trial once" do
+    account = accounts(:greenfield)
+    account.billing_subscription.update!(status: :incomplete, stripe_price_id: nil)
+    start_at = Time.current.to_i
+    end_at = start_at + 90.days.to_i
+    object = real_shape_subscription_object(account, period_end: end_at)
+    object.merge!(status: "trialing", trial_start: start_at, trial_end: end_at)
+    object[:items][:data].first[:quantity] = 8
+    object[:items][:data].first[:price][:id] = "price_profiles"
+    payload = stripe_event_payload(id: "evt_signed_trial", type: "customer.subscription.created", object: object)
+
+    with_stubbed_singleton_method(Billing::StripeConfig, :profile_price_id, "price_profiles") do
+      with_stripe_webhook_secret(WEBHOOK_SECRET) do
+        post "/stripe/webhooks", params: payload, headers: stripe_headers(payload, WEBHOOK_SECRET)
+        assert_response :success
+        post "/stripe/webhooks", params: payload, headers: stripe_headers(payload, WEBHOOK_SECRET)
+      end
+    end
+
+    assert_response :success
+    subscription = account.reload.billing_subscription
+    assert subscription.trialing?
+    assert subscription.active_for_access?
+    assert_equal 8, subscription.profile_limit
+    assert_equal Time.zone.at(start_at), subscription.launch_trial_used_at
+    assert_equal Time.zone.at(end_at), subscription.trial_end
+    assert_not subscription.launch_trial_eligible?
+  end
+
+  test "an invalid signature cannot consume the trial or grant free access" do
+    account = accounts(:greenfield)
+    account.billing_subscription.update!(status: :incomplete, stripe_price_id: nil)
+    object = subscription_object(account, status: "trialing")
+    object.merge!(trial_start: Time.current.to_i, trial_end: 90.days.from_now.to_i)
+    payload = stripe_event_payload(id: "evt_unsigned_trial", type: "customer.subscription.created", object: object)
+
+    with_stripe_webhook_secret(WEBHOOK_SECRET) do
+      post "/stripe/webhooks", params: payload, headers: stripe_headers(payload, "whsec_invalid")
+    end
+
+    assert_response :bad_request
+    subscription = account.reload.billing_subscription
+    assert_nil subscription.launch_trial_used_at
+    assert_nil subscription.trial_end
+    assert subscription.launch_trial_eligible?
+    assert_not subscription.active_for_access?
+  end
+
   private
 
     def with_stripe_webhook_secret(secret)

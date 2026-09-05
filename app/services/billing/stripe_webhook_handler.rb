@@ -61,6 +61,7 @@ module Billing
           item = first_subscription_item(stripe_subscription)
           price_id = stripe_id(stripe_value(item, "price"))
           profile_limit = profile_limit_from_item(subscription, item, price_id)
+          record_trial_usage(subscription, stripe_subscription, event)
           subscription.assign_attributes(
             stripe_customer_id: stripe_id(stripe_value(stripe_subscription, "customer")),
             stripe_subscription_id: stripe_subscription_id,
@@ -113,6 +114,19 @@ module Billing
         subscription.stripe_subscription_id.blank? ||
           subscription.stripe_subscription_id == incoming_id ||
           (subscription.checkout_pending? && (subscription.canceled? || subscription.incomplete_expired?))
+      end
+
+      def record_trial_usage(subscription, stripe_subscription, event)
+        return if subscription.launch_trial_used_at.present?
+
+        # Remember any historical trial before a later lifecycle event replaces
+        # trial_end. An abandoned hosted Checkout does not consume the offer.
+        trial_start = stripe_time(stripe_value(stripe_subscription, "trial_start"))
+        trial_end = stripe_time(stripe_value(stripe_subscription, "trial_end"))
+        return unless trial_start || trial_end || subscription.trial_end ||
+          stripe_value(stripe_subscription, "status") == "trialing"
+
+        subscription.launch_trial_used_at = trial_start || stripe_time(stripe_value(event, "created")) || Time.current
       end
 
       def stale_subscription_event?(subscription, event, incoming_id)
