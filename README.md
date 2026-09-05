@@ -23,6 +23,14 @@ Things you may want to cover:
 
 * ...
 
+## Encrypted Credentials
+
+Use `CREDENTIALS_ENV` to select development, staging, or production credentials
+independently of `RAILS_ENV`. Heroku staging and production apps can both run
+in production mode while loading separate encrypted files and decryption keys.
+See [Encrypted Credentials](docs/runbooks/credentials.md) for creation commands,
+Heroku settings, and migration from the existing shared credentials file.
+
 ## Production Email
 
 Document sharing and password resets use ActionMailer with the same configured

@@ -11,6 +11,12 @@ module PaperBridge
     # Initialize configuration defaults for originally generated Rails version.
     config.load_defaults 8.1
 
+    # Heroku staging also runs in production mode, but can use its own credentials.
+    if (credentials_env = ENV["CREDENTIALS_ENV"].presence)
+      config.credentials.content_path = root.join("config/credentials/#{credentials_env}.yml.enc")
+      config.credentials.key_path = root.join("config/credentials/#{credentials_env}.key")
+    end
+
     # Please, add to the `ignore` list any other `lib` subdirectories that do
     # not contain `.rb` files, or that should not be reloaded or eager loaded.
     # Common ones are `templates`, `generators`, or `middleware`, for example.

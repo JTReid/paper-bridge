@@ -20,6 +20,7 @@ check enforces that every tracked, non-ignored Markdown file is linked here.
 
 | Doc | Purpose |
 | --- | --- |
+| [Encrypted Credentials](runbooks/credentials.md) | Separate development, staging, and production credentials, independent keys, and Heroku configuration. |
 | [Current Product Shape](runbooks/current-product-shape.md) | Implemented first-run guidance, profile, interruption-free family calendar, document, access, sharing, and billing behavior plus focused harness commands. |
 | [Profile Management](runbooks/profile-management.md) | Split names, creation/edit fields, profile deletion, and the separate existing-name backfill script. |
 | [Agentic Pipeline Framework](runbooks/agentic-pipeline.md) | Generic `Agentic::Pipeline` framework contract. |
