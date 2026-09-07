@@ -78,7 +78,7 @@ class DocumentsControllerTest < ActionDispatch::IntegrationTest
     assert_includes response.body, "Care Records"
     assert_includes response.body, dependent_ai_assistant_path(dependent)
     assert_includes response.body, documents(:advance_directive).title
-    assert_includes response.body, "data-controller=\"document-share\""
+    assert_includes response.body, "data-controller=\"document-share document-selection\""
     assert_includes response.body, "Share Documents"
     assert_includes response.body, "Share Selected"
     assert_includes response.body, "Choose care team email"
@@ -770,6 +770,70 @@ class DocumentsControllerTest < ActionDispatch::IntegrationTest
     get document_path(documents(:outside_account))
 
     assert_response :not_found
+  end
+
+  test "bulk delete requires authentication" do
+    delete dependent_documents_path(dependents(:emma)), params: { document_selection: [ documents(:advance_directive).id ] }
+
+    assert_redirected_to new_user_session_path
+  end
+
+  test "bulk deletes selected documents for the profile and keeps the active filters" do
+    dependent = dependents(:emma)
+    first = create_attached_document(dependent: dependent, title: "Insurance Card", category: :insurance)
+    second = create_attached_document(dependent: dependent, title: "Insurance Letter", category: :insurance)
+    kept = documents(:advance_directive)
+    sign_in users(:family_admin)
+
+    assert_difference -> { Document.count }, -2 do
+      delete dependent_documents_path(dependent), params: { document_selection: [ first.id, second.id ], category: "insurance", q: "insurance" }
+    end
+
+    assert_redirected_to dependent_documents_path(dependent, category: "insurance", q: "insurance")
+    assert_equal "2 documents deleted.", flash[:notice]
+    assert Document.exists?(kept.id)
+  end
+
+  test "bulk delete ignores documents outside the profile or account" do
+    dependent = dependents(:emma)
+    other_profile_document = create_attached_document(dependent: dependents(:noah), title: "Noah Report", category: :general)
+    outside = documents(:outside_account)
+    mine = create_attached_document(dependent: dependent, title: "Emma Report", category: :general)
+    sign_in users(:family_admin)
+
+    assert_difference -> { Document.count }, -1 do
+      delete dependent_documents_path(dependent), params: { document_selection: [ mine.id, other_profile_document.id, outside.id ] }
+    end
+
+    assert_redirected_to dependent_documents_path(dependent)
+    assert_equal "1 document deleted.", flash[:notice]
+    assert Document.exists?(other_profile_document.id)
+    assert Document.exists?(outside.id)
+  end
+
+  test "bulk delete with nothing selected explains what to do" do
+    dependent = dependents(:emma)
+    sign_in users(:family_admin)
+
+    assert_no_difference -> { Document.count } do
+      delete dependent_documents_path(dependent), params: { document_selection: [ "" ] }
+    end
+
+    assert_redirected_to dependent_documents_path(dependent)
+    assert_equal "Select at least one document to delete.", flash[:alert]
+  end
+
+  test "documents list renders the selection bar and delete dialog" do
+    sign_in users(:family_admin)
+
+    get dependent_documents_path(dependents(:emma))
+
+    assert_response :success
+    assert_select "[data-testid='documents-selection-bar']"
+    assert_select "input[data-testid='documents-select-all']"
+    assert_select "[data-testid='documents-selection-delete']", text: /Delete selected/
+    assert_select "[data-testid='documents-delete-dialog'][aria-hidden='true']"
+    assert_select "form[data-testid='documents-delete-form'][action='#{dependent_documents_path(dependents(:emma))}'] input[name='_method'][value='delete']"
   end
 
   private

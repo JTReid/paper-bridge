@@ -1,7 +1,7 @@
 <% content_for :title, "Documents | PaperBridge" %>
 
 <%= app_shell(active: :documents, dependent: @dependent) do %>
-  <div class="space-y-8" data-controller="document-share">
+  <div class="space-y-8" data-controller="document-share document-selection" data-action="turbo:before-cache@document->document-selection#closeDelete">
     <header class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
       <div>
         <p class="mb-1 text-xs font-medium uppercase tracking-widest text-accent">Care Records</p>
@@ -67,11 +67,29 @@
     </section>
 
     <% if @documents.any? %>
+      <div class="flex flex-col gap-3 rounded-2xl border border-border/60 bg-white px-5 py-3 shadow-sm sm:flex-row sm:items-center sm:justify-between" data-testid="documents-selection-bar">
+        <label class="flex items-center gap-3 text-sm text-muted-foreground">
+          <input type="checkbox" class="h-4 w-4 rounded border-border text-primary focus:ring-primary" aria-label="Select all documents shown" data-document-selection-target="selectAll" data-action="change->document-selection#toggleAll" data-testid="documents-select-all">
+          <span data-document-selection-target="count" data-testid="documents-selection-count"></span>
+        </label>
+        <div class="hidden flex-wrap gap-2" data-document-selection-target="actions" data-testid="documents-selection-actions">
+          <%= button_tag type: "button", class: "inline-flex h-9 items-center rounded-full border border-primary/20 bg-white px-4 text-xs font-medium text-primary transition-colors hover:bg-primary/5", data: { action: "document-share#open", testid: "documents-selection-share" } do %>
+            <%= pb_icon("share-2", class_name: "mr-1.5 h-3.5 w-3.5") %>
+            Share selected
+          <% end %>
+          <%= button_tag type: "button", class: "inline-flex h-9 items-center rounded-full border border-red-200 bg-white px-4 text-xs font-medium text-red-700 transition-colors hover:bg-red-50", data: { action: "document-selection#openDelete", testid: "documents-selection-delete" } do %>
+            <%= pb_icon("trash-2", class_name: "mr-1.5 h-3.5 w-3.5") %>
+            Delete selected
+          <% end %>
+          <%= button_tag "Clear", type: "button", class: "inline-flex h-9 items-center rounded-full px-3 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground", data: { action: "document-selection#clear", testid: "documents-selection-clear" } %>
+        </div>
+      </div>
+
       <section class="overflow-hidden rounded-2xl border border-border/60 bg-white shadow-sm">
         <div class="divide-y divide-border/40">
           <% @documents.each do |document| %>
             <div class="group flex items-center gap-3 px-5 py-4 transition-colors hover:bg-muted/20" data-testid="document-row-<%= document.id %>">
-              <%= check_box_tag "document_selection[]", document.id, false, id: dom_id(document, :share_checkbox), class: "h-4 w-4 rounded border-border text-primary focus:ring-primary", aria: { label: "Select #{document.title} to share" }, data: { document_share_target: "checkbox", document_title: document.title, testid: "document-share-checkbox-#{document.id}" } %>
+              <%= check_box_tag "document_selection[]", document.id, false, id: dom_id(document, :share_checkbox), class: "h-4 w-4 rounded border-border text-primary focus:ring-primary", aria: { label: "Select #{document.title}" }, data: { document_share_target: "checkbox", document_selection_target: "checkbox", action: "change->document-selection#update", document_title: document.title, document_filename: document.original_filename, testid: "document-share-checkbox-#{document.id}" } %>
               <%= link_to document_path(document), class: "flex min-w-0 flex-1 items-center gap-4" do %>
                 <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-muted transition-colors group-hover:bg-primary/5">
                   <%= pb_icon("file-text", class_name: "h-4 w-4 text-muted-foreground") %>
@@ -127,6 +145,23 @@
           <% end %>
         </div>
       </div>
+
+      <dialog class="fixed inset-0 m-0 h-dvh max-h-none w-screen max-w-none overflow-y-auto border-0 bg-transparent px-4 py-6 backdrop:bg-slate-950/35 backdrop:backdrop-blur-sm sm:px-6" data-document-selection-target="deleteModal" data-action="click->document-selection#closeOnBackdrop cancel->document-selection#closeDelete" data-testid="documents-delete-dialog" aria-hidden="true" aria-labelledby="delete-documents-title">
+        <div class="mx-auto flex min-h-full w-full max-w-lg items-center" data-document-selection-backdrop="true">
+          <%= form_with url: dependent_documents_path(@dependent), method: :delete, class: "w-full rounded-2xl border border-border/60 bg-white p-6 shadow-2xl shadow-slate-950/20 sm:p-7", data: { action: "click->document-selection#keepOpen", testid: "documents-delete-form" } do |form| %>
+            <div data-document-selection-target="deleteFields"></div>
+            <%= form.hidden_field :category, value: @category if @category %>
+            <%= form.hidden_field :q, value: @query if @query %>
+            <h2 id="delete-documents-title" class="text-base font-semibold text-foreground" data-document-selection-target="deleteSummary"></h2>
+            <p class="mt-1 text-sm text-muted-foreground">These records and their original files will be permanently removed from <%= @dependent.name %>'s documents. This cannot be undone.</p>
+            <ul class="mt-4 max-h-56 space-y-1 overflow-y-auto rounded-xl border border-border/60 bg-muted/30 px-4 py-3 text-sm text-foreground" data-document-selection-target="deleteList" data-testid="documents-delete-list"></ul>
+            <div class="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+              <%= button_tag "Cancel", type: "button", autofocus: true, class: "inline-flex h-11 items-center justify-center rounded-full border border-border bg-white px-5 text-sm font-medium text-foreground transition-colors hover:bg-muted", data: { action: "document-selection#closeDelete", testid: "documents-delete-cancel" } %>
+              <%= form.submit "Delete", class: "inline-flex h-11 items-center justify-center rounded-full bg-red-600 px-5 text-sm font-medium text-white shadow-sm transition-colors hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-300", data: { document_selection_target: "deleteSubmit", testid: "documents-delete-submit" } %>
+            </div>
+          <% end %>
+        </div>
+      </dialog>
     <% else %>
       <section class="rounded-2xl border border-border/60 bg-white p-8 shadow-sm">
         <div class="mx-auto max-w-xl text-center">

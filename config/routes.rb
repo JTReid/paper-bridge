@@ -13,6 +13,7 @@ Rails.application.routes.draw do
   get "profiles/:dependent_id/documents" => "documents#index", as: :dependent_documents
   get "profiles/:dependent_id/documents/new" => "documents#new", as: :new_dependent_document
   post "profiles/:dependent_id/documents" => "documents#create"
+  delete "profiles/:dependent_id/documents" => "documents#destroy_selected"
   get "profiles/:dependent_id/ai-assistant" => "ai_assistant#index", as: :dependent_ai_assistant
   post "profiles/:dependent_id/ai-assistant" => "ai_assistant#create"
   post "profiles/:dependent_id/ai-assistant/:id/start" => "ai_assistant#start", as: :start_dependent_ai_assistant_query

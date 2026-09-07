@@ -14,6 +14,10 @@ module Agentic
       pipeline_run = GlobalID::Locator.locate(gid)
 
       pipeline_run&.append_activity(action: action, message: message, metadata: metadata)
+    rescue ActiveRecord::RecordNotFound
+      # The pipeline run was destroyed mid-run (for example, its document was
+      # deleted). There is nothing left to record the activity against.
+      nil
     end
 
     private

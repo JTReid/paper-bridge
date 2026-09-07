@@ -46,6 +46,11 @@ operational harness checks until matching implementation exists.
   afterward; retries preserve them. Other file types, including Word, are saved
   as Stored—not processed, downloadable with immediately editable metadata,
   without entering the AI pipeline. See [Document Uploads](document-uploads.md).
+- Saved document selection supports selecting all currently shown rows, clearing
+  the selection, sharing, and bulk deletion. Deletion confirms the original
+  filenames in a native modal dialog, keeps keyboard focus off the background,
+  and returns to the active filename/category filters. Only documents in the
+  current account and profile can be deleted.
 - Document processing status, summary, readiness, file-detail rendering, and a
   prominent original-file action that opens PDFs in a new tab and downloads
   other formats.

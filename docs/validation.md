@@ -33,7 +33,8 @@ dependent workspace navigation, dependent profile access, appointment creation,
 read-only calendar details, appointment-detail email delivery, account-scoped
 full-page and in-profile calendar rendering, upcoming-appointment display,
 document listing,
-filename-search/category-filter/file-only-upload behavior, family-facing document
+filename-search/category-filter/file-only-upload behavior, selected-document bulk
+delete with a named confirmation dialog, family-facing document
 status and AI language, care team invitations, category permissions,
 search-access mapping, email-attachment document sharing, and the Stripe billing
 foundation.

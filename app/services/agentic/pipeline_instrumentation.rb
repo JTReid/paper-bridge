@@ -74,11 +74,27 @@ module Agentic
     private
 
     def append_log(agent:, message:, payload:, event_type: nil)
-      @pipeline_run.append_log(agent: agent, message: message, payload: payload, event_type: event_type)
+      tolerate_destroyed_run do
+        @pipeline_run.append_log(agent: agent, message: message, payload: payload, event_type: event_type)
+      end
     end
 
     def append_activity(action:, message:, metadata: {})
-      @pipeline_run.append_activity(action: action, message: message, metadata: metadata)
+      tolerate_destroyed_run do
+        @pipeline_run.append_activity(action: action, message: message, metadata: metadata)
+      end
+    end
+
+    # A pipeline run can be destroyed while its pipeline is still executing, for
+    # example when the document it belongs to is deleted. Writes against the
+    # missing run fail with a not-found or foreign-key error; those are skipped.
+    # Any other error is re-raised.
+    def tolerate_destroyed_run
+      yield
+    rescue ActiveRecord::RecordNotFound, ActiveRecord::InvalidForeignKey
+      raise if PipelineRun.exists?(@pipeline_run.id)
+
+      nil
     end
 
     def step_payload(tag:)

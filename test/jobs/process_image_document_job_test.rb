@@ -8,12 +8,13 @@ class ProcessImageDocumentJobTest < ActiveJob::TestCase
 
   class FakeConnection
     class << self
-      attr_accessor :requests, :embedding_failure, :metadata_response
+      attr_accessor :requests, :embedding_failure, :metadata_response, :before_request
     end
 
     class Request
       def self.execute(**kwargs)
         FakeConnection.requests << kwargs
+        FakeConnection.before_request&.call
         payload = JSON.parse(kwargs.fetch(:payload))
 
         if kwargs.fetch(:url).include?("/embeddings")
@@ -101,6 +102,7 @@ class ProcessImageDocumentJobTest < ActiveJob::TestCase
     @original_connection = ProcessImageDocumentJob.llm_connection
     FakeConnection.requests = []
     FakeConnection.embedding_failure = false
+    FakeConnection.before_request = nil
     FakeConnection.metadata_response = { category: "prescriptions", description: "An amoxicillin prescription with dosage instructions." }
     ProcessImageDocumentJob.llm_connection = FakeConnection
   end
@@ -365,6 +367,18 @@ class ProcessImageDocumentJobTest < ActiveJob::TestCase
       assert_empty document.document_embeddings
       assert FakeConnection.requests.none? { |request| request.fetch(:url).include?("/embeddings") }
     end
+  end
+
+  test "discards the job quietly when the image document is deleted while processing" do
+    document = create_image_document
+    clear_enqueued_jobs
+    FakeConnection.before_request = -> { Document.find_by(id: document.id)&.destroy! }
+
+    assert_nothing_raised { ProcessImageDocumentJob.perform_now(document) }
+
+    assert_not Document.exists?(document.id)
+    assert_equal 0, PipelineRun.where(subject_type: "Document", subject_id: document.id).count
+    assert_no_enqueued_jobs only: ProcessImageDocumentJob
   end
 
   private

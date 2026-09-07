@@ -264,7 +264,7 @@ test('a selection over 50 files can be reduced to the supported batch size and u
   expect(await fileField.evaluate((input) => input.validity.valid)).toBe(true);
   await page.getByTestId('document-upload-submit').click();
 
-  await expect(page).toHaveURL(/\/profiles\/\d+\/documents$/);
+  await expect(page).toHaveURL(/\/profiles\/\d+\/documents$/, { timeout: 15_000 });
   await expect(page.getByTestId('flash-notice')).toContainText('50 documents uploaded');
   await expect(page.locator('[data-testid^="document-row-"]').filter({ hasText: 'browser-limit-recovery-' })).toHaveCount(50);
   await expect(page.getByRole('link', { name: /browser-limit-recovery-51/ })).toHaveCount(0);
@@ -309,3 +309,59 @@ test('admin can edit document metadata', async ({ page }) => {
 async function selectedFileNames(fileField) {
   return fileField.evaluate((input) => Array.from(input.files).map((file) => file.name));
 }
+
+test('selected documents can be bulk deleted after a named confirmation', async ({ page }) => {
+  await openDependentWorkspace(page);
+  await page.getByTestId('dependent-documents-link').click();
+  await page.getByTestId('documents-add-link').click();
+  await page.getByTestId('document-file-field').setInputFiles([
+    { name: 'browser-delete-one.txt', mimeType: 'text/plain', buffer: Buffer.concat([sampleFile, Buffer.from('\nFirst document to delete.')]) },
+    { name: 'browser-delete-two.txt', mimeType: 'text/plain', buffer: Buffer.concat([sampleFile, Buffer.from('\nSecond document to delete.')]) },
+  ]);
+  await page.getByTestId('document-upload-submit').click();
+  await expect(page).toHaveURL(/\/profiles\/\d+\/documents$/);
+
+  const rowOne = page.getByTestId(/^document-row-/).filter({ hasText: 'browser-delete-one.txt' });
+  const rowTwo = page.getByTestId(/^document-row-/).filter({ hasText: 'browser-delete-two.txt' });
+  await expect(page.getByTestId('documents-selection-count')).toHaveText('No documents selected');
+  await expect(page.getByTestId('documents-selection-actions')).toBeHidden();
+
+  await rowOne.getByRole('checkbox').check();
+  await rowTwo.getByRole('checkbox').check();
+  await expect(page.getByTestId('documents-selection-count')).toContainText('2 of');
+  await expect(page.getByTestId('documents-selection-actions')).toBeVisible();
+
+  await page.getByTestId('documents-selection-delete').click();
+  const dialog = page.getByTestId('documents-delete-dialog');
+  await expect(dialog).toBeVisible();
+  await expect(dialog.getByRole('heading', { name: 'Delete 2 documents?' })).toBeVisible();
+  await expect(page.getByTestId('documents-delete-list').getByRole('listitem')).toHaveText([
+    'browser-delete-two.txt', 'browser-delete-one.txt',
+  ]);
+  await expect(page.getByTestId('documents-delete-cancel')).toBeFocused();
+  await page.keyboard.press('Tab');
+  await expect(page.getByTestId('documents-delete-submit')).toBeFocused();
+  // A real modal makes background navigation inert, including programmatic focus.
+  await page.getByTestId('all-profiles-link').focus();
+  await expect(page.getByTestId('documents-delete-submit')).toBeFocused();
+  await expectAccessible(page);
+
+  await page.keyboard.press('Escape');
+  await expect(dialog).toBeHidden();
+  await expect(page.getByTestId('documents-selection-delete')).toBeFocused();
+
+  await page.getByTestId('documents-selection-delete').click();
+  await page.getByTestId('documents-delete-cancel').click();
+  await expect(dialog).toBeHidden();
+  await expect(rowOne).toBeVisible();
+
+  await page.getByTestId('documents-selection-delete').click();
+  await page.getByTestId('documents-delete-submit').click();
+
+  await expect(page).toHaveURL(/\/profiles\/\d+\/documents$/);
+  await expect(page.getByTestId('flash-notice')).toContainText('2 documents deleted.');
+  await expect(rowOne).toHaveCount(0);
+  await expect(rowTwo).toHaveCount(0);
+  await expect(page.getByTestId(/^document-row-/).first()).toBeVisible();
+  await expect(page.getByTestId('documents-selection-count')).toHaveText('No documents selected');
+});

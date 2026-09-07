@@ -8,7 +8,7 @@ class ProcessDocumentJobTest < ActiveJob::TestCase
 
   class FakeConnection
     class << self
-      attr_accessor :requests, :metadata_response, :embedding_failure
+      attr_accessor :requests, :metadata_response, :embedding_failure, :before_request
 
       def last_request
         requests.last
@@ -18,6 +18,7 @@ class ProcessDocumentJobTest < ActiveJob::TestCase
     class Request
       def self.execute(**kwargs)
         FakeConnection.requests << kwargs
+        FakeConnection.before_request&.call
         payload = JSON.parse(kwargs.fetch(:payload))
 
         return embedding_response(payload) if kwargs.fetch(:url).include?("/embeddings")
@@ -185,6 +186,7 @@ class ProcessDocumentJobTest < ActiveJob::TestCase
     FakeConnection.requests = []
     FakeConnection.metadata_response = { category: "educational", description: "A short description of the uploaded document." }
     FakeConnection.embedding_failure = false
+    FakeConnection.before_request = nil
     ProcessDocumentJob.llm_connection = FakeConnection
   end
 
@@ -430,6 +432,30 @@ class ProcessDocumentJobTest < ActiveJob::TestCase
       assert_empty document.document_embeddings
       assert FakeConnection.requests.none? { |request| request.fetch(:url).include?("/embeddings") }
     end
+  end
+
+  test "discards the job quietly when the document is deleted while processing" do
+    document = create_document
+    clear_enqueued_jobs
+    FakeConnection.before_request = -> { Document.find_by(id: document.id)&.destroy! }
+
+    assert_nothing_raised { ProcessDocumentJob.perform_now(document) }
+
+    assert_not Document.exists?(document.id)
+    assert_equal 0, PipelineRun.where(subject_type: "Document", subject_id: document.id).count
+    assert_no_enqueued_jobs only: ProcessDocumentJob
+  end
+
+  test "discards a queued job whose document was deleted before it ran" do
+    document = create_document
+    clear_enqueued_jobs
+    ProcessDocumentJob.perform_later(document)
+    document.destroy!
+
+    assert_nothing_raised { perform_enqueued_jobs only: ProcessDocumentJob }
+
+    assert_empty FakeConnection.requests
+    assert_no_enqueued_jobs only: ProcessDocumentJob
   end
 
   private

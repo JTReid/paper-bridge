@@ -6,6 +6,9 @@ class ProcessDocumentJob < ApplicationJob
 
   retry_on Agentic::Errors::ExecutionError, wait: :polynomially_longer, attempts: 3
   discard_on ActiveJob::DeserializationError
+  discard_on ActiveRecord::RecordNotFound do |job, error|
+    Rails.logger.info("#{job.class.name} discarded: document was deleted during processing (#{error.message})")
+  end
 
   def perform(document)
     return unless document.processable? && Documents::UploadNormalizer::PASS_THROUGH_CONTENT_TYPES.include?(document.content_type)
@@ -58,6 +61,8 @@ class ProcessDocumentJob < ApplicationJob
     end
 
     def mark_document_failed(document, error)
+      raise ActiveRecord::RecordNotFound, "Document #{document.id} was deleted during processing" unless Document.exists?(document.id)
+
       document.update!(
         status: :failed,
         preparation_status: document.preparation_status == "prepared" ? document.preparation_status : :preparation_failed,

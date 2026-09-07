@@ -87,6 +87,21 @@ class DocumentsController < ApplicationController
     redirect_to dependent_documents_path(dependent), notice: "Document deleted.", status: :see_other
   end
 
+  def destroy_selected
+    documents = @dependent.documents.where(id: selected_document_ids).to_a
+
+    if documents.empty?
+      redirect_to filtered_dependent_documents_path, alert: "Select at least one document to delete.", status: :see_other
+      return
+    end
+
+    Document.transaction { documents.each(&:destroy!) }
+
+    redirect_to filtered_dependent_documents_path,
+      notice: "#{view_context.pluralize(documents.size, "document")} deleted.",
+      status: :see_other
+  end
+
   private
 
     def set_dependent_from_param
@@ -106,6 +121,15 @@ class DocumentsController < ApplicationController
 
     def document_upload_params
       params.require(:document).permit(:file, files: [])
+    end
+
+    def selected_document_ids
+      Array(params[:document_selection]).compact_blank.uniq
+    end
+
+    def filtered_dependent_documents_path
+      category = params[:category] if Document.categories.key?(params[:category])
+      dependent_documents_path(@dependent, { category: category, q: params[:q].to_s.strip.presence }.compact)
     end
 
     def positive_page_number

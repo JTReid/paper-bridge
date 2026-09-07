@@ -61,6 +61,10 @@ documents.
   `PipelineRun`.
 - Successful processing marks the document `processed`; failures mark it
   `failed`.
+- Deleting a document while it is queued or processing discards the job
+  quietly: a queued job is dropped on deserialization, and a running job exits
+  through `discard_on ActiveRecord::RecordNotFound` without marking failure or
+  writing to the cascaded `PipelineRun`.
 
 ## Image Ingestion
 
@@ -80,6 +84,8 @@ documents.
 - If extraction succeeds but a downstream step fails, the generated summary and
   chunks remain persisted. The document is marked failed and the downstream
   error remains available through `preparation_error` and the `PipelineRun`.
+- Deleting an image document mid-run discards the job the same way as the
+  PDF/text pipeline; nothing is marked failed.
 - The first image iteration does not add conventional OCR, a second extraction
   or verification pass, handwriting-specific model routing, region-level
   citations, multi-image documents, or timeline-event extraction. Those remain
