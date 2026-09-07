@@ -372,6 +372,59 @@ class Billing::StripeWebhookHandlerTest < ActiveSupport::TestCase
     assert subscription.active_for_access?
   end
 
+  test "a replacement checkout completed after a cancel return works in either webhook order" do
+    subscription = accounts(:greenfield).billing_subscription
+    handler = Billing::StripeWebhookHandler.new
+
+    [ true, false ].each do |checkout_first|
+      subscription.update!(status: :canceled, stripe_subscription_id: "sub_old", stripe_customer_id: "cus_profiles",
+        stripe_price_id: "price_profiles", profile_limit: 5, metadata: {}, latest_event_id: nil,
+        stripe_subscription_event_created_at: nil)
+      subscription.start_checkout_attempt(price_id: "price_profiles", quantity: 5)
+      subscription.record_checkout_session("cs_replacement")
+      subscription.mark_checkout_pending
+      subscription.clear_checkout_pending # The Billing cancel return leaves the hosted session open.
+      subscription.save!
+      session = {
+        "id" => "cs_replacement", "customer" => "cus_profiles", "subscription" => "sub_profiles",
+        "metadata" => { "account_id" => subscription.account_id.to_s }
+      }
+      checkout = stripe_event("evt_replacement_checkout", "checkout.session.completed", session)
+      lifecycle = profile_event(quantity: 8)
+
+      with_stubbed_singleton_method(Billing::StripeConfig, :profile_price_id, "price_profiles") do
+        with_stubbed_singleton_method(Stripe::Checkout::Session, :retrieve, ->(id) { assert_equal "cs_replacement", id; session }) do
+          # Even a terminal account must not accept a different old session.
+          handler.call(stripe_event("evt_unrelated_checkout", "checkout.session.completed",
+            session.merge("id" => "cs_unrelated", "subscription" => "sub_unrelated")))
+          assert_equal "sub_old", subscription.reload.stripe_subscription_id
+
+          (checkout_first ? [ checkout, lifecycle ] : [ lifecycle, checkout ]).each { |event| handler.call(event) }
+        end
+      end
+
+      assert_equal "sub_profiles", subscription.reload.stripe_subscription_id
+      assert subscription.active_for_access?
+      assert_equal 8, subscription.profile_limit
+    end
+  end
+
+  test "an open checkout retains its managed allowance when the configured price changes" do
+    subscription = accounts(:greenfield).billing_subscription
+    subscription.update!(status: :incomplete, stripe_subscription_id: nil, stripe_price_id: nil, profile_limit: nil)
+    subscription.start_checkout_attempt(price_id: "price_profiles", quantity: 5)
+    subscription.record_checkout_session("cs_previous_profile_price")
+    subscription.save!
+
+    with_stubbed_singleton_method(Billing::StripeConfig, :profile_price_id, "price_next_version") do
+      Billing::StripeWebhookHandler.new.call(profile_event(quantity: 8))
+    end
+
+    assert subscription.reload.active_for_access?
+    assert_equal 8, subscription.profile_limit
+    assert_equal "price_profiles", subscription.stripe_price_id
+  end
+
   test "invalid profile quantities do not activate an account or grant unlimited access" do
     subscription = accounts(:greenfield).billing_subscription
     subscription.update!(status: :incomplete)

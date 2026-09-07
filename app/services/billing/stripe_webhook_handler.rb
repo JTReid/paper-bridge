@@ -26,7 +26,7 @@ module Billing
         account.with_lock do
           subscription = account.reload.billing_subscription || account.build_billing_subscription
           incoming_id = stripe_id(stripe_value(session, "subscription"))
-          next unless incoming_id && accepts_subscription?(subscription, incoming_id)
+          next unless incoming_id && accepts_subscription?(subscription, incoming_id, checkout_session: session)
 
           # Checkout confirms identity, not the purchased quantity or access. A
           # lifecycle webhook may already have arrived with the actual price.
@@ -110,10 +110,19 @@ module Billing
         broadcast_checkout_result(subscription_to_broadcast) if subscription_to_broadcast
       end
 
-      def accepts_subscription?(subscription, incoming_id)
-        subscription.stripe_subscription_id.blank? ||
-          subscription.stripe_subscription_id == incoming_id ||
-          (subscription.checkout_pending? && (subscription.canceled? || subscription.incomplete_expired?))
+      def accepts_subscription?(subscription, incoming_id, checkout_session: nil)
+        return true if subscription.stripe_subscription_id.blank? || subscription.stripe_subscription_id == incoming_id
+        return false unless subscription.canceled? || subscription.incomplete_expired?
+        return true if subscription.checkout_pending?
+
+        # Returning from Checkout can clear the UI marker while its hosted
+        # session remains open in another tab. Match the saved session before
+        # accepting a replacement, so older subscriptions still stay ignored.
+        session_id = subscription.checkout_attempt&.fetch("session_id", nil)
+        return false if session_id.blank?
+
+        session = checkout_session || Stripe::Checkout::Session.retrieve(session_id)
+        stripe_id(session) == session_id && stripe_id(stripe_value(session, "subscription")) == incoming_id
       end
 
       def record_trial_usage(subscription, stripe_subscription, event)
@@ -139,7 +148,9 @@ module Billing
 
       def profile_limit_from_item(subscription, item, price_id)
         configured_price = Billing::StripeConfig.profile_price_id
+        checkout_price = subscription.checkout_attempt&.fetch("price_id", nil)
         profile_price = (configured_price.present? && price_id == configured_price) ||
+          (checkout_price.present? && price_id == checkout_price) ||
           (subscription.profile_limit.present? && price_id == subscription.stripe_price_id)
 
         # Never turn a known profile plan into unlimited access because its

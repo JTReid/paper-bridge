@@ -67,6 +67,8 @@ profile allowance.
 - Each Checkout attempt pins its trial offer and Payment Method Configuration
   ID alongside price, quantity, and idempotency token. Retrying that attempt
   keeps the same terms even if the configured IDs or launch flag change.
+  The saved attempt's Price also identifies its managed-profile allowance when
+  a webhook arrives after the configured profile Price has changed.
   Attempts created before trial support, without these pinned settings, retain
   their original paid parameters. Expired sessions can be replaced with a fresh
   attempt under the then-current eligibility and offer settings.
@@ -135,6 +137,9 @@ and [trial disclosure and reminder requirements](https://docs.stripe.com/billing
   the signed subscription result, and expired sessions can be replaced.
 - Canceled Checkout returns to `/billing`, clears the temporary pending marker,
   and confirms that the subscription did not change.
+  A hosted session can remain open in another tab. If a returning subscriber
+  completes it later, webhooks match the saved Checkout session before accepting
+  the replacement subscription, including when the lifecycle event arrives first.
 - `/billing/portal_session` starts Stripe's hosted Customer Portal when the
   account has a Stripe customer ID.
 - `/stripe/webhooks` is mounted through StripeEvent. Webhook requests require a
