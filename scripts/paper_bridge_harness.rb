@@ -40,6 +40,7 @@ CURRENT_PRODUCT_FILES = %w[
   app/controllers/care_team_memberships_controller.rb
   app/controllers/share_events_controller.rb
   app/controllers/ai_assistant_controller.rb
+  app/controllers/ai_assistant_emails_controller.rb
   app/controllers/saved_answers_controller.rb
   app/controllers/meeting_preps_controller.rb
   app/controllers/meeting_prep_answers_controller.rb
@@ -55,6 +56,7 @@ CURRENT_PRODUCT_FILES = %w[
   app/jobs/answer_ai_assistant_query_job.rb
   app/javascript/controllers/document_search_controller.js
   app/javascript/controllers/ai_assistant_query_controller.js
+  app/javascript/controllers/ai_assistant_email_controller.js
   app/javascript/controllers/meeting_prep_controller.js
   app/javascript/controllers/meeting_prep_filter_controller.js
   app/javascript/controllers/appointment_dialog_controller.js
@@ -81,6 +83,7 @@ CURRENT_PRODUCT_FILES = %w[
   app/services/billing/stripe_webhook_handler.rb
   app/mailers/document_share_mailer.rb
   app/mailers/appointment_mailer.rb
+  app/mailers/ai_assistant_query_mailer.rb
   app/views/care_team_memberships/index.html.erb
   app/views/calendar/show.html.erb
   app/views/calendar/_workspace.html.erb
@@ -101,6 +104,11 @@ CURRENT_PRODUCT_FILES = %w[
   app/views/ai_assistant/index.html.erb
   app/views/ai_assistant/_query_result.html.erb
   app/views/ai_assistant/create.turbo_stream.erb
+  app/views/ai_assistant_emails/new.html.erb
+  app/views/ai_assistant_emails/create.html.erb
+  app/views/ai_assistant_emails/_dialog.html.erb
+  app/views/ai_assistant_query_mailer/share.html.erb
+  app/views/ai_assistant_query_mailer/share.text.erb
   app/views/saved_answers/index.html.erb
   app/views/saved_answers/show.html.erb
   app/views/meeting_preps/index.html.erb
@@ -149,6 +157,8 @@ CURRENT_PRODUCT_FILES = %w[
   test/helpers/documents_helper_test.rb
   test/helpers/ai_assistant_helper_test.rb
   test/controllers/ai_assistant_controller_test.rb
+  test/controllers/ai_assistant_emails_controller_test.rb
+  test/mailers/ai_assistant_query_mailer_test.rb
   test/jobs/answer_ai_assistant_query_job_test.rb
   test/models/ai_assistant_query_test.rb
   test/models/saved_answer_test.rb
@@ -162,6 +172,9 @@ CURRENT_PRODUCT_FILES = %w[
   tests/e2e/product/accessibility_suite.spec.js
   tests/e2e/product/mobile_suite.spec.js
   tests/e2e/product/ai_assistant.spec.js
+  tests/e2e/helpers/ai_assistant_email.js
+  tests/e2e/product/ai_assistant_email.spec.js
+  tests/e2e/product/ai_assistant_email_mailpit.spec.js
   tests/e2e/product/saved_answers.spec.js
   tests/e2e/product/billing.spec.js
   tests/e2e/product/onboarding_tour.spec.js
@@ -210,6 +223,8 @@ SHARING_TESTS = %w[
   test/controllers/share_events_controller_test.rb
   test/mailers/document_share_mailer_test.rb
   test/mailers/previews/document_share_mailer_preview_test.rb
+  test/controllers/ai_assistant_emails_controller_test.rb
+  test/mailers/ai_assistant_query_mailer_test.rb
 ].freeze
 
 BILLING_TESTS = %w[
@@ -277,6 +292,7 @@ RUBOCOP_PATHS = %w[
   app/controllers/care_team_memberships_controller.rb
   app/controllers/share_events_controller.rb
   app/controllers/ai_assistant_controller.rb
+  app/controllers/ai_assistant_emails_controller.rb
   app/controllers/billing_controller.rb
   app/controllers/billing/checkout_sessions_controller.rb
   app/controllers/billing/portal_sessions_controller.rb
@@ -303,6 +319,7 @@ RUBOCOP_PATHS = %w[
   config/initializers/stripe.rb
   app/mailers/document_share_mailer.rb
   app/mailers/appointment_mailer.rb
+  app/mailers/ai_assistant_query_mailer.rb
   test/test_helper.rb
   test/controllers/home_controller_test.rb
   test/controllers/devise_registrations_controller_test.rb
@@ -341,6 +358,8 @@ RUBOCOP_PATHS = %w[
   test/helpers/documents_helper_test.rb
   test/helpers/ai_assistant_helper_test.rb
   test/controllers/ai_assistant_controller_test.rb
+  test/controllers/ai_assistant_emails_controller_test.rb
+  test/mailers/ai_assistant_query_mailer_test.rb
   test/jobs/answer_ai_assistant_query_job_test.rb
   test/models/ai_assistant_query_test.rb
   scripts/paper_bridge_harness.rb

@@ -334,6 +334,35 @@ class AiAssistantControllerTest < ActionDispatch::IntegrationTest
     assert_includes response.body, "PaperBridge is checking the sources"
   end
 
+  test "offers emailing beside saving a completed answer and in reconciled results" do
+    query = create_query(
+      state: :completed, completed_at: Time.current,
+      answer: { answer: "The final answer.", citations: [], limitations: [] }
+    )
+    sign_in users(:family_admin)
+
+    [ dependent_ai_assistant_path(query.dependent), status_dependent_ai_assistant_query_path(query.dependent, query) ].each do |path|
+      get path
+
+      assert_response :success
+      assert_select "a[href='#{new_dependent_ai_assistant_email_path(query.dependent, query)}'][data-turbo-frame='ai_assistant_email']", text: "Email answer"
+      assert_select "[data-testid='ai-assistant-save-answer']"
+    end
+  end
+
+  test "does not offer email for unfinished failed or empty answers" do
+    sign_in users(:family_admin)
+    queries = %i[queued processing failed].map { |state| create_query(state: state, draft_answer: "Draft text") }
+    queries << create_query(state: :completed, completed_at: Time.current, answer: { answer: "" })
+
+    queries.each do |query|
+      get status_dependent_ai_assistant_query_path(query.dependent, query)
+
+      assert_response :success
+      assert_select "a[href='#{new_dependent_ai_assistant_email_path(query.dependent, query)}']", count: 0
+    end
+  end
+
   private
 
     def create_query(attributes = {})

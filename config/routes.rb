@@ -24,6 +24,8 @@ Rails.application.routes.draw do
   post "profiles/:dependent_id/ai-assistant" => "ai_assistant#create"
   post "profiles/:dependent_id/ai-assistant/:id/start" => "ai_assistant#start", as: :start_dependent_ai_assistant_query
   get "profiles/:dependent_id/ai-assistant/:id/status" => "ai_assistant#status", as: :status_dependent_ai_assistant_query
+  get "profiles/:dependent_id/ai-assistant/:id/email/new" => "ai_assistant_emails#new", as: :new_dependent_ai_assistant_email
+  post "profiles/:dependent_id/ai-assistant/:id/email" => "ai_assistant_emails#create", as: :dependent_ai_assistant_email
 
   # Legacy /dependents URLs (bookmarks, shared links, sent emails) redirect to
   # /profiles, preserving any query string such as document filters.

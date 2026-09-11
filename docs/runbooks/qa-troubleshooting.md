@@ -157,7 +157,7 @@ Named workflow modes:
 | `sharing` | Opens the share modal, selects a care team recipient, submits a document share, and verifies the browser success path without SMTP capture. |
 | `documents` | Exercises original-filename search, category filtering, file-only upload with All Files, selection removal/clearing, 51-to-50 selection recovery and successful 50-file upload, storage-only Word/ZIP downloads and editing, consistent single/batch destinations, pending metadata completion and edit unlock, preserved corrections, and original-file actions. Uses deterministic completion without live AI. |
 | `care-team` | Verifies the care-team contact list and form, successful creation with name, role, email, and optional phone, and contact editing. |
-| `ai` | Opens the dependent-scoped AI assistant, submits a synthetic question, verifies immediate and queued states without leaving the profile, and runs an axe check. |
+| `ai` | Opens the dependent-scoped AI assistant, submits a synthetic question, and verifies immediate/queued states. Emails a completed synthetic answer using any address or a Care Team shortcut; checks validation recovery, focus, phone layout, and axe without saving or rerunning AI. |
 | `saved-answers` | Saves a completed fake answer, edits and searches stored research, adds batches from a searchable checklist, checks desktop and phone picker capacity, one-line previews and independent scrolling, preserves browsing state through meeting changes, reuses and orders answers, and filters 30 loaded answers without requests. No live AI or worker runs. |
 | `calendar` | Opens a profile edit page, leaves work unfinished, opens the family calendar panel without changing pages, creates and emails a profile-owned appointment, closes the panel, and verifies the unfinished edit remains. It also covers the full-page account calendar, Central Time rendering, read-only details, and previous/next month navigation. |
 | `onboarding` | Registers a fresh family account, activates it with synthetic billing state, follows the six-step setup tour through Profile creation, one-file upload, and the first queued question, then verifies completion, dismissal/replay, account-scoped non-sensitive storage, reduced-motion behavior, accessibility, and phone-width fit. |
@@ -175,7 +175,8 @@ Boundaries:
   probes. Workflow modes may include small validation checks that are part of a
   scenario, but they should not grow into the complete negative matrix.
 - `mailpit` owns local SMTP capture and Mailpit API assertions, including email
-  delivery and no-email checks. `workflow sharing` must not require Mailpit.
+  delivery and no-email checks. `workflow sharing` and `workflow ai` must not
+  require Mailpit.
 - `bughunt` owns named reproduction or verification runs with screenshots,
   traces, and videos always on. Use it for defect evidence, then use the
   relevant workflow mode when the fix should become a stable scenario.
@@ -527,13 +528,18 @@ mailpit --smtp 127.0.0.1:1025 --listen 127.0.0.1:8025
 ruby scripts/paper_bridge_qa_harness.rb mailpit
 ```
 
-By default, this runs both document sharing and password reset SMTP checks.
+By default, this runs document sharing, answer email, and password reset SMTP checks.
 Mailpit mode uses one browser worker because the scenarios share an inbox.
 The password reset scenario creates a temporary test account, follows the
 captured email's real reset link, changes the password, and confirms the old
 password no longer signs in while the new one does. Mailpit-mode email links
 use `QA_BASE_URL` so the browser stays on the local QA server. The temporary
 account is removed after the scenario.
+
+Answer email checks use one completed synthetic query and verify the original
+question, response, source labels, qualifications, generation date, and Reply-To.
+They ensure source documents, excerpts, and private document links are excluded,
+and verify that an invalid recipient sends no message.
 
 Single- and multiple-document sharing checks verify captured mail and original
 attachments; validation failures verify that no email was sent. Local SMTP
@@ -581,6 +587,8 @@ main signed-in product surfaces.
   original contents for a multiple-document share.
 - Mailpit mode verifies the password-reset sender, local email link, password
   update, and sign-in with the replacement password.
+- Mailpit mode verifies direct answer email content and Reply-To, with no source
+  attachments, citation excerpts, or private document links.
 - Browser-native upload form validation guards missing files.
 - Document metadata can be edited.
 - Document negative coverage verifies blank-title validation.

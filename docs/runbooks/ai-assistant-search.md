@@ -111,9 +111,57 @@ lifecycle.
 - The local `gpt-5.6-luna` rate card prices input, including cached input, at
   $0.20 per million tokens and output at $1.20 per million tokens.
 
+## Emailing One Answer
+
+- A completed query with nonblank answer text offers **Email answer** beside
+  **Save answer**. Emailing reads that existing `AiAssistantQuery`; it creates
+  no saved answer, new model, or AI request.
+- The dialog accepts one email address and an optional message. A Care Team
+  contact from the current profile can fill the address as a shortcut. The
+  family can type any address, including replacing a selected contact's email.
+- `AiAssistantEmailsController` scopes both the dialog and send action to the
+  current user, account, and profile, and only accepts completed answers with
+  content. The server loads the answer from storage instead of accepting answer
+  text from the browser.
+- `AiAssistantQueryMailer` sends HTML and plain-text versions through the
+  existing mail configuration. The email contains the original question, full
+  answer, generation date, optional message, source numbers with document/page
+  labels, and existing **Things to keep in mind** qualifications. Reply-To is
+  the sender's email address.
+- Source documents are excluded: no attachments, original-file contents,
+  citation excerpts, or links to authenticated documents are added to the email.
+  Sending an answer grants no account access or recipient login.
+- Sending disables the submit button while the request runs. Success keeps the
+  dialog open with the destination address and a Done button. Invalid recipients
+  and delivery failures keep the address and message available for correction.
+  Closing or Escape returns focus to the answer's Email answer action.
+- Delivery is attempted in the request so a mail-server rejection can be shown
+  immediately. Success means the configured mail transport accepted the message;
+  it does not confirm delivery to the recipient's inbox.
+
 ## Validation
 
 ```bash
 ruby scripts/agentic_pipeline_harness.rb documents
 ruby scripts/paper_bridge_harness.rb access
+ruby scripts/paper_bridge_harness.rb sharing
+ruby scripts/paper_bridge_qa_harness.rb workflow ai
 ```
+
+The sharing Rails group covers answer ownership, recipient validation, delivery
+failure handling, preserved question/answer content, and HTML/text mail without
+attachments or private source links. The AI browser workflow uses one synthetic
+completed answer and verifies the manual recipient and Care Team shortcut,
+validation recovery, dialog focus, phone layout, and accessibility without
+saving the answer or calling AI.
+
+For real local SMTP capture, start Mailpit and run:
+
+```bash
+ruby scripts/paper_bridge_qa_harness.rb mailpit tests/e2e/product/ai_assistant_email_mailpit.spec.js
+```
+
+That check verifies the destination and Reply-To, original response content,
+source labels and date, absence of source attachments/excerpts/private links,
+and no message sent for an invalid address. It uses local SMTP and does not
+verify external inbox delivery.

@@ -27,11 +27,11 @@ check enforces that every tracked, non-ignored Markdown file is linked here.
 | [Billing](runbooks/billing.md) | Hosted profile pricing, opt-in card-required 90-day trial, trial-preserving Portal, Checkout recovery, allowance enforcement, reminder setup, safe company-test webhooks, and rollout boundaries. |
 | [Document Ingestion](runbooks/document-ingestion.md) | Upload, preparation, page, chunk, summary, embedding, and timeline lifecycle. |
 | [Document Uploads](runbooks/document-uploads.md) | File-only upload, 50-file batches, profile-scoped duplicate protection, storage-only files, one-time metadata generation, and deployment. |
-| [AI Assistant Search](runbooks/ai-assistant-search.md) | Durable asynchronous questions, streamed answer drafts, dependent-scoped retrieval, source validation, page-linked citations, access filtering, and answer synthesis. |
+| [AI Assistant Search](runbooks/ai-assistant-search.md) | Durable asynchronous questions, streamed drafts, dependent-scoped retrieval, citations, and direct email of one completed answer without source documents. |
 | [Saved Answers And Meeting Preparation](runbooks/saved-answers.md) | Private answer snapshots, library search, reusable meeting collections, responsive batch selection with separate live search, and in-place meeting changes that preserve browsing state. |
 | [Care Team Contacts](runbooks/care-team-access.md) | Profile-scoped contact details, email-sharing recipients, and account access boundaries. |
 | [Document Sharing](runbooks/document-sharing.md) | Current email-attachment sharing behavior and validation surface. |
-| [QA Troubleshooting](runbooks/qa-troubleshooting.md) | Local QA harness for browser bug reproduction, artifacts, password reset and document sharing SMTP checks, and verification. |
+| [QA Troubleshooting](runbooks/qa-troubleshooting.md) | Local QA harness for browser bug reproduction, artifacts, password reset, document sharing and answer email SMTP checks, and verification. |
 | [Browser QA](runbooks/browser-qa.md) | Playwright folder structure, environment, and direct iteration commands. |
 | [QA Seed Data](runbooks/qa-seed-data.md) | Synthetic processed-document corpus for development QA and bug hunting. |
 | [Negative Error-State Probes](runbooks/negative-error-state-probes.md) | Recommended future QA probes for invalid, empty, failed, and edge-case product states. |

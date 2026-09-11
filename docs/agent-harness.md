@@ -78,6 +78,18 @@ ruby scripts/paper_bridge_qa_harness.rb workflow saved-answers
 These cover storing and organizing completed answers without running AI. Query
 execution remains in the existing agentic document checks.
 
+For sending a single completed Ask PaperBridge answer by email, run:
+
+```bash
+ruby scripts/paper_bridge_harness.rb sharing
+ruby scripts/paper_bridge_qa_harness.rb workflow ai
+```
+
+The Rails group checks ownership, email content, and delivery failures. The
+browser group checks the recipient dialog without requiring SMTP. Pair email
+changes with the opt-in Mailpit check documented in
+[AI Assistant Search](runbooks/ai-assistant-search.md#emailing-one-answer).
+
 For appointment persistence, account-wide month rendering, creation, detail
 email delivery, dashboard summaries, calendar navigation, or the in-profile
 family calendar that preserves unfinished profile work, use the focused calendar

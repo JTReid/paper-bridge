@@ -1,0 +1,30 @@
+Ask PaperBridge answer
+
+<%= @sender_name %> shared an answer about <%= @query.dependent.name %> with you.
+Answer generated <%= l(@generated_at.to_date, format: :long) %>.
+
+<% if @message.present? %>
+<%= @message %>
+
+<% end %>
+Question
+<%= @query.question %>
+
+Answer
+<%= @answer[:answer] %>
+
+<% if @citations.any? %>
+Sources
+<% @citations.each do |citation| %>
+[<%= citation[:source_number] %>] <%= citation[:document_title] %><% if citation[:page_number].present? %>, page <%= citation[:page_number] %><% end %>
+<% end %>
+
+<% end %>
+<% if @limitations.any? %>
+Things to keep in mind
+<% @limitations.each do |limitation| %>
+- <%= limitation %>
+<% end %>
+
+<% end %>
+This AI-generated answer is for informational purposes only and is not professional advice.

@@ -1,0 +1,36 @@
+<%= render layout: "dialog" do %>
+  <div class="mb-5 rounded-xl bg-muted/40 p-4">
+    <p class="text-xs font-medium uppercase tracking-wider text-muted-foreground">Your question</p>
+    <p class="mt-2 break-words text-sm font-medium"><%= @query.question %></p>
+    <p class="mt-3 text-xs leading-relaxed text-muted-foreground">The email includes the full answer, source references, and any things to keep in mind.</p>
+  </div>
+
+  <% if @error %>
+    <p class="mb-4 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-900" role="alert" tabindex="-1" autofocus data-testid="ai-assistant-email-error"><%= @error %></p>
+  <% end %>
+
+  <%= form_with url: dependent_ai_assistant_email_path(@dependent, @query), scope: :ai_assistant_email, class: "space-y-4", data: { testid: "ai-assistant-email-form" } do |form| %>
+    <% if @recipient_options.any? %>
+      <div>
+        <%= label_tag :care_team_recipient, "Care Team contact (optional)", class: "block text-sm font-medium" %>
+        <%= select_tag :care_team_recipient, options_for_select(@recipient_options, @recipient_email), include_blank: "Choose a contact", class: "mt-2 h-11 w-full rounded-xl border border-border bg-white px-3 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/10", data: { action: "change->ai-assistant-email#selectRecipient", testid: "ai-assistant-email-recipient-select" } %>
+      </div>
+    <% end %>
+
+    <div>
+      <%= form.label :recipient_email, "Email address", class: "block text-sm font-medium" %>
+      <%= form.email_field :recipient_email, value: @recipient_email, required: true, autofocus: @error.blank?, autocomplete: "off", class: "mt-2 h-11 w-full rounded-xl border border-border bg-white px-3 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/10", aria: { describedby: "ai-assistant-email-recipient-hint" }, data: { ai_assistant_email_target: "recipientEmail", testid: "ai-assistant-email-recipient-email" } %>
+      <p id="ai-assistant-email-recipient-hint" class="mt-2 text-xs text-muted-foreground">You can send to any email address.</p>
+    </div>
+
+    <div>
+      <%= form.label :message, "Message (optional)", class: "block text-sm font-medium" %>
+      <%= form.text_area :message, value: @message, rows: 3, class: "mt-2 w-full rounded-xl border border-border bg-white px-3 py-2 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/10", data: { testid: "ai-assistant-email-message" } %>
+    </div>
+
+    <div class="flex justify-end gap-3 border-t border-border/50 pt-4">
+      <button type="button" class="rounded-full px-4 py-2 text-sm font-medium text-muted-foreground hover:bg-muted" data-action="ai-assistant-email#close">Cancel</button>
+      <%= form.submit "Send answer", class: "rounded-full bg-primary px-5 py-2 text-sm font-medium text-white hover:bg-primary/90 disabled:cursor-wait disabled:opacity-60", data: { turbo_submits_with: "Sending…", testid: "ai-assistant-email-submit" } %>
+    </div>
+  <% end %>
+<% end %>

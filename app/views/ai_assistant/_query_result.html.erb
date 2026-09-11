@@ -78,7 +78,11 @@
     <% documents_by_id = ai_assistant_query.source_documents_by_id %>
 
     <% if answer[:answer].present? %>
-      <div class="flex justify-end">
+      <div class="flex flex-wrap justify-end gap-3">
+        <%= link_to "Email answer", new_dependent_ai_assistant_email_path(ai_assistant_query.dependent, ai_assistant_query),
+          id: "ai-assistant-email-trigger-#{ai_assistant_query.id}",
+          class: "rounded-full border border-primary/20 px-4 py-2 text-sm font-medium text-primary hover:bg-primary/5",
+          data: { turbo_frame: "ai_assistant_email", testid: "ai-assistant-email-answer" } %>
         <%= button_to "Save answer", dependent_saved_answers_path(ai_assistant_query.dependent),
           params: { ai_assistant_query_id: ai_assistant_query.id },
           class: "rounded-full bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary/90",

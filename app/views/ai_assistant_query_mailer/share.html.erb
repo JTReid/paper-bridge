@@ -1,0 +1,34 @@
+<h1>Ask PaperBridge answer</h1>
+
+<p><%= @sender_name %> shared an answer about <%= @query.dependent.name %> with you.</p>
+<p>Answer generated <%= l(@generated_at.to_date, format: :long) %>.</p>
+
+<% if @message.present? %>
+  <%= simple_format(h(@message), {}, sanitize: false) %>
+<% end %>
+
+<h2>Question</h2>
+<%= simple_format(h(@query.question), {}, sanitize: false) %>
+
+<h2>Answer</h2>
+<%= simple_format(h(@answer[:answer]), {}, sanitize: false) %>
+
+<% if @citations.any? %>
+  <h2>Sources</h2>
+  <ul>
+    <% @citations.each do |citation| %>
+      <li>[<%= citation[:source_number] %>] <%= citation[:document_title] %><% if citation[:page_number].present? %>, page <%= citation[:page_number] %><% end %></li>
+    <% end %>
+  </ul>
+<% end %>
+
+<% if @limitations.any? %>
+  <h2>Things to keep in mind</h2>
+  <ul>
+    <% @limitations.each do |limitation| %>
+      <li><%= limitation %></li>
+    <% end %>
+  </ul>
+<% end %>
+
+<p><em>This AI-generated answer is for informational purposes only and is not professional advice.</em></p>

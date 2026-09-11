@@ -102,6 +102,14 @@ live AI, document ingestion, seeded edge-state scenarios, or the complete
 negative/error-state matrix. The detailed contract is in
 `docs/runbooks/qa-troubleshooting.md`.
 
+Use `workflow ai` for the Ask PaperBridge query lifecycle and direct answer
+email dialog. Email scenarios use a synthetic completed query, any recipient
+address or an optional Care Team shortcut, validation recovery, and phone/axe
+checks without saving an answer or calling AI. Controller and mailer coverage
+runs in `ruby scripts/paper_bridge_harness.rb sharing`; real email capture is
+the separate Mailpit mode. See
+[AI Assistant Search](runbooks/ai-assistant-search.md#emailing-one-answer).
+
 Use `workflow saved-answers` for saving a completed answer, editing and
 searching research, and organizing reusable meeting collections. It includes
 batch selection across searches, browsing-state preservation after meeting
@@ -181,8 +189,9 @@ ruby scripts/paper_bridge_qa_harness.rb mailpit
 ```
 
 This captures single- and multiple-document shares, checks original attachment
-contents, and follows a password-reset email through changing the password and
-signing in. Reset links target `QA_BASE_URL`. These checks use local SMTP;
+contents, verifies a single Ask PaperBridge answer email with no source
+attachments or private links, and follows a password-reset email through
+changing the password and signing in. Reset links target `QA_BASE_URL`. These checks use local SMTP;
 they do not verify SES identities, sandbox status, or external inbox delivery.
 
 ## Agentic Pipeline Harness

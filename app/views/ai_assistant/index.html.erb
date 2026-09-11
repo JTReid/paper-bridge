@@ -41,6 +41,7 @@
     </header>
 
     <%= render "shared/research_nav", dependent: @dependent, active: :ask %>
+    <%= turbo_frame_tag "ai_assistant_email" %>
 
     <div class="space-y-6" data-tour="ask-question">
       <section class="space-y-2">

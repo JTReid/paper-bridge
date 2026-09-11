@@ -58,12 +58,18 @@ operational harness checks until matching implementation exists.
   document, creates search chunks, and stores pgvector embeddings.
 - Care team contacts for a dependent, backed by `CareTeamMembership`, with
   required name, role, and email plus an optional phone number. Adding a contact
-  saves their details for the family and document-sharing recipient picker;
+  saves their details for the family and document/answer email recipient pickers;
   it creates no login, invitation email, or record access.
 - Dependent-scoped AI assistant with durable question submission,
   queued/processing/completed/failed states, background execution, final Turbo
   replacement, progressive plain-text answer drafts, immediate progress,
   honest wait-time guidance, duplicate-submit locking, and reload-safe answers.
+- Direct email of one completed Ask PaperBridge response to any email address,
+  with an optional Care Team contact shortcut and message. The email preserves
+  the question, answer, source labels, date, and existing qualifications, without
+  attaching source documents or adding private document links. It uses the
+  existing query and never saves a new answer or reruns AI. See
+  [AI Assistant Search](ai-assistant-search.md#emailing-one-answer).
 - Account-scoped and category-scoped vector search authorization.
 - Private saved-answer research libraries within each profile, with editable
   titles and notes, source snapshots, generated/saved dates, text search, and
