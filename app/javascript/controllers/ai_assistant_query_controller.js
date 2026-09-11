@@ -46,6 +46,8 @@ export default class extends Controller {
   }
 
   submit(event) {
+    if (!event.target.matches('[data-ai-assistant-query-form="true"]')) return
+
     if (this.busy) {
       event.preventDefault()
       return
@@ -67,6 +69,8 @@ export default class extends Controller {
   }
 
   submitEnd(event) {
+    if (!event.target.matches('[data-ai-assistant-query-form="true"]')) return
+
     if (event.detail.success) return
 
     this.optimisticTarget.hidden = true

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_09_10_000100) do
+ActiveRecord::Schema[8.1].define(version: 2026_09_11_135356) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "vector"
@@ -267,6 +267,30 @@ ActiveRecord::Schema[8.1].define(version: 2026_09_10_000100) do
     t.index ["name"], name: "index_llms_on_name", unique: true
   end
 
+  create_table "meeting_prep_answers", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.bigint "meeting_prep_id", null: false
+    t.integer "position", null: false
+    t.bigint "saved_answer_id", null: false
+    t.datetime "updated_at", null: false
+    t.index ["meeting_prep_id", "position"], name: "index_meeting_prep_answers_on_meeting_prep_id_and_position"
+    t.index ["meeting_prep_id", "saved_answer_id"], name: "idx_on_meeting_prep_id_saved_answer_id_eee0f1fa79", unique: true
+    t.index ["meeting_prep_id"], name: "index_meeting_prep_answers_on_meeting_prep_id"
+    t.index ["saved_answer_id"], name: "index_meeting_prep_answers_on_saved_answer_id"
+  end
+
+  create_table "meeting_preps", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.datetime "created_at", null: false
+    t.bigint "dependent_id", null: false
+    t.string "name", null: false
+    t.datetime "updated_at", null: false
+    t.bigint "user_id", null: false
+    t.index ["account_id"], name: "index_meeting_preps_on_account_id"
+    t.index ["dependent_id"], name: "index_meeting_preps_on_dependent_id"
+    t.index ["user_id"], name: "index_meeting_preps_on_user_id"
+  end
+
   create_table "pipeline_activities", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.jsonb "entries", default: [], null: false
@@ -305,6 +329,25 @@ ActiveRecord::Schema[8.1].define(version: 2026_09_10_000100) do
     t.text "system_directive", null: false
     t.datetime "updated_at", null: false
     t.index ["agent_type_id"], name: "index_prompts_on_agent_type_id"
+  end
+
+  create_table "saved_answers", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.bigint "ai_assistant_query_id"
+    t.jsonb "answer", default: {}, null: false
+    t.datetime "created_at", null: false
+    t.bigint "dependent_id", null: false
+    t.datetime "generated_at", null: false
+    t.text "notes"
+    t.text "question", null: false
+    t.string "title"
+    t.datetime "updated_at", null: false
+    t.bigint "user_id", null: false
+    t.index ["account_id", "dependent_id", "user_id", "created_at"], name: "index_saved_answers_on_owner_and_created_at"
+    t.index ["account_id"], name: "index_saved_answers_on_account_id"
+    t.index ["ai_assistant_query_id"], name: "index_saved_answers_on_ai_assistant_query_id", unique: true, where: "(ai_assistant_query_id IS NOT NULL)"
+    t.index ["dependent_id"], name: "index_saved_answers_on_dependent_id"
+    t.index ["user_id"], name: "index_saved_answers_on_user_id"
   end
 
   create_table "share_events", force: :cascade do |t|
@@ -395,10 +438,19 @@ ActiveRecord::Schema[8.1].define(version: 2026_09_10_000100) do
   add_foreign_key "documents", "accounts"
   add_foreign_key "documents", "dependents"
   add_foreign_key "documents", "users"
+  add_foreign_key "meeting_prep_answers", "meeting_preps"
+  add_foreign_key "meeting_prep_answers", "saved_answers"
+  add_foreign_key "meeting_preps", "accounts"
+  add_foreign_key "meeting_preps", "dependents"
+  add_foreign_key "meeting_preps", "users"
   add_foreign_key "pipeline_activities", "pipeline_runs"
   add_foreign_key "pipeline_logs", "pipeline_runs"
   add_foreign_key "pipeline_runs", "users"
   add_foreign_key "prompts", "agent_types"
+  add_foreign_key "saved_answers", "accounts"
+  add_foreign_key "saved_answers", "ai_assistant_queries", on_delete: :nullify
+  add_foreign_key "saved_answers", "dependents"
+  add_foreign_key "saved_answers", "users"
   add_foreign_key "share_events", "accounts"
   add_foreign_key "share_events", "users", column: "sender_id"
   add_foreign_key "shared_documents", "documents"

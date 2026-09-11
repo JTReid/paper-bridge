@@ -1,0 +1,12 @@
+<nav class="flex flex-wrap gap-2" aria-label="Research" data-testid="research-nav">
+  <% [
+    [:ask, "Ask", dependent_ai_assistant_path(dependent)],
+    [:saved_answers, "Saved answers", dependent_saved_answers_path(dependent)],
+    [:meeting_prep, "Meeting prep", dependent_meeting_preps_path(dependent)]
+  ].each do |key, label, path| %>
+    <%= link_to label, path,
+      class: "rounded-full px-4 py-2 text-sm font-medium transition-colors #{active == key ? 'bg-primary text-white' : 'border border-border bg-white text-muted-foreground hover:bg-muted'}",
+      aria: { current: active == key ? "page" : nil },
+      data: { testid: "research-nav-#{key.to_s.dasherize}" } %>
+  <% end %>
+</nav>

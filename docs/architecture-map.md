@@ -106,6 +106,17 @@ ported from Scoutspace.
   run the PDF preparation, document summarizer, or timeline-event extractor.
 - `AiAssistantQuery` durably owns one account-, dependent-, and user-scoped
   question, its lifecycle state, and its final answer.
+- `SavedAnswer` snapshots a completed query's question, answer, citations, and
+  limitations, with separate generated and saved dates plus editable title and
+  notes. It remains private to its user/account/profile and survives deletion
+  of its originating query or source document.
+- `MeetingPrep` names a private collection of saved answers.
+  `MeetingPrepAnswer` gives each membership a position so one answer can be
+  reused in multiple ordered meetings. Meeting deletion preserves saved answers.
+  The meeting page preloads its answers and filters them locally. A searchable
+  checklist supports batch addition; Turbo updates and Stimulus preserve browsing
+  state when membership or order changes. The library performs literal text
+  search over stored research. Neither path invokes AI.
 - `GET /profiles/:dependent_id/ai-assistant` is read-only. `POST` saves a
   queued query. Turbo installs that result before an idempotent start request
   enqueues `AnswerAiAssistantQueryJob`, preventing fast worker broadcasts from

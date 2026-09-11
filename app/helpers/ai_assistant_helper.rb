@@ -1,14 +1,14 @@
 module AiAssistantHelper
   SOURCE_MARKER = /\[(\d+(?:\s*,\s*\d+)*)\]/
 
-  def ai_answer_with_source_links(answer, citations:, documents_by_id:)
+  def ai_answer_with_source_links(answer, citations:, documents_by_id:, source_testid_prefix: "ai")
     sources_by_number = Array(citations).index_by { |citation| citation[:source_number].to_i }
     paragraphs = answer.to_s.split(/\n{2,}/)
 
     safe_join(
       paragraphs.map do |paragraph|
         lines = paragraph.split("\n", -1)
-        content_tag(:p, safe_join(lines.map { |line| linked_answer_line(line, sources_by_number, documents_by_id) }, tag.br))
+        content_tag(:p, safe_join(lines.map { |line| linked_answer_line(line, sources_by_number, documents_by_id, source_testid_prefix) }, tag.br))
       end,
       "\n"
     )
@@ -35,7 +35,7 @@ module AiAssistantHelper
 
   private
 
-    def linked_answer_line(line, sources_by_number, documents_by_id)
+    def linked_answer_line(line, sources_by_number, documents_by_id, source_testid_prefix)
       fragments = []
       cursor = 0
 
@@ -51,7 +51,7 @@ module AiAssistantHelper
             documents_by_id: documents_by_id,
             label: "[#{source_number}]",
             class_name: "font-semibold text-primary underline decoration-primary/30 underline-offset-2 hover:decoration-primary",
-            testid: "ai-inline-source-#{source_number}"
+            testid: "#{source_testid_prefix}-inline-source-#{source_number}"
           )
         end
         fragments << safe_join(links, " ")

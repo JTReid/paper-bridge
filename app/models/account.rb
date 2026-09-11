@@ -8,6 +8,8 @@ class Account < ApplicationRecord
   has_many :appointments, through: :dependents
   has_many :care_team_memberships, dependent: :destroy
   has_many :ai_assistant_queries, dependent: :destroy
+  has_many :meeting_preps, dependent: :destroy
+  has_many :saved_answers, dependent: :destroy
   has_many :share_events, dependent: :destroy
   has_many :timeline_events, through: :document_chunks
   has_one :billing_subscription, dependent: :destroy

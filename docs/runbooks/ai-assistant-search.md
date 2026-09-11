@@ -92,6 +92,10 @@ lifecycle.
   document-original endpoint. PDFs open in a new tab at the cited physical page.
 - The source-opening workflow is a family-account surface. Care Team stores
   contacts only; adding a contact grants no document or assistant access.
+- A completed answer can be copied into the user's private saved research
+  library. `SavedAnswer` owns that snapshot separately from query execution;
+  library search and meeting preparation never enqueue an answer job. See
+  [Saved Answers And Meeting Preparation](saved-answers.md).
 - If retrieval returns no chunks, answer synthesis is skipped without making a
   chat completion call. This is a completed query with no supported answer, not
   a failed job.

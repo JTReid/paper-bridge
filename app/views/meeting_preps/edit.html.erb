@@ -1,0 +1,9 @@
+<% content_for :title, "Edit meeting prep | PaperBridge" %>
+
+<%= app_shell(active: :ai_assistant, dependent: @dependent) do %>
+  <div class="mx-auto max-w-2xl space-y-6">
+    <%= render "shared/research_nav", dependent: @dependent, active: :meeting_prep %>
+    <h1 class="text-2xl font-bold tracking-tight text-foreground md:text-3xl">Edit meeting prep</h1>
+    <%= render "form", meeting_prep: @meeting_prep %>
+  </div>
+<% end %>

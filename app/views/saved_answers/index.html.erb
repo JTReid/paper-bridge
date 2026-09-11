@@ -1,0 +1,57 @@
+<% content_for :title, "Saved answers | PaperBridge" %>
+
+<%= app_shell(active: :ai_assistant, dependent: @dependent) do %>
+  <div class="space-y-6">
+    <header>
+      <h1 class="text-2xl font-bold tracking-tight text-foreground md:text-3xl">Saved answers</h1>
+      <p class="mt-1 text-sm text-muted-foreground">Your saved research for <%= @dependent.name %>. Only you can see it.</p>
+    </header>
+
+    <%= render "shared/research_nav", dependent: @dependent, active: :saved_answers %>
+
+    <%= form_with url: dependent_saved_answers_path(@dependent), method: :get, class: "grid gap-4 rounded-2xl border border-border/50 bg-white p-4 sm:grid-cols-2 lg:grid-cols-[1fr_1fr_auto]" do |form| %>
+      <div>
+        <%= form.label :q, "Search saved answers", class: "block text-sm font-medium text-foreground" %>
+        <%= form.search_field :q, value: @query, placeholder: "Search answers, notes, or sources", class: "mt-2 block h-11 w-full rounded-xl border border-border bg-white px-3 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/10", data: { testid: "saved-answers-search" } %>
+      </div>
+      <div>
+        <%= form.label :meeting_prep_id, "Meeting prep", class: "block text-sm font-medium text-foreground" %>
+        <%= form.select :meeting_prep_id, options_from_collection_for_select(@meeting_preps, :id, :name, @meeting_prep&.id), { include_blank: "All saved answers" }, class: "mt-2 block h-11 w-full rounded-xl border border-border bg-white px-3 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/10", data: { testid: "saved-answers-meeting-filter" } %>
+      </div>
+      <div class="flex items-end gap-3">
+        <%= form.submit "Search", class: "h-11 rounded-full bg-primary px-5 text-sm font-medium text-white hover:bg-primary/90" %>
+        <% if @query.present? || @meeting_prep.present? %>
+          <%= link_to "Clear filters", dependent_saved_answers_path(@dependent), class: "inline-flex h-11 items-center text-sm font-medium text-primary" %>
+        <% end %>
+      </div>
+    <% end %>
+
+    <% if @saved_answers.any? %>
+      <section class="grid gap-4 md:grid-cols-2" aria-label="Saved answers">
+        <% @saved_answers.each do |saved_answer| %>
+          <article class="space-y-3 rounded-2xl border border-border/50 bg-white p-5" data-testid="saved-answer-<%= saved_answer.id %>">
+            <h2 class="break-words text-base font-semibold text-primary">
+              <%= link_to saved_answer.display_title, dependent_saved_answer_path(@dependent, saved_answer), class: "underline decoration-primary/20 underline-offset-4 hover:decoration-primary" %>
+            </h2>
+            <% if saved_answer.display_title != saved_answer.question %>
+              <p class="break-words text-sm font-medium text-foreground"><%= truncate(saved_answer.question, length: 180) %></p>
+            <% end %>
+            <p class="break-words text-sm leading-relaxed text-muted-foreground"><%= truncate(saved_answer.answer_payload[:answer], length: 240) %></p>
+            <p class="text-xs text-muted-foreground">Saved <time datetime="<%= saved_answer.created_at.iso8601 %>"><%= l(saved_answer.created_at.to_date, format: :long) %></time></p>
+          </article>
+        <% end %>
+      </section>
+    <% else %>
+      <section class="rounded-2xl border border-dashed border-border bg-white p-8 text-center">
+        <% if @query.present? || @meeting_prep.present? %>
+          <h2 class="text-base font-semibold text-foreground">No saved answers match</h2>
+          <p class="mt-2 text-sm text-muted-foreground">Try another search or clear the filters.</p>
+        <% else %>
+          <h2 class="text-base font-semibold text-foreground">Keep useful answers here</h2>
+          <p class="mt-2 text-sm text-muted-foreground">Save an answer from Ask PaperBridge to return to it or include it in meeting prep.</p>
+          <%= link_to "Ask a question", dependent_ai_assistant_path(@dependent), class: "mt-5 inline-flex rounded-full bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary/90" %>
+        <% end %>
+      </section>
+    <% end %>
+  </div>
+<% end %>

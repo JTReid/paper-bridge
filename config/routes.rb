@@ -9,6 +9,12 @@ Rails.application.routes.draw do
   resources :dependents, path: "profiles" do
     get :avatar, on: :member
     resources :care_team_memberships, path: "care-team", except: :show
+    resources :saved_answers, path: "saved-answers", except: :new do
+      post :add_to_meeting, on: :member
+    end
+    resources :meeting_preps, path: "meeting-prep" do
+      resources :meeting_prep_answers, path: "answers", only: %i[create update destroy]
+    end
   end
   get "profiles/:dependent_id/documents" => "documents#index", as: :dependent_documents
   get "profiles/:dependent_id/documents/new" => "documents#new", as: :new_dependent_document

@@ -13,6 +13,7 @@ class AiAssistantQuery < ApplicationRecord
   belongs_to :user
 
   has_many :pipeline_runs, as: :subject, dependent: :destroy
+  has_many :saved_answers, dependent: :nullify
 
   enum :state, STATES
 

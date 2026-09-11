@@ -158,6 +158,7 @@ Named workflow modes:
 | `documents` | Exercises original-filename search, category filtering, file-only upload with All Files, selection removal/clearing, 51-to-50 selection recovery and successful 50-file upload, storage-only Word/ZIP downloads and editing, consistent single/batch destinations, pending metadata completion and edit unlock, preserved corrections, and original-file actions. Uses deterministic completion without live AI. |
 | `care-team` | Verifies the care-team contact list and form, successful creation with name, role, email, and optional phone, and contact editing. |
 | `ai` | Opens the dependent-scoped AI assistant, submits a synthetic question, verifies immediate and queued states without leaving the profile, and runs an axe check. |
+| `saved-answers` | Saves a completed fake answer, edits and searches stored research, adds batches from a searchable checklist, checks desktop and phone picker capacity, one-line previews and independent scrolling, preserves browsing state through meeting changes, reuses and orders answers, and filters 30 loaded answers without requests. No live AI or worker runs. |
 | `calendar` | Opens a profile edit page, leaves work unfinished, opens the family calendar panel without changing pages, creates and emails a profile-owned appointment, closes the panel, and verifies the unfinished edit remains. It also covers the full-page account calendar, Central Time rendering, read-only details, and previous/next month navigation. |
 | `onboarding` | Registers a fresh family account, activates it with synthetic billing state, follows the six-step setup tour through Profile creation, one-file upload, and the first queued question, then verifies completion, dismissal/replay, account-scoped non-sensitive storage, reduced-motion behavior, accessibility, and phone-width fit. |
 
@@ -188,6 +189,11 @@ Live-service caveats:
 - AI assistant workflow coverage submits and persists a queued question through
   the test adapter. It does not run a worker, call a live LLM, generate
   embeddings, prove vector retrieval, or wait for a final answer.
+- Saved-answer workflows create completed synthetic results in a dedicated
+  profile through the test runner. They prove saved research and meeting
+  interactions, including local filtering, rather than answer generation.
+  Setup and cleanup stay scoped to that synthetic profile. Printing and PDF
+  export are outside the feature and browser contract.
 - Seeded edge-state workflow coverage is not part of Phase 3 yet. When added,
   it should use synthetic records and avoid live document ingestion, background
   workers, OCR, PDF tooling, embeddings, or summary generation.

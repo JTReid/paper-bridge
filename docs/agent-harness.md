@@ -67,6 +67,17 @@ interactions:
 ruby scripts/paper_bridge_qa_harness.rb workflow documents
 ```
 
+For saved answer snapshots, research search, and ordered meeting preparation,
+use the focused product and browser checks:
+
+```bash
+ruby scripts/paper_bridge_harness.rb saved-answers
+ruby scripts/paper_bridge_qa_harness.rb workflow saved-answers
+```
+
+These cover storing and organizing completed answers without running AI. Query
+execution remains in the existing agentic document checks.
+
 For appointment persistence, account-wide month rendering, creation, detail
 email delivery, dashboard summaries, calendar navigation, or the in-profile
 family calendar that preserves unfinished profile work, use the focused calendar

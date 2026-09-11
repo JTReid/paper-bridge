@@ -21,6 +21,7 @@ ruby scripts/paper_bridge_harness.rb foundation
 ruby scripts/paper_bridge_harness.rb calendar
 ruby scripts/paper_bridge_harness.rb document-ui
 ruby scripts/paper_bridge_harness.rb access
+ruby scripts/paper_bridge_harness.rb saved-answers
 ruby scripts/paper_bridge_harness.rb sharing
 ruby scripts/paper_bridge_harness.rb billing
 ruby scripts/paper_bridge_harness.rb product
@@ -35,9 +36,9 @@ full-page and in-profile calendar rendering, upcoming-appointment display,
 document listing,
 filename-search/category-filter/file-only-upload behavior, selected-document bulk
 delete with a named confirmation dialog, family-facing document
-status and AI language, care team contacts, account-scoped
-search access, email-attachment document sharing, and the Stripe billing
-foundation.
+status and AI language, care team contacts, private saved research and ordered
+meeting preparation, account-scoped search access, email-attachment document
+sharing, and the Stripe billing foundation.
 
 Future product requirements that are not implemented yet, such as appointment
 editing, deletion, reminders, recurrence, and external calendar integrations;
@@ -93,13 +94,22 @@ mobile, or broader negative workflows.
 The intended Phase 3 workflow selector is
 `ruby scripts/paper_bridge_qa_harness.rb workflow MODE`. Use it for named,
 deterministic product scenarios such as `profiles`, `billing`, `sharing`, `documents`,
-`care-team`, `ai`, `calendar`, `onboarding`, or `all`. Workflow modes sit between `smoke` and
-`browser`:
-they submit real browser workflows in `RAILS_ENV=test`, but they do not imply
+`care-team`, `ai`, `saved-answers`, `calendar`, `onboarding`, or `all`. Workflow
+modes sit between `smoke` and `browser`: they submit real browser workflows in
+`RAILS_ENV=test`, but they do not imply
 the full Chromium suite, Mailpit SMTP capture, bughunt artifacts, live Stripe,
 live AI, document ingestion, seeded edge-state scenarios, or the complete
 negative/error-state matrix. The detailed contract is in
 `docs/runbooks/qa-troubleshooting.md`.
+
+Use `workflow saved-answers` for saving a completed answer, editing and
+searching research, and organizing reusable meeting collections. It includes
+batch selection across searches, browsing-state preservation after meeting
+changes, a 30-answer meeting with local filtering, and a phone-width check, using fake
+completed answers without live AI or background workers. Rails ownership,
+snapshot, search, and ordering tests run with
+`ruby scripts/paper_bridge_harness.rb saved-answers`. See
+[Saved Answers And Meeting Preparation](runbooks/saved-answers.md).
 
 Use `workflow onboarding` for the fresh-registration path from Billing through
 the first-run Driver.js prompts, Profile creation, one-file upload, Ask

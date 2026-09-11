@@ -65,6 +65,14 @@ operational harness checks until matching implementation exists.
   replacement, progressive plain-text answer drafts, immediate progress,
   honest wait-time guidance, duplicate-submit locking, and reload-safe answers.
 - Account-scoped and category-scoped vector search authorization.
+- Private saved-answer research libraries within each profile, with editable
+  titles and notes, source snapshots, generated/saved dates, text search, and
+  named meeting preparations that reuse and order saved answers. A searchable
+  checklist adds answers in batches. Meeting pages filter loaded answers locally
+  and preserve searches, open answers, and the user's place when answers are
+  added, removed, or reordered. Saving and organizing do not run AI;
+  printing and PDF export are excluded. See
+  [Saved Answers And Meeting Preparation](saved-answers.md).
 - Email-based document sharing through `ShareEvent`, `SharedDocument`, and
   `DocumentShareMailer`.
 - Account-level Stripe billing foundation with `BillingSubscription`, hosted
@@ -161,9 +169,11 @@ For current product shape checks:
 ruby scripts/paper_bridge_harness.rb static
 ruby scripts/paper_bridge_harness.rb calendar
 ruby scripts/paper_bridge_harness.rb document-ui
+ruby scripts/paper_bridge_harness.rb saved-answers
 ruby scripts/paper_bridge_harness.rb product
 ruby scripts/paper_bridge_qa_harness.rb workflow profiles
 ruby scripts/paper_bridge_qa_harness.rb workflow onboarding
+ruby scripts/paper_bridge_qa_harness.rb workflow saved-answers
 ```
 
 Before broader product-shape or runbook changes:

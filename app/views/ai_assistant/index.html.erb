@@ -40,6 +40,8 @@
       </p>
     </header>
 
+    <%= render "shared/research_nav", dependent: @dependent, active: :ask %>
+
     <div class="space-y-6" data-tour="ask-question">
       <section class="space-y-2">
         <p class="text-xs font-medium uppercase tracking-wider text-muted-foreground">Suggested questions</p>
@@ -54,6 +56,7 @@
               form: {
                 class: "contents",
                 data: {
+                  ai_assistant_query_form: true,
                   action: "turbo:submit-end->product-tour#advanceAfterSubmit",
                   product_tour_from_phase_param: "ask_question",
                   product_tour_kind_param: "question",
@@ -65,7 +68,7 @@
       </section>
 
       <section class="space-y-4 rounded-2xl border border-border/50 bg-white p-6">
-        <%= form_with url: dependent_ai_assistant_path(@dependent), method: :post, class: "space-y-4", data: { action: "input->product-tour#pause turbo:submit-end->product-tour#advanceAfterSubmit", product_tour_from_phase_param: "ask_question", product_tour_kind_param: "question", product_tour_next_phase_param: "completed", testid: "ai-assistant-form" } do |form| %>
+        <%= form_with url: dependent_ai_assistant_path(@dependent), method: :post, class: "space-y-4", data: { ai_assistant_query_form: true, action: "input->product-tour#pause turbo:submit-end->product-tour#advanceAfterSubmit", product_tour_from_phase_param: "ask_question", product_tour_kind_param: "question", product_tour_next_phase_param: "completed", testid: "ai-assistant-form" } do |form| %>
           <%= form.text_area :q, placeholder: "Ask a question about documents, care progress, or next steps...", class: "min-h-[110px] w-full resize-none rounded-xl border border-border bg-white px-3 py-3 text-sm text-foreground outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/10 read-only:bg-muted/30", data: { testid: "ai-assistant-query", ai_assistant_query_target: "input" } %>
           <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <p class="text-xs text-muted-foreground">Most answers begin appearing within about 30 seconds. Once your question is queued, you can leave this page while PaperBridge keeps working.</p>

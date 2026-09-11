@@ -9,6 +9,8 @@ class Dependent < ApplicationRecord
   end
   has_many :documents, dependent: :restrict_with_error
   has_many :ai_assistant_queries, dependent: :destroy
+  has_many :meeting_preps, dependent: :destroy
+  has_many :saved_answers, dependent: :destroy
   has_many :appointments, dependent: :destroy
   has_many :care_team_memberships, dependent: :destroy
 

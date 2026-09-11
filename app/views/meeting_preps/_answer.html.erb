@@ -1,0 +1,28 @@
+<% saved_answer = meeting_prep_answer.saved_answer %>
+<article id="<%= dom_id(meeting_prep_answer) %>" class="rounded-2xl border border-border/50 bg-white" data-meeting-prep-filter-target="entry" data-meeting-prep-filter-search-text="<%= saved_answer.search_text %>" data-testid="meeting-prep-answer-<%= meeting_prep_answer.id %>">
+  <details id="<%= dom_id(meeting_prep_answer, :details) %>">
+    <summary id="<%= dom_id(meeting_prep_answer, :summary) %>" class="cursor-pointer break-words p-4 text-base font-semibold text-primary sm:p-5"><%= saved_answer.display_title %></summary>
+    <div class="space-y-5 border-t border-border/50 p-4 sm:p-5">
+      <div>
+        <h2 class="text-xs font-medium uppercase tracking-wider text-muted-foreground">Your question</h2>
+        <p class="mt-2 break-words text-sm font-medium text-foreground"><%= saved_answer.question %></p>
+        <% if saved_answer.generated_at.present? %>
+          <p class="mt-2 text-xs text-muted-foreground">Answer generated <time datetime="<%= saved_answer.generated_at.iso8601 %>"><%= l(saved_answer.generated_at.to_date, format: :long) %></time></p>
+        <% end %>
+      </div>
+      <%= render "shared/research_answer", answer: saved_answer.answer_payload, documents_by_id: @source_documents_by_id, source_prefix: dom_id(meeting_prep_answer) %>
+      <% if saved_answer.notes.present? %>
+        <section>
+          <h2 class="text-base font-semibold text-foreground">Your notes</h2>
+          <p class="mt-2 whitespace-pre-wrap break-words text-sm leading-relaxed text-foreground"><%= saved_answer.notes %></p>
+        </section>
+      <% end %>
+      <%= link_to "Edit title and notes", edit_dependent_saved_answer_path(@dependent, saved_answer), class: "inline-flex text-sm font-medium text-primary underline decoration-primary/30 underline-offset-2" %>
+    </div>
+  </details>
+  <div class="flex flex-wrap items-center gap-2 border-t border-border/50 px-4 py-2">
+    <%= button_to "Move up", dependent_meeting_prep_meeting_prep_answer_path(@dependent, @meeting_prep, meeting_prep_answer), method: :patch, params: { direction: "up" }, id: dom_id(meeting_prep_answer, :move_up), disabled: index.zero?, aria: { label: "Move up: #{saved_answer.display_title}" }, class: "min-h-11 rounded-full px-3 text-xs font-medium text-primary hover:bg-primary/5 disabled:cursor-not-allowed disabled:opacity-40", data: { testid: "meeting-prep-answer-up" } %>
+    <%= button_to "Move down", dependent_meeting_prep_meeting_prep_answer_path(@dependent, @meeting_prep, meeting_prep_answer), method: :patch, params: { direction: "down" }, id: dom_id(meeting_prep_answer, :move_down), disabled: index == @meeting_prep_answers.size - 1, aria: { label: "Move down: #{saved_answer.display_title}" }, class: "min-h-11 rounded-full px-3 text-xs font-medium text-primary hover:bg-primary/5 disabled:cursor-not-allowed disabled:opacity-40", data: { testid: "meeting-prep-answer-down" } %>
+    <%= button_to "Remove from meeting", dependent_meeting_prep_meeting_prep_answer_path(@dependent, @meeting_prep, meeting_prep_answer), method: :delete, id: dom_id(meeting_prep_answer, :remove), aria: { label: "Remove from meeting: #{saved_answer.display_title}" }, class: "min-h-11 rounded-full px-3 text-xs font-medium text-red-600 hover:bg-red-50", data: { testid: "meeting-prep-answer-remove" } %>
+  </div>
+</article>

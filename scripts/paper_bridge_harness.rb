@@ -16,12 +16,15 @@ CURRENT_PRODUCT_FILES = %w[
   db/migrate/20260808000200_add_enqueued_at_to_ai_assistant_queries.rb
   db/migrate/20260904000100_split_dependent_names.rb
   db/migrate/20260905000100_add_initial_metadata_pending_to_documents.rb
+  db/migrate/20260911000100_create_saved_answers_and_meeting_preps.rb
+  db/migrate/20260911135356_simplify_saved_answer_query_index.rb
   docs/runbooks/current-product-shape.md
   docs/runbooks/profile-management.md
   docs/runbooks/document-uploads.md
   docs/runbooks/care-team-access.md
   docs/runbooks/billing.md
   docs/runbooks/document-sharing.md
+  docs/runbooks/saved-answers.md
   scripts/paper_bridge_harness.rb
   scripts/agentic_pipeline_harness.rb
   app/controllers/concerns/calendar_workspace.rb
@@ -37,6 +40,10 @@ CURRENT_PRODUCT_FILES = %w[
   app/controllers/care_team_memberships_controller.rb
   app/controllers/share_events_controller.rb
   app/controllers/ai_assistant_controller.rb
+  app/controllers/saved_answers_controller.rb
+  app/controllers/meeting_preps_controller.rb
+  app/controllers/meeting_prep_answers_controller.rb
+  app/controllers/concerns/meeting_prep_workspace.rb
   app/controllers/billing_controller.rb
   app/controllers/billing/checkout_sessions_controller.rb
   app/controllers/billing/portal_sessions_controller.rb
@@ -48,6 +55,8 @@ CURRENT_PRODUCT_FILES = %w[
   app/jobs/answer_ai_assistant_query_job.rb
   app/javascript/controllers/document_search_controller.js
   app/javascript/controllers/ai_assistant_query_controller.js
+  app/javascript/controllers/meeting_prep_controller.js
+  app/javascript/controllers/meeting_prep_filter_controller.js
   app/javascript/controllers/appointment_dialog_controller.js
   app/javascript/controllers/family_calendar_controller.js
   app/javascript/controllers/product_tour_controller.js
@@ -55,6 +64,9 @@ CURRENT_PRODUCT_FILES = %w[
   app/assets/stylesheets/vendor/driver.css
   app/models/account.rb
   app/models/ai_assistant_query.rb
+  app/models/saved_answer.rb
+  app/models/meeting_prep.rb
+  app/models/meeting_prep_answer.rb
   app/models/account_membership.rb
   app/models/user.rb
   app/models/dependent.rb
@@ -89,6 +101,14 @@ CURRENT_PRODUCT_FILES = %w[
   app/views/ai_assistant/index.html.erb
   app/views/ai_assistant/_query_result.html.erb
   app/views/ai_assistant/create.turbo_stream.erb
+  app/views/saved_answers/index.html.erb
+  app/views/saved_answers/show.html.erb
+  app/views/meeting_preps/index.html.erb
+  app/views/meeting_preps/show.html.erb
+  app/views/meeting_preps/_workspace.html.erb
+  app/views/meeting_preps/_answer.html.erb
+  app/views/shared/_research_nav.html.erb
+  app/views/shared/_research_answer.html.erb
   test/controllers/home_controller_test.rb
   test/controllers/devise_registrations_controller_test.rb
   test/controllers/devise_sessions_controller_test.rb
@@ -131,11 +151,18 @@ CURRENT_PRODUCT_FILES = %w[
   test/controllers/ai_assistant_controller_test.rb
   test/jobs/answer_ai_assistant_query_job_test.rb
   test/models/ai_assistant_query_test.rb
+  test/models/saved_answer_test.rb
+  test/models/meeting_prep_test.rb
+  test/models/meeting_prep_answer_test.rb
+  test/controllers/saved_answers_controller_test.rb
+  test/controllers/meeting_preps_controller_test.rb
+  test/controllers/meeting_prep_answers_controller_test.rb
   tests/e2e/product/document_management.spec.js
   tests/e2e/product/calendar.spec.js
   tests/e2e/product/accessibility_suite.spec.js
   tests/e2e/product/mobile_suite.spec.js
   tests/e2e/product/ai_assistant.spec.js
+  tests/e2e/product/saved_answers.spec.js
   tests/e2e/product/billing.spec.js
   tests/e2e/product/onboarding_tour.spec.js
   vendor/javascript/driver.js.js
@@ -166,6 +193,15 @@ ACCESS_TESTS = %w[
   test/models/care_team_membership_test.rb
   test/controllers/care_team_memberships_controller_test.rb
   test/services/documents/search_access_profile_test.rb
+].freeze
+
+SAVED_ANSWER_TESTS = %w[
+  test/models/saved_answer_test.rb
+  test/models/meeting_prep_test.rb
+  test/models/meeting_prep_answer_test.rb
+  test/controllers/saved_answers_controller_test.rb
+  test/controllers/meeting_preps_controller_test.rb
+  test/controllers/meeting_prep_answers_controller_test.rb
 ].freeze
 
 SHARING_TESTS = %w[
@@ -206,6 +242,20 @@ CALENDAR_TESTS = %w[
 ].freeze
 
 RUBOCOP_PATHS = %w[
+  db/migrate/20260911000100_create_saved_answers_and_meeting_preps.rb
+  db/migrate/20260911135356_simplify_saved_answer_query_index.rb
+  app/models/saved_answer.rb
+  app/models/meeting_prep.rb
+  app/models/meeting_prep_answer.rb
+  app/controllers/saved_answers_controller.rb
+  app/controllers/meeting_preps_controller.rb
+  app/controllers/meeting_prep_answers_controller.rb
+  test/models/saved_answer_test.rb
+  test/models/meeting_prep_test.rb
+  test/models/meeting_prep_answer_test.rb
+  test/controllers/saved_answers_controller_test.rb
+  test/controllers/meeting_preps_controller_test.rb
+  test/controllers/meeting_prep_answers_controller_test.rb
   Gemfile
   config/application.rb
   config/routes.rb
@@ -312,6 +362,9 @@ COMMANDS = {
   "access" => [
     [ "bin/rails", "test", *ACCESS_TESTS ]
   ],
+  "saved-answers" => [
+    [ "bin/rails", "test", *SAVED_ANSWER_TESTS ]
+  ],
   "sharing" => [
     [ "bin/rails", "test", *SHARING_TESTS ]
   ],
@@ -345,12 +398,13 @@ def usage
       foundation  Run public/auth/account/dashboard/dependent workflow tests
       document-ui Run document listing, filename/category filter, upload-form, and presentation tests
       access      Run care team contact and account search-access tests
+      saved-answers Run saved research and meeting preparation tests
       sharing     Run current document sharing and mailer tests
       billing     Run Stripe billing foundation tests
       calendar    Run appointment persistence, calendar, email delivery, creation, and dashboard tests
       documents   Delegate document ingestion/search checks to the agentic harness
       agentic     Run agentic static, framework, and document lifecycle checks
-      product     Run foundation, calendar, document UI, access, sharing, and billing checks
+      product     Run foundation, calendar, document UI, access, saved answers, sharing, and billing checks
       rubocop     Run RuboCop on current product-shape files
       review      Run docs, static, product, agentic, and rubocop checks
   USAGE
@@ -377,7 +431,7 @@ def static_check_passed?
   end
 
   puts "Expected current product-shape files exist."
-  puts "Product workflows covered: foundation, calendar, document UI, access, sharing, billing."
+  puts "Product workflows covered: foundation, calendar, document UI, access, saved answers, sharing, billing."
   puts "Agentic document workflows remain delegated to scripts/agentic_pipeline_harness.rb."
   true
 end
@@ -387,10 +441,10 @@ def run_named_command(name)
   when "static"
     static_check_passed?
   when "product"
-    run_command_group("assets") && %w[foundation calendar document-ui access sharing billing].all? { |command| run_command_group(command) }
+    run_command_group("assets") && %w[foundation calendar document-ui access saved-answers sharing billing].all? { |command| run_command_group(command) }
   when "review"
     %w[docs static product agentic rubocop].all? { |command| run_named_command(command) }
-  when "foundation", "calendar", "document-ui", "access", "sharing", "billing"
+  when "foundation", "calendar", "document-ui", "access", "saved-answers", "sharing", "billing"
     run_command_group("assets") && run_command_group(name)
   else
     run_command_group(name)
