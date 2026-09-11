@@ -1,27 +1,26 @@
 class CareTeamMembershipsController < ApplicationController
   before_action :authenticate_user!
+  before_action :require_current_account!
   before_action :set_dependent
+  before_action :require_account_manager!, except: :index
   before_action :set_care_team_membership, only: %i[edit update destroy]
 
   def index
-    @care_team_memberships = @dependent.care_team_memberships.includes(:user).order(:created_at)
+    @care_team_memberships = @dependent.care_team_memberships.order(:created_at)
   end
 
   def new
-    @care_team_membership = @dependent.care_team_memberships.new(default_membership_attributes)
+    @care_team_membership = @dependent.care_team_memberships.new(role: :teacher)
   end
 
   def create
-    user = find_or_initialize_user
     @care_team_membership = @dependent.care_team_memberships.new(care_team_membership_params)
     @care_team_membership.account = current_account
-    @care_team_membership.user = user
     @care_team_membership.invited_by = current_user
 
-    if save_invitation(user)
-      redirect_to dependent_care_team_memberships_path(@dependent), notice: "Care team member invited."
+    if @care_team_membership.save
+      redirect_to dependent_care_team_memberships_path(@dependent), notice: "Care team member added."
     else
-      user.errors.full_messages.each { |message| @care_team_membership.errors.add(:user, message) }
       render :new, status: :unprocessable_entity
     end
   end
@@ -52,33 +51,8 @@ class CareTeamMembershipsController < ApplicationController
       @care_team_membership = @dependent.care_team_memberships.find(params[:id])
     end
 
-    def default_membership_attributes
-      {
-        role: :teacher,
-        permissions: CareTeamMembership::DOCUMENT_CATEGORY_PERMISSIONS.index_with do |category|
-          category == "educational"
-        end
-      }
-    end
-
-    def find_or_initialize_user
-      User.find_or_initialize_by(email: care_team_membership_params.fetch(:email).to_s.strip.downcase).tap do |user|
-        user.name = care_team_membership_params[:name] if user.new_record? || user.name.blank?
-        if user.new_record?
-          user.password = SecureRandom.urlsafe_base64(24)
-          user.password_confirmation = user.password
-        end
-      end
-    end
-
-    def save_invitation(user)
-      ActiveRecord::Base.transaction do
-        user.save!
-        @care_team_membership.save!
-      end
-      true
-    rescue ActiveRecord::RecordInvalid
-      false
+    def require_account_manager!
+      head :forbidden unless current_user.can_manage_account?(current_account)
     end
 
     def care_team_membership_params
@@ -86,8 +60,7 @@ class CareTeamMembershipsController < ApplicationController
         :name,
         :email,
         :role,
-        :status,
-        permissions: CareTeamMembership::DOCUMENT_CATEGORY_PERMISSIONS
+        :phone_number
       )
     end
 end

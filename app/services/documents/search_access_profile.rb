@@ -17,15 +17,6 @@ module Documents
       "legal_advocate" => %w[legal education general]
     }.freeze
 
-    CATEGORY_LABELS = {
-      "educational" => %w[education behavior general],
-      "medical" => %w[medical general],
-      "prescriptions" => %w[medical general],
-      "therapy" => %w[therapy behavior medical general],
-      "insurance" => %w[financial general],
-      "general" => %w[general]
-    }.freeze
-
     ROLE_CATEGORIES = {
       "account_owner" => Document.categories.keys,
       "admin" => Document.categories.keys,
@@ -44,27 +35,17 @@ module Documents
     attr_reader :role, :allowed_chunk_labels, :allowed_document_categories
 
     def self.for(actor, account: nil, dependent: nil)
-      if account && actor&.can_manage_account?(account)
-        return new(role: "admin")
-      end
+      account ||= dependent&.account
+      memberships = actor&.account_memberships
+      memberships = memberships.where(account: account) if account && memberships
 
-      membership = if dependent
-        actor&.care_team_memberships&.active&.find_by(dependent: dependent)
-      end
-
-      if membership
-        categories = membership.allowed_document_categories
-        labels = categories.flat_map { |category| CATEGORY_LABELS.fetch(category, []) }.uniq
-        return new(role: membership.role, allowed_chunk_labels: labels, allowed_document_categories: categories)
-      end
-
-      role = if actor&.account_memberships&.admin&.exists?
+      role = if memberships&.admin&.exists?
         "admin"
-      elsif actor&.account_memberships&.member&.exists?
+      elsif memberships&.member&.exists?
         "member"
-      else
-        actor&.care_team_memberships&.active&.first&.role
       end
+
+      return new(role: nil, allowed_chunk_labels: [], allowed_document_categories: []) unless role
 
       new(role: role)
     end

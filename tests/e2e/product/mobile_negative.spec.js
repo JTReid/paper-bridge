@@ -16,15 +16,15 @@ test.describe('mobile negative workflows', () => {
     expect(await page.getByTestId('document-share-recipient-email').evaluate((input) => input.validity.valueMissing)).toBe(true);
   });
 
-  test('mobile care team invite shows blank email validation', async ({ page }) => {
+  test('mobile care team contact shows blank email validation', async ({ page }) => {
     await openDependentWorkspace(page);
     await page.getByTestId('dependent-care-team-link').click();
-    await page.getByTestId('care-team-invite-link').click();
+    await page.getByTestId('care-team-add-link').click();
 
     await page.getByTestId('care-team-name-field').fill('Mobile Missing Email');
     await page.getByTestId('care-team-submit').click();
 
-    await expect(page.getByRole('heading', { name: 'Invite Care Team Member' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Add Care Team Member' })).toBeVisible();
     await expect(page.getByTestId('care-team-form-errors')).toContainText(/Email|can't be blank|invalid/i);
   });
 });

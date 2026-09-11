@@ -11,7 +11,7 @@ class DependentsController < ApplicationController
 
   def show
     @documents = @dependent.documents.order(created_at: :desc).to_a
-    @care_team_memberships = @dependent.care_team_memberships.includes(:user).order(:created_at)
+    @care_team_memberships = @dependent.care_team_memberships.order(:created_at)
   end
 
   def new

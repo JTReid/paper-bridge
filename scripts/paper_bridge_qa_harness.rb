@@ -195,7 +195,7 @@ def workflow_usage
       billing    Run billing access and subscription state workflow checks
       sharing    Run document sharing workflow checks without Mailpit
       documents  Run document upload and metadata workflow checks
-      care-team  Run care team invitation and permissions workflow checks
+      care-team  Run care team contact workflow checks
       ai         Run AI assistant page workflow checks without live model calls
       calendar   Run calendar appointment and month navigation workflow checks
       onboarding Run the post-signup setup tour through the first question
@@ -241,7 +241,7 @@ def negative_usage
 
     Modes:
       documents   Run document form validation probes
-      care-team   Run invalid care team invite probes
+      care-team   Run invalid care team contact probes
       mobile      Run narrow viewport negative workflow probes
       edge-states Run seeded empty, failed, and partial document state probes
       all         Run all negative/error-state modes above

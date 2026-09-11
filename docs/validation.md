@@ -35,8 +35,8 @@ full-page and in-profile calendar rendering, upcoming-appointment display,
 document listing,
 filename-search/category-filter/file-only-upload behavior, selected-document bulk
 delete with a named confirmation dialog, family-facing document
-status and AI language, care team invitations, category permissions,
-search-access mapping, email-attachment document sharing, and the Stripe billing
+status and AI language, care team contacts, account-scoped
+search access, email-attachment document sharing, and the Stripe billing
 foundation.
 
 Future product requirements that are not implemented yet, such as appointment
@@ -87,7 +87,7 @@ test app, runs only `tests/e2e/smoke`, and verifies the public entry surface,
 fixture-admin sign-in, dashboard, main signed-in product surface reachability,
 invalid sign-in feedback, shared browser diagnostics, and targeted axe checks.
 It is not proof of form side effects, document sharing delivery, persisted
-care-team invitations, Stripe Checkout/webhooks, AI answer generation, email,
+care-team contacts, Stripe Checkout/webhooks, AI answer generation, email,
 mobile, or broader negative workflows.
 
 The intended Phase 3 workflow selector is

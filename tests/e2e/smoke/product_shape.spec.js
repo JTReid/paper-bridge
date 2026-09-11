@@ -56,10 +56,10 @@ test('care team and ai assistant surfaces render without submitting workflows', 
   await page.getByTestId('dependent-care-team-link').click();
   await expect(page.getByRole('heading', { name: 'Care Team' })).toBeVisible();
   await expect(page.getByText('Therapist User')).toBeVisible();
-  await expect(page.getByTestId('care-team-invite-link')).toBeVisible();
+  await expect(page.getByTestId('care-team-add-link')).toBeVisible();
 
-  await page.getByTestId('care-team-invite-link').click();
-  await expect(page.getByRole('heading', { name: 'Invite Care Team Member' })).toBeVisible();
+  await page.getByTestId('care-team-add-link').click();
+  await expect(page.getByRole('heading', { name: 'Add Care Team Member' })).toBeVisible();
   await expect(page.getByTestId('care-team-form')).toBeVisible();
 
   await page.goto(aiAssistantPath || '/dashboard');

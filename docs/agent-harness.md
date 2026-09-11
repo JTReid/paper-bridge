@@ -50,8 +50,8 @@ ruby scripts/paper_bridge_harness.rb product
 
 Use that command when changing public/auth entry points, registration-created
 accounts, dashboard or dependent workspace navigation, dependent profile
-workflows, account calendar appointments, care team invitations, care team category permissions,
-search-access mapping, document listing and filename/category filters,
+workflows, account calendar appointments, care team contacts, account-scoped
+search access, document listing and filename/category filters,
 upload-form defaults, document sharing, or mailers. Use the focused document UI
 command while iterating:
 

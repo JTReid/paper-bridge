@@ -265,10 +265,10 @@ class DependentsControllerTest < ActionDispatch::IntegrationTest
     appointment = appointments(:noah_checkup)
     membership = dependent.care_team_memberships.create!(
       account: accounts(:greenfield),
-      user: users(:therapist),
       invited_by: users(:family_admin),
-      role: :therapist,
-      status: :active
+      name: "Therapist Contact",
+      email: "therapist@example.test",
+      role: :therapist
     )
     query = create_query(dependent)
     sign_in users(:family_admin)

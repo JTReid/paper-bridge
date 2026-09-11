@@ -71,8 +71,8 @@ test.describe('mobile product surfaces', () => {
     await page.locator('summary').first().click();
     await page.getByRole('link', { name: 'Care Team' }).click();
     await expect(page.getByRole('heading', { name: 'Care Team' })).toBeVisible();
-    await page.getByTestId('care-team-invite-link').click();
-    await expect(page.getByRole('heading', { name: 'Invite Care Team Member' })).toBeVisible();
+    await page.getByTestId('care-team-add-link').click();
+    await expect(page.getByRole('heading', { name: 'Add Care Team Member' })).toBeVisible();
 
     await page.locator('summary').first().click();
     await page.getByRole('link', { name: 'Ask PaperBridge' }).click();

@@ -91,7 +91,7 @@ route, authenticate, or render the implemented signed-in workspace:
 - An invalid sign-in stays on the sign-in page and shows the Devise alert.
 - An active account can reach the dashboard, dependent workspace, documents
   index, document detail, document upload form, document share modal, care-team
-  index, care-team invite form, AI assistant page, and billing page.
+  index, care-team contact form, AI assistant page, and billing page.
 - Smoke only checks that these surfaces render and expose their primary
   affordances; it does not submit product forms or verify side effects.
 - Shared browser diagnostics still apply: uncaught page errors, console errors,
@@ -103,13 +103,13 @@ Hard boundaries:
   (`ruby scripts/paper_bridge_harness.rb foundation`, `calendar`, `access`,
   `sharing`, `billing`, or `product`) and to the richer Playwright product specs
   run by `browser`. Smoke should not prove dependent CRUD, appointment creation,
-  document create/update/delete, document sharing delivery, care-team invitation
+  document create/update/delete, document sharing delivery, care-team contact
   persistence, billing status transitions, AI answer generation, or seeded
   edge-state workflows.
 - Negative and error-state probes belong in focused product, Mailpit, or
   regression specs. Smoke may keep the shallow invalid sign-in sentinel, but it
   should not become the matrix for blank forms, malformed recipients, duplicate
-  invites, mobile validation, failed processing states, or no-email assertions.
+  contacts, mobile validation, failed processing states, or no-email assertions.
 - `browser` is the full Chromium Playwright suite. Use it when a change needs
   confidence across browser-visible product workflows, negative probes, billing
   forms, seeded QA states, and smoke together.
@@ -156,7 +156,7 @@ Named workflow modes:
 | `billing` | Verifies inactive-account billing gating, hidden product navigation, Checkout form full-page navigation, the locked post-Checkout dashboard state, Turbo-driven active and non-active outcomes, cancellation feedback, active-account product access, and Customer Portal form full-page navigation with synthetic Stripe records. |
 | `sharing` | Opens the share modal, selects a care team recipient, submits a document share, and verifies the browser success path without SMTP capture. |
 | `documents` | Exercises original-filename search, category filtering, file-only upload with All Files, selection removal/clearing, 51-to-50 selection recovery and successful 50-file upload, storage-only Word/ZIP downloads and editing, consistent single/batch destinations, pending metadata completion and edit unlock, preserved corrections, and original-file actions. Uses deterministic completion without live AI. |
-| `care-team` | Verifies the care-team list, active member permissions, invite form, and successful invite creation with category permissions. |
+| `care-team` | Verifies the care-team contact list and form, successful creation with name, role, email, and optional phone, and contact editing. |
 | `ai` | Opens the dependent-scoped AI assistant, submits a synthetic question, verifies immediate and queued states without leaving the profile, and runs an axe check. |
 | `calendar` | Opens a profile edit page, leaves work unfinished, opens the family calendar panel without changing pages, creates and emails a profile-owned appointment, closes the panel, and verifies the unfinished edit remains. It also covers the full-page account calendar, Central Time rendering, read-only details, and previous/next month navigation. |
 | `onboarding` | Registers a fresh family account, activates it with synthetic billing state, follows the six-step setup tour through Profile creation, one-file upload, and the first queued question, then verifies completion, dismissal/replay, account-scoped non-sensitive storage, reduced-motion behavior, accessibility, and phone-width fit. |
@@ -222,9 +222,9 @@ Named negative modes:
 | Mode | Coverage |
 | --- | --- |
 | `all` | Runs every deterministic negative mode in this table. It does not run `workflow`, `mailpit`, `bughunt`, live-service probes, or full responsive sweeps. |
-| `care-team` | Verifies blank email, malformed email, and duplicate invite behavior, including clear user-visible errors and no successful invalid invite. Successful invite creation remains `workflow care-team`. |
+| `care-team` | Verifies blank email, malformed email, and duplicate contact behavior, including clear user-visible errors and no successful invalid contact. Successful contact creation remains `workflow care-team`. |
 | `documents` | Verifies required-file and blank-title validation, invalid supported-image rejection, partial-upload notices, the server-side 51-file limit without client validation, duplicate rejection without overwrites, changed contents under the same filename, and identical files across profiles. Successful uploads and metadata edits remain `workflow documents`; live ingestion, OCR, and embeddings remain outside browser coverage. |
-| `mobile` | Runs a narrow viewport pass over deterministic negative probes, currently blank-recipient sharing and blank-email care-team invite behavior. It is not a full mobile product or responsive-layout suite. |
+| `mobile` | Runs a narrow viewport pass over deterministic negative probes, currently blank-recipient sharing and blank-email care-team contact behavior. It is not a full mobile product or responsive-layout suite. |
 | `edge-states` | Verifies synthetic uploaded, failed, missing-embedding, partial-embedding, and no-summary document lifecycle states render safely. It does not run live ingestion, OCR, embeddings, or background workers. |
 
 Boundaries:
@@ -392,7 +392,7 @@ Accessibility modes:
 
 | Mode | Coverage |
 | --- | --- |
-| `surfaces` | Runs axe checks over public home, sign-in, dashboard, billing gate, workspace, documents, share modal, upload, care team, invite, AI assistant, and seeded document edge states. |
+| `surfaces` | Runs axe checks over public home, sign-in, dashboard, billing gate, workspace, documents, share modal, upload, care team, contact form, AI assistant, and seeded document edge states. |
 | `all` | Runs every accessibility mode above. Today this is the same path as `accessibility surfaces`. It does not run mobile viewport checks, Mailpit, or live-service probes. |
 
 Mobile commands:
@@ -405,7 +405,7 @@ Mobile modes:
 
 | Mode | Coverage |
 | --- | --- |
-| `surfaces` | Runs successful `390x844` viewport navigation through public home, dashboard, billing, workspace, documents, share modal, care team, invite, and AI assistant surfaces. |
+| `surfaces` | Runs successful `390x844` viewport navigation through public home, dashboard, billing, workspace, documents, share modal, care team, contact form, and AI assistant surfaces. |
 | `negative` | Runs narrow viewport negative workflow probes. |
 | `all` | Runs every mobile mode above. |
 
@@ -417,12 +417,12 @@ the Playwright run with the affected selectors and axe help URL.
 Mobile coverage currently has two specs at a `390x844` viewport.
 `mobile surfaces` runs `tests/e2e/product/mobile_suite.spec.js` and verifies
 successful narrow navigation through the public entry points, app shell,
-billing page, workspace, documents, share modal, care-team invite, and AI
+billing page, workspace, documents, share modal, care-team contact form, and AI
 assistant. `mobile negative` runs `tests/e2e/product/mobile_negative.spec.js`
 and verifies two user-visible failure states: blank-recipient document sharing
 stays in the share modal with browser-native required-field validation, and a
-blank-email care-team invite returns to the invite form with visible validation
-errors.
+blank-email care-team submission returns to the contact form with visible
+validation errors.
 
 What Phase 6 proves:
 
@@ -452,7 +452,7 @@ What Phase 6 does not prove:
   Chromium viewport tied to selected successful navigation and negative
   validation probes.
 - It does not prove successful mobile document sharing submission, care-team
-  invite submission, file upload, AI answer generation, or document processing.
+  contact submission, file upload, AI answer generation, or document processing.
 - It does not call live Stripe, live AI providers, external SMTP, background
   workers, OCR, embeddings, or native device services.
 
@@ -565,8 +565,8 @@ main signed-in product surfaces.
 - Smoke verifies a dependent workspace opens.
 - Smoke verifies the documents page, document detail, upload form, and share
   modal can be opened without submitting document workflows.
-- Smoke verifies the care-team index and invite form can be opened without
-  submitting an invitation.
+- Smoke verifies the care-team index and contact form can be opened without
+  saving a contact.
 - Smoke verifies the AI assistant page opens without submitting a query.
 - Smoke verifies the billing page renders the active subscription state.
 - Document sharing can submit to a care team recipient.
@@ -578,11 +578,12 @@ main signed-in product surfaces.
 - Browser-native upload form validation guards missing files.
 - Document metadata can be edited.
 - Document negative coverage verifies blank-title validation.
-- A care team member can be invited with category permissions.
-- Care-team negative coverage verifies blank, malformed, and duplicate invite
+- A care team contact can be added with name, role, email, and optional phone,
+  then edited.
+- Care-team negative coverage verifies blank, malformed, and duplicate contact
   errors.
 - Mobile negative coverage verifies blank-recipient sharing and blank-email care
-  team invite behavior on a narrow viewport.
+  team contact behavior on a narrow viewport.
 - Billing gates inactive accounts to `/billing`, hides product navigation,
   verifies active accounts keep product access, and checks Stripe Checkout and
   Customer Portal forms use full-page navigation instead of Turbo fetches.

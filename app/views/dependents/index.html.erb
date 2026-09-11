@@ -36,7 +36,7 @@
             <% if dependent.notes.present? %>
               <p class="line-clamp-2 text-xs leading-relaxed text-muted-foreground"><%= dependent.notes %></p>
             <% else %>
-              <p class="text-xs leading-relaxed text-muted-foreground">Open this profile to manage documents, questions and answers, and care team access.</p>
+              <p class="text-xs leading-relaxed text-muted-foreground">Open this profile to manage documents, questions and answers, and care team contacts.</p>
             <% end %>
           <% end %>
         <% end %>
@@ -48,7 +48,7 @@
             <%= pb_icon("user-circle", class_name: "h-5 w-5 text-primary/60") %>
           </div>
           <h2 class="text-base font-semibold text-foreground">Add the first profile</h2>
-          <p class="mt-2 text-sm leading-relaxed text-muted-foreground">Documents, care team access, and answers will be organized around each profile.</p>
+          <p class="mt-2 text-sm leading-relaxed text-muted-foreground">Documents, care team contacts, and answers will be organized around each profile.</p>
           <%= link_to "Add Profile", new_dependent_path, class: "mt-5 inline-flex rounded-full bg-primary px-5 py-2 text-xs font-medium text-white transition-colors hover:bg-primary/90" %>
         </div>
       </section>

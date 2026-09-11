@@ -1,10 +1,6 @@
 require "test_helper"
 
 class Documents::SearchAccessProfileTest < ActiveSupport::TestCase
-  test "defines chunk-label access for every document category" do
-    assert_equal Document.categories.keys.sort, Documents::SearchAccessProfile::CATEGORY_LABELS.keys.sort
-  end
-
   test "family admin can search every chunk label" do
     profile = Documents::SearchAccessProfile.for(users(:family_admin), account: accounts(:greenfield))
 
@@ -12,23 +8,20 @@ class Documents::SearchAccessProfileTest < ActiveSupport::TestCase
     assert_equal Document.categories.keys, profile.allowed_document_categories
   end
 
-  test "care team access is limited by category permissions" do
+  test "account members can search every chunk label and document category" do
     profile = Documents::SearchAccessProfile.for(
-      users(:therapist),
+      users(:account_member),
       account: accounts(:greenfield),
       dependent: dependents(:emma)
     )
 
-    assert_equal %w[behavior general medical therapy], profile.allowed_chunk_labels.sort
-    assert_equal %w[general medical therapy], profile.allowed_document_categories.sort
-    assert profile.allows_label?("therapy")
-    assert_not profile.allows_label?("education")
-    assert profile.allows_category?("medical")
-    assert_not profile.allows_category?("insurance")
+    assert_equal "member", profile.role
+    assert_equal DocumentChunk::LABELS, profile.allowed_chunk_labels
+    assert_equal Document.categories.keys, profile.allowed_document_categories
   end
 
-  test "prescription permission grants medical and general search access" do
-    care_team_memberships(:emma_therapist).update!(permissions: { prescriptions: true })
+  test "care team contacts do not grant search access to a user with the same email" do
+    assert_equal care_team_memberships(:emma_therapist).email, users(:therapist).email
 
     profile = Documents::SearchAccessProfile.for(
       users(:therapist),
@@ -36,11 +29,36 @@ class Documents::SearchAccessProfileTest < ActiveSupport::TestCase
       dependent: dependents(:emma)
     )
 
-    assert_equal %w[general medical], profile.allowed_chunk_labels.sort
-    assert_equal %w[prescriptions], profile.allowed_document_categories
-    assert profile.allows_label?("medical")
-    assert profile.allows_label?("general")
-    assert profile.allows_category?("prescriptions")
+    assert_empty profile.allowed_chunk_labels
+    assert_empty profile.allowed_document_categories
+  end
+
+  test "care team contacts do not grant search access without a dependent" do
+    profile = Documents::SearchAccessProfile.for(users(:therapist))
+
+    assert_empty profile.allowed_chunk_labels
+    assert_empty profile.allowed_document_categories
+  end
+
+  test "an admin from another account has no search access" do
+    profile = Documents::SearchAccessProfile.for(users(:other_user), account: accounts(:greenfield))
+
+    assert_empty profile.allowed_chunk_labels
+    assert_empty profile.allowed_document_categories
+  end
+
+  test "dependent scopes account membership when no account is provided" do
+    profile = Documents::SearchAccessProfile.for(users(:other_user), dependent: dependents(:emma))
+
+    assert_empty profile.allowed_chunk_labels
+    assert_empty profile.allowed_document_categories
+  end
+
+  test "a missing actor has no search access" do
+    profile = Documents::SearchAccessProfile.for(nil, account: accounts(:greenfield))
+
+    assert_empty profile.allowed_chunk_labels
+    assert_empty profile.allowed_document_categories
   end
 
   test "teacher role is limited to school-relevant labels" do

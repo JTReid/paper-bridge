@@ -11,7 +11,7 @@ not accept them. Date of birth remains optional. User sign-up names are not
 part of this change.
 
 The edit page exposes Delete profile with a confirmation explaining that its
-appointments, saved questions, and care team memberships are also removed.
+appointments, saved questions, and care team contacts are also removed.
 Profiles with documents cannot be deleted: the existing model restriction
 remains, and the page links to those documents with instructions to remove
 them first. Requests scope the profile to the signed-in user's current account.

@@ -10,7 +10,6 @@ ruby scripts/paper_bridge_qa_harness.rb negative all
 
 ## TODO
 
-- Decide whether zero-permission care team invites should be valid.
 - Add deeper AI no-evidence browser coverage once the QA harness has a
   deterministic fake LLM/vector-search path.
 
@@ -23,11 +22,11 @@ ruby scripts/paper_bridge_qa_harness.rb negative all
   validation and sends no email.
 - Sharing Mailpit QA verifies malformed recipient is rejected server-side and
   sends no email.
-- Care team QA verifies blank email, malformed email, and duplicate invite
+- Care team QA verifies blank email, malformed email, and duplicate contact
   behavior.
 - Document QA verifies blank title edits show a validation error instead of
   silently restoring the filename.
-- Mobile QA verifies blank recipient sharing and blank-email care team invites
+- Mobile QA verifies blank recipient sharing and blank-email care team contacts
   on a narrow viewport.
 - Job and controller coverage verifies persisted AI assistant failures render
   the intended fallback UI without exposing provider errors.
@@ -38,7 +37,7 @@ Start with targeted negative probes where browser-level behavior adds value
 beyond existing model and controller tests:
 
 1. Sharing validation and failure states.
-2. Care team invitation validation.
+2. Care team contact validation.
 3. AI assistant failure and no-evidence states.
 4. Mobile viewport sweeps around the same workflows.
 
@@ -74,28 +73,24 @@ Likely product improvement:
 
 - Add server-side recipient email format validation to `ShareEvent`.
 
-### Care Team Invites
+### Care Team Contacts
 
 Current surface:
 
-- `CareTeamMembership` validates name, email, role, status, uniqueness by
-  dependent/user, account ownership, and inviter permissions.
-- Controller coverage is strongest on successful invite flows.
+- `CareTeamMembership` validates name, email, role, email uniqueness within the
+  profile, account ownership, and the creating account manager. Phone number is
+  optional.
+- Saving contacts creates no login, sends no invitation, and grants no access.
 
 Recommended probes:
 
 - Submit blank name.
 - Submit blank email.
 - Submit malformed email.
-- Submit a duplicate invite for the same dependent.
-- Submit with no permissions selected, once the intended product behavior is
-  decided.
-- Confirm failed submissions do not create users or memberships.
-
-Open product question:
-
-- Should a care team member be allowed to have zero category permissions, or is
-  that an invalid invite?
+- Submit a duplicate email for the same profile, including case and whitespace
+  variations.
+- Confirm failed submissions do not save a contact or change an existing one.
+- Confirm valid submissions create no users, account memberships, or emails.
 
 ### Documents
 
@@ -150,7 +145,7 @@ rather than becoming a separate mobile-only suite:
 
 - Auth sign in and invalid sign in.
 - Document list and share modal.
-- Care team invite form.
+- Care team contact form.
 - AI assistant empty and error states.
 - Public home navigation and primary CTAs.
 
@@ -168,14 +163,14 @@ when a specific defect needs screenshots, videos, and traces.
 Recommended first pass:
 
 1. Sharing no-document and blank/malformed-recipient probes.
-2. Care team blank/malformed/duplicate invite probes.
+2. Care team blank/malformed/duplicate contact probes.
 3. AI assistant simulated failure probe.
 4. Mobile viewport sweep for auth, sharing, and care team forms.
 
 Defer:
 
-- Role-based admin versus care-team behavior until the product defines what care
-  team members can do differently.
+- Care-team portal and role-based record-access workflows; Care Team currently
+  stores contacts only.
 - Cross-browser expansion beyond Chromium.
 - New file-size policy probes beyond the existing image limits until the
   product defines additional storage limits.

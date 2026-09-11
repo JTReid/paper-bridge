@@ -344,7 +344,7 @@ def usage
       static      Check current product-shape files and runbooks exist
       foundation  Run public/auth/account/dashboard/dependent workflow tests
       document-ui Run document listing, filename/category filter, upload-form, and presentation tests
-      access      Run care team and search-access permission tests
+      access      Run care team contact and account search-access tests
       sharing     Run current document sharing and mailer tests
       billing     Run Stripe billing foundation tests
       calendar    Run appointment persistence, calendar, email delivery, creation, and dashboard tests

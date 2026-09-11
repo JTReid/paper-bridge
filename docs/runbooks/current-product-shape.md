@@ -56,9 +56,10 @@ operational harness checks until matching implementation exists.
   other formats.
 - Separate GPT-backed image ingestion that extracts text, classifies the
   document, creates search chunks, and stores pgvector embeddings.
-- Care team invitations for a dependent, backed by `CareTeamMembership`.
-- Care team category permissions for educational, medical, prescriptions,
-  therapy, insurance, and general document categories.
+- Care team contacts for a dependent, backed by `CareTeamMembership`, with
+  required name, role, and email plus an optional phone number. Adding a contact
+  saves their details for the family and document-sharing recipient picker;
+  it creates no login, invitation email, or record access.
 - Dependent-scoped AI assistant with durable question submission,
   queued/processing/completed/failed states, background execution, final Turbo
   replacement, progressive plain-text answer drafts, immediate progress,
@@ -85,6 +86,8 @@ Customer pages use language intended for a parent or caregiver rather than
 describing the implementation:
 
 - People whose records are managed are called **Profiles**.
+- Care Team uses **Add Member** and contact details, without invitation status
+  or document-access controls.
 - The question-and-answer feature is called **Ask PaperBridge**. The page still
   explains that answers are AI-generated and should be verified.
 - Supporting records shown with an answer are called **Sources**.

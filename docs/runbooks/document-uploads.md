@@ -68,8 +68,8 @@ Structured output follows the existing provider integration and the
 `Document#complete_initial_metadata!` validates the output, locks the record,
 and saves category, description, and pending=false together. Missing/invalid
 metadata fails processing without completing the step or becoming searchable.
-Pending records are excluded from vector search, including care-team search;
-the existing category and chunk-label access checks still apply afterward.
+Pending records are excluded from vector search; the existing category and
+chunk-label access checks still apply afterward.
 
 Category and description are disabled on Edit Document until this initial step
 finishes; title editing remains available. The backend also rejects premature

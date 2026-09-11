@@ -14,6 +14,9 @@ product scope rather than this operational harness contract.
 - A share can include one or more selected documents from the current account.
 - Document IDs outside the current account are ignored by the controller scope.
 - A share requires at least one selected account document.
+- The recipient picker offers saved Care Team contact names and email
+  addresses. Adding a contact sends no email and grants no document access;
+  sharing sends only the documents selected for that email.
 - Selected email attachments are capped by `ShareEventsController`.
 - `ShareEvent` stores account, sender, recipient email, subject, message,
   status, sent timestamp, and error message.

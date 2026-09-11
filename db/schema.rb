@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_09_05_000300) do
+ActiveRecord::Schema[8.1].define(version: 2026_09_10_000100) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "vector"
@@ -136,11 +136,12 @@ ActiveRecord::Schema[8.1].define(version: 2026_09_05_000300) do
     t.bigint "invited_by_id", null: false
     t.string "name", null: false
     t.jsonb "permissions", default: {}, null: false
+    t.string "phone_number"
     t.datetime "revoked_at"
     t.string "role", null: false
-    t.string "status", default: "invited", null: false
+    t.string "status"
     t.datetime "updated_at", null: false
-    t.bigint "user_id", null: false
+    t.bigint "user_id"
     t.index ["account_id", "status"], name: "index_care_team_memberships_on_account_id_and_status"
     t.index ["account_id"], name: "index_care_team_memberships_on_account_id"
     t.index ["dependent_id", "user_id"], name: "index_care_team_memberships_on_dependent_id_and_user_id", unique: true

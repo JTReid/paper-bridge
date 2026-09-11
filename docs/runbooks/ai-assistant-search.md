@@ -90,13 +90,14 @@ lifecycle.
   source, and unknown source numbers are discarded.
 - Inline answer citations and source cards link through an authenticated
   document-original endpoint. PDFs open in a new tab at the cited physical page.
-- The current source-opening workflow is a family-account surface. Extending it
-  to accountless care-team logins requires a shared document-access scope and is
-  not implied by this citation-link feature.
+- The source-opening workflow is a family-account surface. Care Team stores
+  contacts only; adding a contact grants no document or assistant access.
 - If retrieval returns no chunks, answer synthesis is skipped without making a
   chat completion call. This is a completed query with no supported answer, not
   a failed job.
 - Retrieval is constrained by account before results are ranked.
+- `Documents::SearchAccessProfile` requires membership in the requested account;
+  a care team contact or membership in another account grants no search access.
 - Retrieval is constrained by both document category and
   `Documents::SearchAccessProfile` labels before results are ranked.
 - Family-facing answers expose numbered sources, canonical document titles,

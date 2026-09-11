@@ -30,7 +30,7 @@ qa-family-admin@example.test / password
 - Billing: active synthetic `BillingSubscription` so global subscription gates
   do not block seeded product workflows
 - Dependent: `Avery Morgan`
-- Care team: one active teacher and one invited therapist
+- Care team: one teacher contact and one therapist contact
 - Documents: 11 synthetic PDF records
 - Baseline documents: 4 processed records matching the observed development
   corpus shape

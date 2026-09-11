@@ -1,14 +1,4 @@
 module ApplicationHelper
-  CARE_TEAM_ACCESS_LABELS = {
-    "invited" => "Invitation pending",
-    "active" => "Can access",
-    "revoked" => "Access removed"
-  }.freeze
-
-  def care_team_access_label(status)
-    CARE_TEAM_ACCESS_LABELS.fetch(status.to_s, status.to_s.humanize)
-  end
-
   def app_shell(active:, dependent: nil, product_tour_auto_start: false, &block)
     product_tour_enabled = current_account.present? &&
       current_account.subscription_active? &&

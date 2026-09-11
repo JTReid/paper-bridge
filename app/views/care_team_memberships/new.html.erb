@@ -1,4 +1,4 @@
-<% content_for :title, "Invite Care Team Member | PaperBridge" %>
+<% content_for :title, "Add Care Team Member | PaperBridge" %>
 
 <%= app_shell(active: :care_team, dependent: @dependent) do %>
   <div class="mx-auto max-w-2xl space-y-6">
@@ -7,8 +7,7 @@
         <span aria-hidden="true" class="mr-2">&larr;</span>
         Back to care team
       <% end %>
-      <h1 class="mt-6 text-2xl font-bold tracking-tight text-foreground md:text-3xl">Invite Care Team Member</h1>
-      <p class="mt-1 text-sm text-muted-foreground">Set up their access to <%= @dependent.name %>’s records. They can view selected records but cannot change or share them.</p>
+      <h1 class="mt-6 text-2xl font-bold tracking-tight text-foreground md:text-3xl">Add Care Team Member</h1>
     </header>
 
     <%= render "form", care_team_membership: @care_team_membership %>

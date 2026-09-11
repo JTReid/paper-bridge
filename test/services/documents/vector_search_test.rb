@@ -150,6 +150,18 @@ class Documents::VectorSearchTest < ActiveSupport::TestCase
     assert_empty search(query_embedding: unit_vector(0))
   end
 
+  test "care team contact records do not grant access to indexed documents" do
+    chunk = create_chunk!("General family note", label: "general", chunk_index: 2)
+    create_embedding!(chunk, unit_vector(0))
+    profile = Documents::SearchAccessProfile.for(
+      users(:therapist),
+      account: @account,
+      dependent: @dependent
+    )
+
+    assert_empty search(query_embedding: unit_vector(0), access_profile: profile)
+  end
+
   test "storage-only documents are never returned even if stale embeddings exist" do
     chunk = create_chunk!("Stored-only record", label: "medical", chunk_index: 2)
     create_embedding!(chunk, unit_vector(0))

@@ -100,8 +100,8 @@ test('care team and AI surfaces pass axe checks', async ({ page }) => {
   await expect(page.getByRole('heading', { name: 'Care Team' })).toBeVisible();
   await expectAccessible(page);
 
-  await page.getByTestId('care-team-invite-link').click();
-  await expect(page.getByRole('heading', { name: 'Invite Care Team Member' })).toBeVisible();
+  await page.getByTestId('care-team-add-link').click();
+  await expect(page.getByRole('heading', { name: 'Add Care Team Member' })).toBeVisible();
   await expectAccessible(page);
 
   await page.goto('/dashboard');

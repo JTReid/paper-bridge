@@ -11,7 +11,6 @@ class Dependent < ApplicationRecord
   has_many :ai_assistant_queries, dependent: :destroy
   has_many :appointments, dependent: :destroy
   has_many :care_team_memberships, dependent: :destroy
-  has_many :care_team_users, through: :care_team_memberships, source: :user
 
   normalizes :first_name, :last_name, with: ->(value) { value.strip }
 

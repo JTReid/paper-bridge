@@ -1,88 +1,76 @@
 require "test_helper"
 
 class CareTeamMembershipTest < ActiveSupport::TestCase
-  test "keeps document category permissions in parity with document categories" do
-    assert_equal Document.categories.keys, CareTeamMembership::DOCUMENT_CATEGORY_PERMISSIONS
+  test "saves normalized contact details without a login or phone number" do
+    membership = build_contact(name: "  New Therapist  ", email: "  NEW-THERAPIST@example.test  ", phone_number: " ")
+
+    assert_no_difference [ -> { User.count }, -> { AccountMembership.count } ] do
+      assert membership.save
+    end
+
+    assert_equal "New Therapist", membership.reload.name
+    assert_equal "new-therapist@example.test", membership.email
+    assert_nil membership.phone_number
   end
 
-  test "normalizes category permissions and copies user identity" do
-    user = User.create!(
-      name: "New Therapist",
-      email: "new-therapist@example.test",
-      password: "password",
-      password_confirmation: "password"
-    )
-    membership = CareTeamMembership.create!(
-      account: accounts(:greenfield),
-      dependent: dependents(:emma),
-      user: user,
-      invited_by: users(:family_admin),
-      role: :therapist,
-      permissions: {
-        "educational" => "0",
-        "medical" => "1",
-        "prescriptions" => "1",
-        "therapy" => true
-      }
-    )
+  test "preserves phone formatting and extensions" do
+    membership = build_contact(phone_number: " +1 (850) 555-0101 ext. 23 ")
 
-    assert_equal "New Therapist", membership.name
-    assert_equal "new-therapist@example.test", membership.email
-    assert_equal %w[medical prescriptions therapy], membership.allowed_document_categories.sort
-    assert_equal false, membership.permissions.fetch("general")
+    assert membership.save
+    assert_equal "+1 (850) 555-0101 ext. 23", membership.reload.phone_number
+  end
+
+  test "requires name email and role" do
+    membership = build_contact(name: " ", email: " ", role: nil)
+
+    assert_not membership.valid?
+    %i[name email role].each { |attribute| assert_includes membership.errors[attribute], "can't be blank" }
+  end
+
+  test "rejects malformed email addresses" do
+    membership = build_contact(email: "not-an-email")
+
+    assert_not membership.valid?
+    assert_includes membership.errors[:email], "is invalid"
+  end
+
+  test "prevents duplicate emails within a profile regardless of case" do
+    membership = build_contact(email: " THERAPIST@example.test ")
+
+    assert_not membership.valid?
+    assert_includes membership.errors[:email], "has already been taken"
+  end
+
+  test "allows the same contact email on different profiles" do
+    membership = build_contact(dependent: dependents(:noah), email: "therapist@example.test")
+
+    assert membership.save
   end
 
   test "requires account to match dependent" do
-    membership = CareTeamMembership.new(
-      account: accounts(:other),
-      dependent: dependents(:emma),
-      user: users(:therapist),
-      invited_by: users(:other_user),
-      name: "Therapist User",
-      email: "therapist@example.test",
-      role: :therapist
-    )
+    membership = build_contact(account: accounts(:other), invited_by: users(:other_user))
 
     assert_not membership.valid?
     assert_includes membership.errors[:account], "must match the dependent"
   end
 
-  test "normalizes symbol keyed category permissions" do
-    user = User.create!(
-      name: "Symbol Therapist",
-      email: "symbol-therapist@example.test",
-      password: "password",
-      password_confirmation: "password"
-    )
-    membership = CareTeamMembership.new(
-      account: accounts(:greenfield),
-      dependent: dependents(:emma),
-      user: user,
-      invited_by: users(:family_admin),
-      role: :therapist,
-      permissions: {
-        educational: "1",
-        medical: "0",
-        therapy: true
-      }
-    )
-
-    assert membership.valid?
-    assert_equal %w[educational therapy], membership.allowed_document_categories.sort
-  end
-
-  test "requires inviter to manage the account" do
-    membership = CareTeamMembership.new(
-      account: accounts(:greenfield),
-      dependent: dependents(:emma),
-      user: users(:therapist),
-      invited_by: users(:account_member),
-      name: "Therapist User",
-      email: "therapist@example.test",
-      role: :therapist
-    )
+  test "requires creator to manage the account" do
+    membership = build_contact(invited_by: users(:account_member))
 
     assert_not membership.valid?
     assert_includes membership.errors[:invited_by], "must be able to manage the account"
   end
+
+  private
+
+    def build_contact(**attributes)
+      CareTeamMembership.new({
+        account: accounts(:greenfield),
+        dependent: dependents(:emma),
+        invited_by: users(:family_admin),
+        name: "New Therapist",
+        email: "new-therapist@example.test",
+        role: :therapist
+      }.merge(attributes))
+    end
 end

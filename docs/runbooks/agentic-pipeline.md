@@ -2,7 +2,7 @@
 
 This runbook protects the generic `Agentic::Pipeline` machinery. It should stay
 separate from product lifecycle details such as document ingestion, search,
-sharing, or care team access.
+sharing, or care team contacts.
 
 ## Contract
 

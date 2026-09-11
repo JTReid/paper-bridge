@@ -7,12 +7,11 @@ ported from Scoutspace.
 
 ## Application Shape
 
-- `User` is Devise-backed and is the single login identity for account members
-  and care team members.
+- `User` is the Devise-backed login identity for account members.
 - `Account` is the tenant boundary. Users join accounts through
   `AccountMembership` records with `admin` or `member` roles.
 - `Dependent` is the person whose care records are being managed. Dependents
-  belong to an account, own documents plus care team access, and may have one
+  belong to an account, own documents plus care team contacts, and may have one
   validated Active Storage avatar.
 - `Appointment` belongs to one dependent and stores the scheduled time plus a
   family-facing description. Account calendar access is derived through the
@@ -26,8 +25,10 @@ ported from Scoutspace.
   validates the recipient address, and sends its profile, Central Time, and
   description details through `AppointmentMailer` without creating sharing
   history or changing the appointment.
-- `CareTeamMembership` links a login user to one dependent, records the care
-  team role, tracks invite status, and stores document category permissions.
+- `CareTeamMembership` stores one dependent's care team contact with a name,
+  role, email, and optional phone number. It records the creating user through
+  `invited_by` for provenance. Contacts do not create logins or grant access.
+  Legacy login links, status, and permissions remain stored but unused.
 - `Document` is the first-class upload record. It owns processing state,
   category, dependent ownership, preparation state, prepared payload JSON, and
   one Active Storage file attachment.
@@ -53,9 +54,8 @@ ported from Scoutspace.
 - `TimelineEvent` stores source-grounded care timeline events extracted from
   chunks. Each event belongs to one `DocumentChunk`, so attribution flows back
   through the chunk, document page, document, and account.
-- `Documents::SearchAccessProfile` maps account membership roles or care team
-  category permissions to allowed chunk labels. This is the current
-  authorization seam for search.
+- `Documents::SearchAccessProfile` derives search access from membership in the
+  requested account. Care team contacts and their roles grant no search access.
 - `Documents::VectorSearch` performs account-scoped, label-scoped pgvector
   retrieval with an optional dependent scope and returns chunks with document,
   page, distance, and similarity metadata.
@@ -83,9 +83,8 @@ ported from Scoutspace.
   calendar display, on-demand detail emails, document uploads, document
   categories, care team memberships, current email-attachment document sharing,
   and document pages are real.
-- Admin/member authorization lives on `AccountMembership`. Care team document
-  search authorization is derived from dependent-scoped `CareTeamMembership`
-  category permissions.
+- Admin/member authorization lives on `AccountMembership`. Care team contacts
+  supply contact details and suggested document-sharing recipients only.
 - Development and production Active Storage use S3. Tests use the local test
   disk service. Profile avatars use a named 256-pixel square variant and an
   authenticated, account-scoped endpoint that redirects to a five-minute

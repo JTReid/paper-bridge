@@ -250,45 +250,22 @@ module QaHarnessSeed
         email: "qa-teacher@example.test",
         name: "QA Classroom Teacher",
         role: "teacher",
-        status: "active",
-        accepted_at: 2.days.ago,
-        permissions: {
-          "educational" => true,
-          "general" => true,
-          "medical" => false,
-          "prescriptions" => false,
-          "therapy" => false,
-          "insurance" => false
-        }
+        phone_number: "850-555-0101"
       },
       {
         email: "qa-therapist@example.test",
         name: "QA Speech Therapist",
         role: "therapist",
-        status: "invited",
-        permissions: {
-          "therapy" => true,
-          "medical" => true,
-          "prescriptions" => false,
-          "general" => true,
-          "educational" => false,
-          "insurance" => false
-        }
+        phone_number: "850-555-0102"
       }
     ].each do |member|
-      user = upsert_user!(member.fetch(:email), member.fetch(:name))
-
       account.care_team_memberships.create!(
         dependent: dependent,
-        user: user,
         invited_by: admin,
         name: member.fetch(:name),
         email: member.fetch(:email),
         role: member.fetch(:role),
-        status: member.fetch(:status),
-        invited_at: 3.days.ago,
-        accepted_at: member[:accepted_at],
-        permissions: member.fetch(:permissions)
+        phone_number: member.fetch(:phone_number)
       )
     end
   end
