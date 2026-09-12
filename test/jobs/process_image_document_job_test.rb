@@ -130,6 +130,8 @@ class ProcessImageDocumentJobTest < ActiveJob::TestCase
     embedding_payload = JSON.parse(embedding_request.fetch(:payload))
 
     assert_equal "processed", document.status
+    assert_nil document.processing_job_id
+    assert_nil pipeline_run.context["processing_job_id"]
     assert_equal "prepared", document.preparation_status
     assert_equal "image-v1", document.prepared_payload.fetch("preparation_version")
     assert_equal "image", document.prepared_payload.fetch("format")
@@ -188,6 +190,19 @@ class ProcessImageDocumentJobTest < ActiveJob::TestCase
     assert_nil template.at_css("fieldset[disabled]")
     assert_equal "prescriptions", template.at_css("option[selected]")["value"]
     assert_includes template.text, "An amoxicillin prescription with dosage instructions."
+  end
+
+  test "records the actual Solid Queue job id on the image document and its pipeline run" do
+    document = create_image_document
+    clear_enqueued_jobs
+    job = ProcessImageDocumentJob.new(document)
+    job.provider_job_id = 23_456
+
+    job.perform_now
+
+    assert_predicate document.reload, :processed?
+    assert_equal 23_456, document.processing_job_id
+    assert_equal 23_456, document.pipeline_runs.last.context.fetch("processing_job_id")
   end
 
   test "storage-only documents are not enqueued and ignore a directly invoked image job" do

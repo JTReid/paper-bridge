@@ -16,7 +16,7 @@ class ProcessImageDocumentJob < ApplicationJob
   def perform(document)
     return unless document.processable? && Documents::UploadNormalizer::IMAGE_CONTENT_TYPES.include?(document.content_type)
 
-    document.processing!
+    document.update!(status: :processing, processing_job_id: provider_job_id)
     prepared_payload = prepare_image(document)
     pipeline_run = create_pipeline_run(document, prepared_payload)
 
@@ -104,6 +104,7 @@ class ProcessImageDocumentJob < ApplicationJob
           filename: document.original_filename,
           content_type: document.content_type,
           byte_size: document.byte_size,
+          processing_job_id: provider_job_id,
           preparation_status: document.preparation_status,
           preparation_version: prepared_payload[:preparation_version],
           page_count: prepared_payload[:page_count]

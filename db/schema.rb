@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_09_11_135356) do
+ActiveRecord::Schema[8.1].define(version: 2026_09_12_030542) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "vector"
@@ -233,6 +233,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_09_11_135356) do
     t.string "preparation_status", default: "unprepared", null: false
     t.datetime "prepared_at"
     t.jsonb "prepared_payload", default: {}, null: false
+    t.bigint "processing_job_id"
     t.string "status", default: "uploaded", null: false
     t.datetime "summarized_at"
     t.jsonb "summary", default: {}, null: false

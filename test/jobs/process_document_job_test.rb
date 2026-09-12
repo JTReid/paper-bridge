@@ -215,6 +215,8 @@ class ProcessDocumentJobTest < ActiveJob::TestCase
     embedding_payload = JSON.parse(embedding_request.fetch(:payload))
 
     assert_equal "processed", document.status
+    assert_nil document.processing_job_id
+    assert_nil pipeline_run.context["processing_job_id"]
     assert_equal "educational", document.category
     assert_equal "A short description of the uploaded document.", document.description
     assert_not document.initial_metadata_pending?
@@ -268,6 +270,19 @@ class ProcessDocumentJobTest < ActiveJob::TestCase
     assert_nil template.at_css("fieldset[disabled]")
     assert_equal "educational", template.at_css("option[selected]")["value"]
     assert_includes template.text, "A short description of the uploaded document."
+  end
+
+  test "records the actual Solid Queue job id on the document and its pipeline run" do
+    document = create_document
+    clear_enqueued_jobs
+    job = ProcessDocumentJob.new(document)
+    job.provider_job_id = 12_345
+
+    job.perform_now
+
+    assert_predicate document.reload, :processed?
+    assert_equal 12_345, document.processing_job_id
+    assert_equal 12_345, document.pipeline_runs.last.context.fetch("processing_job_id")
   end
 
   test "storage-only documents are not enqueued and ignore a directly invoked document job" do

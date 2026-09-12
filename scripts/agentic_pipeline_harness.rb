@@ -55,6 +55,7 @@ DOCUMENT_PIPELINE_FILES = %w[
   app/jobs/answer_ai_assistant_query_job.rb
   app/jobs/process_image_document_job.rb
   app/jobs/process_document_job.rb
+  app/jobs/reconcile_document_processing_job.rb
   app/models/ai_assistant_query.rb
   app/models/document.rb
   app/models/document_chunk.rb
@@ -63,6 +64,7 @@ DOCUMENT_PIPELINE_FILES = %w[
   app/models/timeline_event.rb
   config/database.yml
   config/environments/development.rb
+  config/recurring.yml
   app/services/agentic/document_ingestion_pipeline.rb
   app/services/agentic/document_search_pipeline.rb
   app/services/agentic/image_document_ingestion_pipeline.rb
@@ -82,6 +84,7 @@ DOCUMENT_PIPELINE_FILES = %w[
   app/services/documents/prepare.rb
   app/services/documents/prepare_pdf.rb
   app/services/documents/prepare_text.rb
+  app/services/documents/reconcile_failed_processing.rb
   app/services/documents/search_access_profile.rb
   app/services/documents/search_answer_citation_normalizer.rb
   app/services/documents/streaming_answer_extractor.rb
@@ -95,6 +98,7 @@ DOCUMENT_PIPELINE_FILES = %w[
   db/migrate/20260808000100_create_ai_assistant_queries.rb
   db/migrate/20260808000200_add_enqueued_at_to_ai_assistant_queries.rb
   db/migrate/20260905000100_add_initial_metadata_pending_to_documents.rb
+  db/migrate/20260912030542_add_processing_job_id_to_documents.rb
   db/migrate/20260614033907_add_summary_to_documents.rb
   db/migrate/20260614040236_create_document_pages.rb
   db/migrate/20260614040243_add_preparation_to_documents.rb
@@ -123,6 +127,7 @@ DOCUMENT_PIPELINE_FILES = %w[
   test/services/documents/pipeline_configuration_check_test.rb
   test/services/documents/prepare_pdf_test.rb
   test/services/documents/prepare_text_test.rb
+  test/services/documents/reconcile_failed_processing_test.rb
   test/services/documents/search_access_profile_test.rb
   test/services/documents/search_answer_citation_normalizer_test.rb
   test/services/documents/streaming_answer_extractor_test.rb
@@ -336,6 +341,7 @@ COMMANDS = {
       "test/services/documents/pipeline_configuration_check_test.rb",
       "test/services/documents/pdf_command_runner_test.rb",
       "test/services/documents/prepare_text_test.rb",
+      "test/services/documents/reconcile_failed_processing_test.rb",
       "test/services/documents/prepare_pdf_test.rb",
       "test/services/documents/search_access_profile_test.rb",
       "test/services/documents/search_answer_citation_normalizer_test.rb",
@@ -399,6 +405,7 @@ COMMANDS = {
       "scripts/sync_document_pipeline_configuration.rb",
       "test/scripts/update_document_metadata_schemas_test.rb",
       "db/migrate/20260905000100_add_initial_metadata_pending_to_documents.rb",
+      "db/migrate/20260912030542_add_processing_job_id_to_documents.rb",
       "scripts/agentic_pipeline_harness.rb"
     ]
   ],

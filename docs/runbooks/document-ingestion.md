@@ -61,6 +61,21 @@ documents.
   `PipelineRun`.
 - Successful processing marks the document `processed`; failures mark it
   `failed`.
+- Both processing jobs record the Solid Queue job ID in
+  `Document.processing_job_id` and in the `PipelineRun` context. The queue ID
+  identifies the current execution even when Active Job retries reuse their
+  Active Job ID.
+- `ReconcileDocumentProcessingJob` runs every minute in development and
+  production. `Documents::ReconcileFailedProcessing` checks tracked processing
+  documents against Solid Queue's recorded `ProcessPrunedError`,
+  `ProcessExitError`, or `ProcessMissingError` failures. It marks the matching document and its unfinished
+  pipeline runs failed, preserving attachments and any generated results.
+  It does not infer failure from elapsed time or automatically retry work.
+  The failed-execution row and document are locked before applying the change,
+  so a newer execution or a manual queue retry is not mistaken for the old failure.
+- Older processing documents without a recorded queue job ID need individual
+  verification against queue history before correcting their status; the
+  scheduled job does not guess which execution they belong to.
 - Deleting a document while it is queued or processing discards the job
   quietly: a queued job is dropped on deserialization, and a running job exits
   through `discard_on ActiveRecord::RecordNotFound` without marking failure or
