@@ -38,6 +38,21 @@ ruby scripts/agentic_pipeline_harness.rb doctor
 ruby scripts/agentic_pipeline_harness.rb tests
 ```
 
+`doctor` loads seeds in the test database before checking provider setup.
+It is a local framework check, not a check of deployed records. To inspect the
+document pipeline configuration as stored in a selected environment, use:
+
+```bash
+ruby scripts/agentic_pipeline_harness.rb config-check
+RAILS_ENV=production ruby scripts/agentic_pipeline_harness.rb config-check
+```
+
+This read-only check defaults to `development`, preserves `RAILS_ENV`, and
+does not load seeds or call AI. It is separate from `review`, which validates
+seeded test configuration. Release-time synchronization and the document
+configuration contract are documented in
+[Document Uploads](document-uploads.md#deployment).
+
 Live provider smoke checks are opt-in:
 
 ```bash

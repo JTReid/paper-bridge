@@ -51,7 +51,7 @@ openai_embeddings.update!(provider_class: "Agentic::Providers::Openai")
   [
     "image_document_extractor",
     openai_mini,
-    "Read uploaded image documents using vision, including printed and handwritten text. Preserve uncertainty instead of guessing, classify the document, summarize only visible evidence, and create useful search chunks. Return only fields allowed by the configured schema."
+    Documents::PipelineConfiguration::IMAGE_PROMPT
   ],
   [
     "query_embedder",
@@ -107,37 +107,6 @@ validation_schema = {
   required: %w[status reasons]
 }
 
-document_chunks_schema = {
-  type: "object",
-  additionalProperties: false,
-  properties: {
-    chunks: {
-      type: "array",
-      items: {
-        type: "object",
-        additionalProperties: false,
-        properties: {
-          content: { type: "string" },
-          label: {
-            type: "string",
-            enum: %w[
-              medical
-              education
-              therapy
-              behavior
-              legal
-              financial
-              general
-            ]
-          }
-        },
-        required: %w[content label]
-      }
-    }
-  },
-  required: %w[chunks]
-}
-
 search_answer_schema = {
   type: "object",
   additionalProperties: false,
@@ -168,62 +137,14 @@ search_answer_schema = {
   required: %w[answer citations limitations]
 }
 
-timeline_events_schema = {
-  type: "object",
-  additionalProperties: false,
-  properties: {
-    events: {
-      type: "array",
-      items: {
-        type: "object",
-        additionalProperties: false,
-        properties: {
-          document_chunk_id: { type: "integer" },
-          event_type: {
-            type: "string",
-            enum: TimelineEvent::EVENT_TYPES
-          },
-          title: { type: "string" },
-          description: { type: "string" },
-          occurred_on: { type: "string" },
-          started_on: { type: "string" },
-          ended_on: { type: "string" },
-          date_precision: {
-            type: "string",
-            enum: TimelineEvent::DATE_PRECISIONS
-          },
-          date_source: {
-            type: "string",
-            enum: TimelineEvent::DATE_SOURCES
-          },
-          source_quote: { type: "string" }
-        },
-        required: %w[
-          document_chunk_id
-          event_type
-          title
-          description
-          occurred_on
-          started_on
-          ended_on
-          date_precision
-          date_source
-          source_quote
-        ]
-      }
-    }
-  },
-  required: %w[events]
-}
-
 {
   "structured_summary" => summary_schema,
   "document_summary" => Documents::MetadataSchemas.document_summary,
   "structured_validation" => validation_schema,
-  "document_chunks" => document_chunks_schema,
+  "document_chunks" => Documents::PipelineSchemas.document_chunks,
   "image_document_extraction" => Documents::MetadataSchemas.image_document_extraction,
   "search_answer" => search_answer_schema,
-  "timeline_events" => timeline_events_schema
+  "timeline_events" => Documents::PipelineSchemas.timeline_events
 }.each do |name, schema|
   openai_schema = JsonSchema.find_or_initialize_by(name: "openai_#{name}")
   openai_schema.schema = {

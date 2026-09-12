@@ -59,7 +59,7 @@ module Documents
       }
     end
 
-    # A narrow post-migration update; this deliberately leaves models, prompts,
+    # A narrow create/update; this deliberately leaves models, prompts,
     # generic structured summaries, and every other schema untouched.
     def self.update!
       JsonSchema.transaction do
@@ -68,7 +68,7 @@ module Documents
           "image_document_extraction" => image_document_extraction
         }
         records = schemas.keys.flat_map { |name| [ "openai_#{name}", "anthropic_#{name}" ] }
-          .index_with { |name| JsonSchema.find_by!(name: name) }
+          .index_with { |name| JsonSchema.find_or_initialize_by(name: name) }
 
         schemas.each do |name, schema|
           records.fetch("openai_#{name}").update!(

@@ -200,6 +200,7 @@ they do not verify SES identities, sandbox status, or external inbox delivery.
 ruby scripts/agentic_pipeline_harness.rb static
 ruby scripts/agentic_pipeline_harness.rb assets
 ruby scripts/agentic_pipeline_harness.rb doctor
+ruby scripts/agentic_pipeline_harness.rb config-check
 ruby scripts/agentic_pipeline_harness.rb tests
 ruby scripts/agentic_pipeline_harness.rb documents
 ruby scripts/agentic_pipeline_harness.rb pdf-tools
@@ -224,8 +225,20 @@ synthesis with citations, pipeline records, and exact final usage telemetry with
 fake PDF tooling and fake LLM/embedding calls.
 It also covers one-time category/description generation, retry preservation,
 pending-document search exclusion, edit-field completion broadcasts, and the
-separate document-schema updater described in
+document configuration synchronization, read-only configuration checks, and the
+legacy document-schema updater described in
 [Document Uploads](runbooks/document-uploads.md).
+
+`config-check` inspects stored document pipeline configuration in `RAILS_ENV`
+(default: `development`) without loading seeds, changing records, or calling
+AI. For a deployed production Rails environment, run
+`RAILS_ENV=production ruby scripts/agentic_pipeline_harness.rb config-check`.
+It exits unsuccessfully if the configuration does not meet the current
+contract. This is separate from `doctor`, which seeds and checks the test
+database; a green `doctor` or `review` is not a deployed configuration check.
+The Heroku release command runs the targeted configuration sync and check
+after migrations, failing the release if that transaction cannot complete.
+
 Upload coverage also checks the 50-file batch limit, profile-scoped duplicate
 rejection without overwrites, storage-only originals/downloads/editing, no
 pipeline or attachment analysis for non-processable files, and the unchanged

@@ -50,15 +50,26 @@ class UpdateDocumentMetadataSchemasTest < ActiveSupport::TestCase
     assert_equal model_settings, [ Llm, AgentType, Prompt ].map { |model| model.order(:id).map(&:attributes) }
   end
 
-  test "fails without writes if a required schema record is missing" do
-    JsonSchema.find_by!(name: "anthropic_image_document_extraction").destroy!
-    JsonSchema.find_by!(name: "openai_document_summary").update!(schema: { old_schema: true })
-    before = JsonSchema.order(:id).map(&:attributes)
+  test "creates missing metadata schemas without changing other configuration" do
+    target_names = %w[
+      openai_document_summary anthropic_document_summary
+      openai_image_document_extraction anthropic_image_document_extraction
+    ]
+    JsonSchema.where(name: target_names).destroy_all
+    other_schemas = JsonSchema.order(:id).map(&:attributes)
+    model_settings = [ Llm, AgentType, Prompt ].map { |model| model.order(:id).map(&:attributes) }
 
-    assert_raises ActiveRecord::RecordNotFound do
+    assert_difference "JsonSchema.count", 4 do
       capture_io { load Rails.root.join("scripts/update_document_metadata_schemas.rb") }
     end
 
-    assert_equal before, JsonSchema.order(:id).map(&:attributes)
+    assert_equal target_names.sort, JsonSchema.where(name: target_names).pluck(:name).sort
+    assert_equal other_schemas, JsonSchema.where.not(name: target_names).order(:id).map(&:attributes)
+    assert_equal model_settings, [ Llm, AgentType, Prompt ].map { |model| model.order(:id).map(&:attributes) }
+    created_schemas = JsonSchema.order(:id).map(&:attributes)
+
+    capture_io { load Rails.root.join("scripts/update_document_metadata_schemas.rb") }
+
+    assert_equal created_schemas, JsonSchema.order(:id).map(&:attributes)
   end
 end

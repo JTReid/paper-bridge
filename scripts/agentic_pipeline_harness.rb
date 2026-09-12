@@ -48,6 +48,7 @@ AGENTIC_CORE_FILES = %w[
 ].freeze
 
 DOCUMENT_PIPELINE_FILES = %w[
+  Procfile
   app/controllers/ai_assistant_controller.rb
   app/helpers/ai_assistant_helper.rb
   app/javascript/controllers/ai_assistant_query_controller.js
@@ -75,6 +76,9 @@ DOCUMENT_PIPELINE_FILES = %w[
   app/services/agents/vector_retriever.rb
   app/services/documents/pdf_command_runner.rb
   app/services/documents/metadata_schemas.rb
+  app/services/documents/pipeline_configuration.rb
+  app/services/documents/pipeline_configuration_check.rb
+  app/services/documents/pipeline_schemas.rb
   app/services/documents/prepare.rb
   app/services/documents/prepare_pdf.rb
   app/services/documents/prepare_text.rb
@@ -106,6 +110,8 @@ DOCUMENT_PIPELINE_FILES = %w[
   test/jobs/process_image_document_job_test.rb
   test/scripts/update_document_metadata_schemas_test.rb
   scripts/update_document_metadata_schemas.rb
+  scripts/check_document_pipeline_configuration.rb
+  scripts/sync_document_pipeline_configuration.rb
   test/models/document_chunk_test.rb
   test/models/document_embedding_test.rb
   test/models/document_page_test.rb
@@ -113,6 +119,8 @@ DOCUMENT_PIPELINE_FILES = %w[
   test/models/timeline_event_test.rb
   test/models/ai_assistant_query_test.rb
   test/services/documents/pdf_command_runner_test.rb
+  test/services/documents/pipeline_configuration_test.rb
+  test/services/documents/pipeline_configuration_check_test.rb
   test/services/documents/prepare_pdf_test.rb
   test/services/documents/prepare_text_test.rb
   test/services/documents/search_access_profile_test.rb
@@ -292,6 +300,9 @@ COMMANDS = {
   "doctor" => [
     [ "bin/rails", "runner", "-e", "test", DOCTOR_RUNNER ]
   ],
+  "config-check" => [
+    [ "bin/rails", "runner", "-e", ENV.fetch("RAILS_ENV", "development"), "scripts/check_document_pipeline_configuration.rb" ]
+  ],
   "tests" => [
     [
       "bin/rails", "test",
@@ -321,6 +332,8 @@ COMMANDS = {
       "test/jobs/process_document_job_test.rb",
       "test/jobs/process_image_document_job_test.rb",
       "test/scripts/update_document_metadata_schemas_test.rb",
+      "test/services/documents/pipeline_configuration_test.rb",
+      "test/services/documents/pipeline_configuration_check_test.rb",
       "test/services/documents/pdf_command_runner_test.rb",
       "test/services/documents/prepare_text_test.rb",
       "test/services/documents/prepare_pdf_test.rb",
@@ -382,6 +395,8 @@ COMMANDS = {
       "test/models/user_test.rb",
       "scripts/check_docs_index.rb",
       "scripts/update_document_metadata_schemas.rb",
+      "scripts/check_document_pipeline_configuration.rb",
+      "scripts/sync_document_pipeline_configuration.rb",
       "test/scripts/update_document_metadata_schemas_test.rb",
       "db/migrate/20260905000100_add_initial_metadata_pending_to_documents.rb",
       "scripts/agentic_pipeline_harness.rb"
@@ -401,6 +416,7 @@ def usage
       assets    Build generated Tailwind CSS for Rails view tests
       static    Check generic agentic pipeline file shape and provider interface
       doctor    Seed/check local test DB provider records and API key visibility
+      config-check Read document pipeline configuration in RAILS_ENV (default: development); no seeds or AI calls
       tests     Run deterministic generic pipeline Minitest coverage
       documents Run deterministic document upload, ingestion, timeline, and search lifecycle coverage
       pdf-tools Check local Poppler/Tesseract binaries for live PDF preparation
@@ -409,6 +425,13 @@ def usage
       rubocop   Run RuboCop on generic pipeline files and this harness
       live      Run an explicit live provider smoke using AGENTIC_LIVE_* env vars
       review    Run docs, static, doctor, tests, documents, and rubocop
+
+    Configuration checks:
+      ruby scripts/agentic_pipeline_harness.rb config-check
+      RAILS_ENV=production ruby scripts/agentic_pipeline_harness.rb config-check
+
+    config-check inspects the selected environment without changing records.
+    doctor and review use seeded test configuration and do not verify deployed configuration.
   USAGE
 end
 

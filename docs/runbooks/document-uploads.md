@@ -85,22 +85,47 @@ must explicitly set pending=true to opt into the new upload behavior.
 
 ## Deployment
 
-Cohort 4 adds no database migration, data backfill, schema-configuration update,
-or AI model configuration change. Deploy the code and restart web/worker processes normally.
-It does not reprocess or alter existing documents.
-
-The earlier Cohort 3 migration changes only the schema. Refresh its four document-output schema
-records separately, without reseeding unrelated models, prompts, or schemas:
+The Heroku release command runs migrations, then synchronizes the document
+pipeline configuration and checks it before the new release starts. The same
+sequence can be run in the intended Rails environment:
 
 ```bash
 bin/rails db:migrate
-bin/rails runner scripts/update_document_metadata_schemas.rb
+bin/rails runner scripts/sync_document_pipeline_configuration.rb
 ```
 
-Use the intended Rails environment. Coordinate the migration, schema-record
-update, and web/worker restart before accepting new uploads. The updater is
-repeatable and requires all four existing records before making any changes.
-Fresh databases get the same definitions through the normal seeds.
+The sync updates the OpenAI and Anthropic document-summary and image-extraction
+schemas, creating missing records. It also supplies a missing
+`image_document_extractor` agent and active prompt, using the existing OpenAI
+`gpt-5.4-mini` model record when the agent needs to be created. Existing agent
+model assignments, active prompt contents, and model records are preserved.
+
+`Documents::PipelineConfiguration.sync!` runs the configuration check inside
+the same transaction. Invalid existing configuration rolls back the sync and
+fails the release. It does not reseed the application, process documents, or
+call an AI provider. Existing failed uploads still need a separate processing
+retry after their configuration is repaired.
+
+To inspect the currently stored configuration without changing it:
+
+```bash
+ruby scripts/agentic_pipeline_harness.rb config-check
+RAILS_ENV=production ruby scripts/agentic_pipeline_harness.rb config-check
+```
+
+`config-check` uses the selected `RAILS_ENV`, defaulting to `development`, and
+exits unsuccessfully when stored schemas, agents, prompts, or model bindings
+do not meet the current document pipeline contract. It never loads seeds or
+calls AI. Heroku normally uses `RAILS_ENV=production` even when the app name
+includes development. The harness's `doctor` command instead loads seeds in
+the test database; passing it does not verify a deployed environment.
+
+`Documents::MetadataSchemas` defines summary/image output contracts;
+`Documents::PipelineSchemas` defines chunk/timeline output contracts. Seeds
+and configuration checks use these shared definitions. The older
+`scripts/update_document_metadata_schemas.rb` remains a targeted update of
+only the four summary/image schema records, including creating missing ones.
+It does not replace the release configuration check.
 
 ## Validation
 
