@@ -119,6 +119,7 @@ STATIC_FILES = %w[
   package.json
   package-lock.json
   tests/e2e/helpers/auth.js
+  tests/e2e/helpers/date_input.js
   tests/e2e/helpers/backend.js
   tests/e2e/helpers/document_list_updates.js
   tests/e2e/helpers/document_retry.js

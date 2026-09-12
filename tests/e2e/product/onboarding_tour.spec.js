@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs';
 import { test, expect } from '../fixtures';
 import { expectAccessible } from '../helpers/accessibility';
 import { deleteAccountsAndUsers, setAccountSubscription } from '../helpers/backend';
+import { typeNativeDate } from '../helpers/date_input';
 
 const sampleFile = readFileSync('test/fixtures/files/sample.txt');
 
@@ -150,6 +151,12 @@ test('new customer completes the guided path from signup through their first que
   await page.reload();
   await expect(page.getByTestId('product-tour-popover')).toHaveCount(0);
 
+  await page.goto('/profiles/new');
+  await typeNativeDate(page, page.locator('#dependent_date_of_birth'), '05251980');
+  await expect(page.locator('#dependent_date_of_birth')).toHaveValue('1980-05-25');
+  await expect(page.getByTestId('product-tour-popover')).toHaveCount(0);
+  await expect.poll(async () => (await tourState(page))?.status).toBe('completed');
+
   await page.getByTestId('product-tour-replay').click();
   await expect(page).toHaveURL(/\/dashboard$/);
   await expectTourStep(page, 1, 'Open a Profile');
@@ -159,6 +166,13 @@ test('new customer completes the guided path from signup through their first que
 test('multiple files return directly to Documents and a suggested question completes the tour', async ({ page }) => {
   await registerAndOpenDashboard(page, ACCOUNTS.multi);
   await page.getByTestId('dashboard-add-profile').click();
+  await expectTourStep(page, 1, 'Add their details');
+  // The date itself is the first interaction with the active form tour.
+  await typeNativeDate(page, page.locator('#dependent_date_of_birth'), '05251980');
+  await expect(page.locator('#dependent_date_of_birth')).toHaveValue('1980-05-25');
+  await expect(page.locator('#dependent_date_of_birth')).toBeFocused();
+  await expect(page.getByTestId('product-tour-popover')).toHaveCount(0);
+  await expect.poll(async () => tourState(page)).toMatchObject({ status: 'active', phase: 'profile_form' });
   await page.locator('#dependent_first_name').fill('Morgan');
   await page.locator('#dependent_last_name').fill('Multi');
   await page.getByTestId('profile-create-submit').click();
@@ -205,6 +219,12 @@ test('skipping stays dismissed until the customer replays the tour', async ({ pa
 
   await page.reload();
   await expect(page.getByTestId('product-tour-popover')).toHaveCount(0);
+
+  await page.goto('/profiles/new');
+  await typeNativeDate(page, page.locator('#dependent_date_of_birth'), '05251980');
+  await expect(page.locator('#dependent_date_of_birth')).toHaveValue('1980-05-25');
+  await expect(page.getByTestId('product-tour-popover')).toHaveCount(0);
+  await expect.poll(async () => (await tourState(page))?.status).toBe('dismissed');
 
   await page.getByTestId('product-tour-replay').click();
   await expect(page).toHaveURL(/\/dashboard$/);

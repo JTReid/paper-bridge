@@ -132,6 +132,10 @@ highlighted link. Profile creation, document upload, and question submission
 advance only after the real form succeeds, so validation errors stay on the
 same milestone.
 
+Typing hides a visible tour tooltip without refocusing an input that already
+has focus. If no tooltip is showing, typing leaves focus alone. This preserves
+keyboard entry in native date fields, including four-digit years.
+
 The tour has six customer-facing milestones:
 
 1. Create a Profile.

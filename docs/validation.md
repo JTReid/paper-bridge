@@ -103,6 +103,11 @@ live AI, document ingestion, seeded edge-state scenarios, or the complete
 negative/error-state matrix. The detailed contract is in
 `docs/runbooks/qa-troubleshooting.md`.
 
+For keyboard date entry, run `workflow profiles`, `workflow onboarding`, and
+`workflow calendar`. These checks type individual digits into native date
+fields, edit an existing year, and cover visible, dismissed, and completed tour
+states. Filling a complete date programmatically does not exercise this path.
+
 Use `workflow ai` for the Ask PaperBridge query lifecycle and direct answer
 email dialog. Email scenarios use a synthetic completed query, any recipient
 address or an optional Care Team shortcut, validation recovery, and phone/axe

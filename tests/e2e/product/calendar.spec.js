@@ -2,6 +2,7 @@
 import { test, expect } from '../fixtures';
 import { openDependentWorkspace, signIn } from '../helpers/auth';
 import { expectAccessible } from '../helpers/accessibility';
+import { replaceNativeYear } from '../helpers/date_input';
 
 const APPOINTMENT = {
   date: '2031-05-14',
@@ -94,7 +95,10 @@ test('family admin can add, review, and email a profile appointment on the accou
   await expectAccessible(page);
 
   await page.getByTestId('appointment-dependent').selectOption({ label: APPOINTMENT.dependent });
-  await page.getByTestId('appointment-scheduled-at').fill(APPOINTMENT.localDateTime);
+  const scheduledAt = page.getByTestId('appointment-scheduled-at');
+  await scheduledAt.fill('2000-05-14T10:30');
+  await replaceNativeYear(page, scheduledAt, '2031');
+  await expect(scheduledAt).toHaveValue(APPOINTMENT.localDateTime);
   await page.getByTestId('appointment-description').fill(APPOINTMENT.description);
   await page.getByTestId('appointment-submit').click();
 

@@ -182,6 +182,7 @@ CURRENT_PRODUCT_FILES = %w[
   tests/e2e/product/document_list_updates.spec.js
   tests/e2e/helpers/document_list_updates.js
   tests/e2e/helpers/document_retry.js
+  tests/e2e/helpers/date_input.js
   tests/e2e/product/document_retry.spec.js
   tests/e2e/product/calendar.spec.js
   tests/e2e/product/accessibility_suite.spec.js

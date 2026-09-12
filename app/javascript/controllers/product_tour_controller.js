@@ -153,10 +153,14 @@ export default class extends Controller {
   }
 
   pause(event) {
+    if (!this.driverInstance) return
+
     const interactionTarget = event.target
 
     this.destroyTour()
-    window.requestAnimationFrame(() => interactionTarget?.focus({ preventScroll: true }))
+    window.requestAnimationFrame(() => {
+      if (document.activeElement !== interactionTarget) interactionTarget?.focus({ preventScroll: true })
+    })
   }
 
   start() {

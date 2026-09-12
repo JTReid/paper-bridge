@@ -2,6 +2,7 @@
 import { randomUUID } from 'node:crypto';
 import { test, expect } from '../fixtures';
 import { openDependentWorkspace, signIn } from '../helpers/auth';
+import { replaceNativeYear, typeNativeDate } from '../helpers/date_input';
 
 test('admin can create, edit, and delete a profile with separate name fields', async ({ page }) => {
   const lastName = `Morgan ${randomUUID()}`;
@@ -13,6 +14,9 @@ test('admin can create, edit, and delete a profile with separate name fields', a
   await expect(page.locator('#dependent_grade')).toHaveCount(0);
   await expect(page.locator('#dependent_school')).toHaveCount(0);
   await expect(page.getByTestId('profile-delete-button')).toHaveCount(0);
+  await expect(page.getByTestId('product-tour-popover')).toHaveCount(0);
+  await typeNativeDate(page, page.locator('#dependent_date_of_birth'), '05251980');
+  await expect(page.locator('#dependent_date_of_birth')).toHaveValue('1980-05-25');
   await page.locator('#dependent_first_name').fill('Jamie');
   await page.locator('#dependent_last_name').fill(lastName);
   await page.getByTestId('profile-create-submit').click();
@@ -27,7 +31,9 @@ test('admin can create, edit, and delete a profile with separate name fields', a
   await expect(page.locator('#dependent_grade')).toHaveCount(0);
   await expect(page.locator('#dependent_school')).toHaveCount(0);
   await page.locator('#dependent_first_name').fill('Jordan');
-  await page.locator('#dependent_date_of_birth').fill('2017-04-12');
+  await expect(page.locator('#dependent_date_of_birth')).toHaveValue('1980-05-25');
+  await replaceNativeYear(page, page.locator('#dependent_date_of_birth'), '1981');
+  await expect(page.locator('#dependent_date_of_birth')).toHaveValue('1981-05-25');
   await page.locator('#dependent_notes').fill('Prefers morning appointments.');
   await page.getByTestId('profile-save-submit').click();
 
@@ -40,7 +46,7 @@ test('admin can create, edit, and delete a profile with separate name fields', a
   await expect(page).toHaveURL(`${profileURL}/edit`);
   await page.reload();
   await expect(page.locator('#dependent_first_name')).toHaveValue('Jordan');
-  await expect(page.locator('#dependent_date_of_birth')).toHaveValue('2017-04-12');
+  await expect(page.locator('#dependent_date_of_birth')).toHaveValue('1981-05-25');
   await expect(page.locator('#dependent_notes')).toHaveValue('Prefers morning appointments.');
   await expect(page.locator('#dependent_grade')).toHaveCount(0);
   await expect(page.locator('#dependent_school')).toHaveCount(0);
