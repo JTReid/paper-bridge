@@ -100,6 +100,10 @@ lifecycle.
   chat completion call. This is a completed query with no supported answer, not
   a failed job.
 - Retrieval is constrained by account before results are ranked.
+- Retrieval requires a fully processed document with completed initial
+  metadata. Failed documents and documents being retried contribute no chunks,
+  even when an earlier attempt left embeddings behind. Saved answers remain
+  unchanged snapshots during document retries.
 - `Documents::SearchAccessProfile` requires membership in the requested account;
   a care team contact or membership in another account grants no search access.
 - Retrieval is constrained by both document category and

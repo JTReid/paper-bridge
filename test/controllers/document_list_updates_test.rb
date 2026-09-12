@@ -83,7 +83,7 @@ class DocumentListUpdatesTest < ActionDispatch::IntegrationTest
     get document_path(document)
 
     assert_response :success
-    assert_includes response.body, "Your file is saved, but we couldn’t finish processing it. Please contact support."
+    assert_includes response.body, "Your file is saved, but we couldn’t finish processing it. You can retry using your saved original file."
     assert_not_includes response.body, "Try uploading it again"
   end
 

@@ -63,7 +63,9 @@ documents.
 - Pipeline logs, activity entries, and LLM telemetry are recorded on the
   `PipelineRun`.
 - Successful processing marks the document `processed`; failures mark it
-  `failed`.
+  `failed`. A successfully generated summary is available as soon as it is
+  saved, even if a later stage fails. Ask PaperBridge retrieval requires the
+  document to finish processing successfully.
 - Both processing jobs record the Solid Queue job ID in
   `Document.processing_job_id` and in the `PipelineRun` context. The queue ID
   identifies the current execution even when Active Job retries reuse their
@@ -100,7 +102,8 @@ documents.
   `Agents::DocumentEmbedder` creates pgvector embeddings so image documents are
   available to the existing search pipeline.
 - If extraction succeeds but a downstream step fails, the generated summary and
-  chunks remain persisted. The document is marked failed and the downstream
+  chunks remain persisted. The summary and key points remain visible, while
+  the chunks are excluded from retrieval. The document is marked failed and the downstream
   error remains available through `preparation_error` and the `PipelineRun`.
 - Deleting an image document mid-run discards the job the same way as the
   PDF/text pipeline; nothing is marked failed.
@@ -108,6 +111,38 @@ documents.
   or verification pass, handwriting-specific model routing, region-level
   citations, multi-image documents, or timeline-event extraction. Those remain
   follow-up work informed by real image quality and extraction results.
+
+## Processing Retries
+
+An account member can choose **Retry processing** on the detail page of a failed
+document with an attached, supported original. The request queues the correct
+PDF/text or image job and returns to the same document. A document already
+queued or processing does not start another user-requested retry.
+
+`Documents::RetryProcessing` handles the retry request. At worker start,
+`Documents::ResetProcessing` clears the old prepared text, pages and page
+images, summary, chunks, embeddings, and extracted timeline events so the
+pipeline rebuilds the document from its original file.
+
+The reset preserves the `Document` and original Active Storage blob, user-edited
+metadata, `SavedAnswer` snapshots, meeting-prep entries, sharing records, and
+previous `PipelineRun` history. Initial category/description generation still
+runs if the original attempt never completed that step; otherwise retries
+preserve the existing category and description.
+
+An existing generated summary, its key points, and generation time remain
+visible while a failed document waits for its retry. The worker clears them
+when it starts rebuilding the document. A new summary becomes visible as soon
+as it is saved, and a later embedding or timeline failure does not remove it.
+The failed document still shows **Needs attention** and the retry control.
+Document-sharing emails continue to include an available summary excerpt
+alongside the original attachment.
+
+Ask PaperBridge excludes documents that are queued, processing, or failed,
+even if a summary or embeddings are present. The original remains available
+to open/download, and existing saved answers remain readable as their original
+snapshots. Extracted timeline events are rebuilt with their source chunks;
+there is currently no family-facing extracted-timeline screen.
 
 ## Validation
 

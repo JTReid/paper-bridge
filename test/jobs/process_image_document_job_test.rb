@@ -279,7 +279,7 @@ class ProcessImageDocumentJobTest < ActiveJob::TestCase
     assert_not_includes final_summary_html, "A summary isn’t available yet."
   end
 
-  test "preserves the extracted summary when embedding fails" do
+  test "preserves and displays the completed image summary when embedding fails" do
     document = create_image_document
     clear_enqueued_jobs
     FakeConnection.embedding_failure = true
@@ -298,6 +298,12 @@ class ProcessImageDocumentJobTest < ActiveJob::TestCase
       .last
       .at_css("template")
       .inner_html
+    status_target = ActionView::RecordIdentifier.dom_id(document, :processing_status)
+    final_status_html = turbo_streams
+      .select { |stream| stream["target"] == status_target }
+      .last
+      .at_css("template")
+      .inner_html
 
     assert_equal "failed", document.status
     assert_equal "prepared", document.preparation_status
@@ -310,7 +316,12 @@ class ProcessImageDocumentJobTest < ActiveJob::TestCase
     assert_equal 0, document.document_embeddings.count
     assert_equal "failed", pipeline_run.state
     assert_includes final_summary_html, "A prescription for amoxicillin with handwritten dosage instructions."
-    assert_includes final_summary_html, "Needs attention"
+    assert_includes final_summary_html, "Take one capsule twice daily"
+    assert_includes final_summary_html, "Ready"
+    assert_includes final_summary_html, "Your file is saved, but we couldn’t finish processing it."
+    assert_includes final_status_html, "Needs attention"
+    assert_includes final_summary_html, "Retry processing"
+    assert_not_includes final_summary_html, document.preparation_error
     assert_not_includes final_summary_html, "We couldn’t prepare a summary for this file."
   end
 
@@ -378,6 +389,9 @@ class ProcessImageDocumentJobTest < ActiveJob::TestCase
       assert document.initial_metadata_pending?
       assert_equal "general", document.category
       assert_nil document.description
+      assert_not document.generated_summary?
+      assert_nil document.summarized_at
+      assert_predicate document.summary.dig("error", "message"), :present?
       assert_empty document.document_chunks
       assert_empty document.document_embeddings
       assert FakeConnection.requests.none? { |request| request.fetch(:url).include?("/embeddings") }

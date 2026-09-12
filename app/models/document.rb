@@ -61,6 +61,10 @@ class Document < ApplicationRecord
     Documents::UploadNormalizer.processable_content_type?(content_type)
   end
 
+  def generated_summary?
+    summary.to_h.with_indifferent_access[:summary].present?
+  end
+
   def complete_initial_metadata!(category:, description:)
     with_lock do
       next false unless initial_metadata_pending?

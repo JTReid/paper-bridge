@@ -83,27 +83,30 @@ module DocumentsHelper
 
     def page_state(document, page_count)
       return :unsupported if document.stored?
-      return :failed if document.failed? || document.preparation_failed?
-      return :complete if document.prepared? && page_count.positive?
+      return :failed if document.failed?
       return :working if processing_active?(document)
+      return :failed if document.preparation_failed?
+      return :complete if document.prepared? && page_count.positive?
 
       :idle
     end
 
     def question_state(document, chunk_count, embedding_count)
       return :unsupported if document.stored?
-      return :failed if document.failed? || document.preparation_failed?
-      return :complete if chunk_count.positive? && embedding_count >= chunk_count
+      return :failed if document.failed?
       return :working if processing_active?(document)
+      return :failed if document.preparation_failed?
+      return :complete if document.processed? && chunk_count.positive? && embedding_count >= chunk_count
 
       :idle
     end
 
     def summary_state(document)
       return :unsupported if document.stored?
-      return :failed if document.failed? || document.preparation_failed?
-      return :complete if document.summarized_at.present?
+      return :complete if document.generated_summary?
+      return :failed if document.failed?
       return :working if processing_active?(document)
+      return :failed if document.preparation_failed?
 
       :idle
     end

@@ -92,6 +92,8 @@ DOCUMENT_PIPELINE_FILES = %w[
   app/services/documents/prepare_pdf.rb
   app/services/documents/prepare_text.rb
   app/services/documents/reconcile_failed_processing.rb
+  app/services/documents/retry_processing.rb
+  app/services/documents/reset_processing.rb
   app/services/documents/search_access_profile.rb
   app/services/documents/search_answer_citation_normalizer.rb
   app/services/documents/streaming_answer_extractor.rb
@@ -114,6 +116,7 @@ DOCUMENT_PIPELINE_FILES = %w[
   db/migrate/20260614230727_create_document_embeddings.rb
   db/migrate/20260615020405_create_timeline_events.rb
   test/controllers/documents_controller_test.rb
+  test/controllers/document_retries_controller_test.rb
   test/integration/document_upload_multipart_test.rb
   test/controllers/ai_assistant_controller_test.rb
   test/helpers/ai_assistant_helper_test.rb
@@ -130,6 +133,8 @@ DOCUMENT_PIPELINE_FILES = %w[
   test/services/documents/prepare_pdf_test.rb
   test/services/documents/prepare_text_test.rb
   test/services/documents/reconcile_failed_processing_test.rb
+  test/services/documents/retry_processing_test.rb
+  test/services/documents/reset_processing_test.rb
   test/services/documents/search_access_profile_test.rb
   test/services/documents/search_answer_citation_normalizer_test.rb
   test/services/documents/streaming_answer_extractor_test.rb
@@ -303,6 +308,7 @@ COMMANDS = {
       "test/models/document_embedding_test.rb",
       "test/models/timeline_event_test.rb",
       "test/controllers/documents_controller_test.rb",
+      "test/controllers/document_retries_controller_test.rb",
       "test/integration/document_upload_multipart_test.rb",
       "test/controllers/ai_assistant_controller_test.rb",
       "test/helpers/ai_assistant_helper_test.rb",
@@ -315,6 +321,8 @@ COMMANDS = {
       "test/services/documents/pdf_command_runner_test.rb",
       "test/services/documents/prepare_text_test.rb",
       "test/services/documents/reconcile_failed_processing_test.rb",
+      "test/services/documents/retry_processing_test.rb",
+      "test/services/documents/reset_processing_test.rb",
       "test/services/documents/prepare_pdf_test.rb",
       "test/services/documents/search_access_profile_test.rb",
       "test/services/documents/search_answer_citation_normalizer_test.rb",
@@ -363,6 +371,7 @@ COMMANDS = {
       "app/services/documents",
       "test/controllers/ai_assistant_controller_test.rb",
       "test/controllers/documents_controller_test.rb",
+      "test/controllers/document_retries_controller_test.rb",
       "test/helpers/ai_assistant_helper_test.rb",
       "test/jobs",
       "test/services/agentic",

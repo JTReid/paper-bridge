@@ -38,6 +38,7 @@ Rails.application.routes.draw do
   resources :share_events, only: :create
   resources :documents, only: %i[show edit update destroy] do
     get :original, on: :member
+    post :retry_processing, on: :member
   end
   resource :billing, only: :show, controller: :billing
   namespace :billing do

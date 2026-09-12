@@ -2,6 +2,7 @@
 
 class ProcessImageDocumentJob < ApplicationJob
   queue_as :default
+  self.enqueue_after_transaction_commit = false
 
   NORMALIZED_IMAGE_CONTENT_TYPES = %w[image/jpeg image/png image/webp].freeze
 
@@ -16,7 +17,7 @@ class ProcessImageDocumentJob < ApplicationJob
   def perform(document)
     return unless document.processable? && Documents::UploadNormalizer::IMAGE_CONTENT_TYPES.include?(document.content_type)
 
-    document.update!(status: :processing, processing_job_id: provider_job_id)
+    return unless Documents::ResetProcessing.call(document, processing_job_id: provider_job_id)
     prepared_payload = prepare_image(document)
     pipeline_run = create_pipeline_run(document, prepared_payload)
 
@@ -135,12 +136,8 @@ class ProcessImageDocumentJob < ApplicationJob
           class: error.class.name,
           message: error.message
         }
-      } unless generated_summary?(document)
+      } unless document.generated_summary?
 
       document.update!(failure_attributes)
-    end
-
-    def generated_summary?(document)
-      document.summary.to_h.with_indifferent_access[:summary].present?
     end
 end

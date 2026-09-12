@@ -2,8 +2,9 @@ class DocumentsController < ApplicationController
   include ActiveStorage::SetCurrent
 
   before_action :authenticate_user!
+  before_action :require_current_account!, only: :retry_processing
   before_action :set_dependent_from_param
-  before_action :set_document, only: %i[show edit update destroy original]
+  before_action :set_document, only: %i[show edit update destroy original retry_processing]
 
   def index
     scope = @dependent ? @dependent.documents : current_account.documents
@@ -37,6 +38,23 @@ class DocumentsController < ApplicationController
   end
 
   def edit
+  end
+
+  def retry_processing
+    if Documents::RetryProcessing.call(@document)
+      redirect_to @document, notice: "Document queued for processing.", status: :see_other
+    else
+      message = if @document.queued? || @document.processing?
+        "This document is already being prepared."
+      elsif @document.failed? && @document.processable? && @document.file.attached?
+        "A processing attempt is already queued or running."
+      else
+        "This document is not available to retry."
+      end
+      redirect_to @document, alert: message, status: :see_other
+    end
+  rescue Documents::RetryProcessing::EnqueueError
+    redirect_to @document, alert: "We couldn’t queue this document. Please try again.", status: :see_other
   end
 
   def new
@@ -113,7 +131,8 @@ class DocumentsController < ApplicationController
     end
 
     def set_document
-      @document = current_account.documents.find(params[:id])
+      scope = @dependent ? @dependent.documents : current_account.documents
+      @document = scope.find(params[:id])
       @dependent ||= @document.dependent
     end
 

@@ -1,5 +1,6 @@
 class ProcessDocumentJob < ApplicationJob
   queue_as :default
+  self.enqueue_after_transaction_commit = false
 
   class_attribute :llm_connection, default: RestClient
   class_attribute :pdf_command_runner, default: Documents::PdfCommandRunner.new
@@ -13,7 +14,7 @@ class ProcessDocumentJob < ApplicationJob
   def perform(document)
     return unless document.processable? && Documents::UploadNormalizer::PASS_THROUGH_CONTENT_TYPES.include?(document.content_type)
 
-    document.update!(status: :processing, processing_job_id: provider_job_id)
+    return unless Documents::ResetProcessing.call(document, processing_job_id: provider_job_id)
     prepared_payload = Documents::Prepare.call(document, pdf_command_runner: pdf_command_runner)
 
     pipeline_run = create_pipeline_run(document, prepared_payload)
@@ -64,16 +65,19 @@ class ProcessDocumentJob < ApplicationJob
     def mark_document_failed(document, error)
       raise ActiveRecord::RecordNotFound, "Document #{document.id} was deleted during processing" unless Document.exists?(document.id)
 
-      document.update!(
+      document.reload
+      failure_attributes = {
         status: :failed,
         preparation_status: document.preparation_status == "prepared" ? document.preparation_status : :preparation_failed,
-        preparation_error: error.message,
-        summary: {
-          error: {
-            class: error.class.name,
-            message: error.message
-          }
+        preparation_error: error.message
+      }
+      failure_attributes[:summary] = {
+        error: {
+          class: error.class.name,
+          message: error.message
         }
-      )
+      } unless document.generated_summary?
+
+      document.update!(failure_attributes)
     end
 end

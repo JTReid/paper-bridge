@@ -127,11 +127,16 @@ check. It uses synthetic subscription state and the test job adapter; it does
 not open Stripe Checkout, run document processing, or call a live model.
 
 Use `workflow documents` for upload selection, batches above the former 50-file
-limit, and live list refreshes that preserve active filters, selected rows, and
-unfinished sharing/deletion dialogs. The list tests deliver captured Turbo
-broadcasts in the browser; they do not run a production Cable server or a live
-ingestion worker. The agentic `documents` group separately covers confirmed
-Solid Queue worker-failure reconciliation, complete text and summary evidence,
+limit, full retry from a failed document's saved original, and live list
+refreshes that preserve active filters, selected rows, and unfinished
+sharing/deletion dialogs. The retry scenario runs the real text worker with a
+fake provider connection and checks rebuilt results, preserved saved answers,
+meeting prep, sharing references, and processing history. It verifies that an
+existing generated summary stays visible while queued, is cleared at worker
+start, and is replaced before Ask PaperBridge becomes ready. Browser tests
+deliver captured Turbo broadcasts; they do not call AI or run a production Cable
+server. The agentic `documents` group separately covers retry/reset boundaries,
+confirmed Solid Queue worker-failure reconciliation, complete text and summary evidence,
 and real images above the removed byte-size and pixel-count limits.
 
 The Phase 4 negative/error-state selector contract is
@@ -232,7 +237,8 @@ OpenAI SSE parsing, safe progressive answer extraction, batched draft delivery,
 safe failure handling, final Turbo result broadcasts, structured answer
 synthesis with citations, pipeline records, and exact final usage telemetry with
 fake PDF tooling and fake LLM/embedding calls.
-It also covers one-time category/description generation, retry preservation,
+It also covers one-time category/description generation, full retry/reset
+behavior and preservation of original files and saved research,
 pending-document search exclusion, edit-field completion broadcasts, and the
 AI configuration setup, read-only checks, and public Rake tasks described in
 [AI Setup](runbooks/agentic-pipeline.md#ai-setup).

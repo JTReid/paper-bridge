@@ -49,4 +49,19 @@ class DocumentShareMailerTest < ActionMailer::TestCase
 
     assert_equal [ "shared-name.txt", "shared-name-2.txt" ], email.attachments.map(&:filename)
   end
+
+  test "shares an available summary and the original despite unfinished overall processing" do
+    document = documents(:advance_directive)
+    document.file.attach(io: StringIO.new("Original evidence"), filename: "original.txt", content_type: "text/plain")
+
+    %i[failed queued processing].each do |status|
+      document.update!(status: status, summary: { summary: "Successfully generated summary" }, summarized_at: 1.hour.ago)
+
+      email = DocumentShareMailer.with(share_event: share_events(:one)).share
+
+      assert_includes email.html_part.body.decoded, "Successfully generated summary", status
+      assert_includes email.text_part.body.decoded, "Successfully generated summary", status
+      assert_equal "Original evidence", email.attachments.sole.body.decoded, status
+    end
+  end
 end

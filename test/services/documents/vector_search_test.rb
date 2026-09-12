@@ -5,6 +5,7 @@ class Documents::VectorSearchTest < ActiveSupport::TestCase
     @account = accounts(:greenfield)
     @dependent = dependents(:emma)
     @document = documents(:advance_directive)
+    @document.update_column(:status, "processed")
     @page = document_pages(:advance_directive_first)
     @owner_profile = Documents::SearchAccessProfile.new(role: "admin")
   end
@@ -51,6 +52,7 @@ class Documents::VectorSearchTest < ActiveSupport::TestCase
       }
     )
     clear_enqueued_jobs
+    insurance_document.processed!
     insurance_page = DocumentPage.create!(
       account: @account,
       document: insurance_document,
@@ -80,6 +82,7 @@ class Documents::VectorSearchTest < ActiveSupport::TestCase
   end
 
   test "filters by account before ranking" do
+    documents(:outside_account).update_column(:status, "processed")
     other_page = DocumentPage.create!(
       account: accounts(:other),
       document: documents(:outside_account),
@@ -121,6 +124,7 @@ class Documents::VectorSearchTest < ActiveSupport::TestCase
       }
     )
     clear_enqueued_jobs
+    other_document.processed!
     other_page = DocumentPage.create!(
       account: @account,
       document: other_document,
@@ -162,12 +166,19 @@ class Documents::VectorSearchTest < ActiveSupport::TestCase
     assert_empty search(query_embedding: unit_vector(0), access_profile: profile)
   end
 
-  test "storage-only documents are never returned even if stale embeddings exist" do
-    chunk = create_chunk!("Stored-only record", label: "medical", chunk_index: 2)
+  test "only fully processed documents are searchable even when embeddings already exist" do
+    chunk = create_chunk!("Medical record", label: "medical", chunk_index: 2)
     create_embedding!(chunk, unit_vector(0))
-    @document.update_column(:status, "stored")
 
-    assert_empty search(query_embedding: unit_vector(0))
+    (Document.statuses.keys - [ "processed" ]).each do |status|
+      @document.update_column(:status, status)
+
+      assert_empty search(query_embedding: unit_vector(0)), "Document in #{status} state should not be searchable"
+    end
+
+    @document.update_column(:status, "processed")
+
+    assert_equal [ chunk ], search(query_embedding: unit_vector(0)).map(&:chunk)
   end
 
   test "initial metadata must finish before document contents are searchable" do

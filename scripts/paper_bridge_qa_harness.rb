@@ -41,7 +41,7 @@ WORKFLOW_SPECS = {
   "profiles" => [ "tests/e2e/product/profile_management.spec.js" ].freeze,
   "billing" => [ "tests/e2e/product/billing.spec.js" ].freeze,
   "sharing" => [ "tests/e2e/product/document_sharing.spec.js" ].freeze,
-  "documents" => [ "tests/e2e/product/document_management.spec.js", "tests/e2e/product/document_list_updates.spec.js" ].freeze,
+  "documents" => [ "tests/e2e/product/document_management.spec.js", "tests/e2e/product/document_list_updates.spec.js", "tests/e2e/product/document_retry.spec.js" ].freeze,
   "care-team" => [ "tests/e2e/product/care_team.spec.js" ].freeze,
   "ai" => [ "tests/e2e/product/ai_assistant.spec.js", "tests/e2e/product/ai_assistant_email.spec.js" ].freeze,
   "saved-answers" => [ "tests/e2e/product/saved_answers.spec.js" ].freeze,
@@ -121,6 +121,7 @@ STATIC_FILES = %w[
   tests/e2e/helpers/auth.js
   tests/e2e/helpers/backend.js
   tests/e2e/helpers/document_list_updates.js
+  tests/e2e/helpers/document_retry.js
   tests/e2e/helpers/ai_assistant_email.js
   tests/e2e/helpers/diagnostics.js
   tests/e2e/helpers/accessibility.js
@@ -137,6 +138,7 @@ STATIC_FILES = %w[
   tests/e2e/product/billing.spec.js
   tests/e2e/product/document_management.spec.js
   tests/e2e/product/document_list_updates.spec.js
+  tests/e2e/product/document_retry.spec.js
   tests/e2e/product/calendar.spec.js
   tests/e2e/product/document_negative.spec.js
   tests/e2e/product/care_team.spec.js

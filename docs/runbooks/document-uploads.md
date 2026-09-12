@@ -30,9 +30,20 @@ search text, checked documents that remain visible, and open sharing/deletion
 dialogs stay intact. It also reconciles the list after the Cable subscription
 connects or reconnects. There is no periodic browser polling.
 
-Failed processing leaves the saved file available. The detail page explains
-that processing did not finish and asks the user to contact support; it does
-not recommend uploading an identical file that the duplicate guard rejects.
+Failed processing leaves the saved file available. Open a failed document and
+choose **Retry processing** in its Summary card to try again with the saved
+original. The document returns to **Getting ready**, then **Preparing** and
+**Ready** as processing completes. It does not need another upload.
+
+Retrying rebuilds generated results from the beginning. The original file,
+document identity, edited title/category/description, saved answers, meeting
+prep, share history, and previous processing history remain intact. A summary
+that was successfully generated remains visible even if a later stage fails,
+and stays visible until the retry worker starts rebuilding the document. The
+new summary appears as soon as it is generated; Ask PaperBridge retrieval
+becomes available after the document finishes processing successfully. See
+[Processing Retries](document-ingestion.md#processing-retries) for the reset
+boundary and validation coverage.
 
 ## Processing Limits
 
@@ -129,8 +140,8 @@ bundle exec rake db:migrate paper_bridge:setup_ai
 The task supplies missing model/agent/prompt defaults, updates canonical JSON
 schemas, and checks the result in one transaction. Existing model assignments
 and prompt content are preserved. A failed check rolls back the setup changes
-and fails the release. It does not call AI or retry documents; previously failed
-uploads still need a separate processing retry after configuration is repaired.
+and fails the release. It does not call AI or retry documents; use **Retry
+processing** on previously failed uploads after configuration is repaired.
 
 Inspect stored configuration without changing it:
 

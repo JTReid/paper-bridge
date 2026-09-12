@@ -1,11 +1,12 @@
 <% summary = document.summary.to_h.with_indifferent_access %>
+<% summary_available = !document.stored? && document.generated_summary? %>
 <% key_points = Array(summary[:key_points]).filter_map { |point| point.to_s.squish.presence } %>
 
 <section id="<%= dom_id(document, :summary) %>" class="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
   <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
     <div>
       <h2 class="text-xl font-semibold text-slate-950">Summary</h2>
-      <% if document.summarized_at.present? && !document.stored? %>
+      <% if summary_available && document.summarized_at.present? %>
         <p class="mt-1 text-xs text-slate-500">Generated <%= l document.summarized_at, format: :short %></p>
       <% end %>
     </div>
@@ -13,6 +14,10 @@
     <% if document.stored? %>
       <span class="inline-flex w-fit items-center rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700">
         Not supported
+      </span>
+    <% elsif summary_available %>
+      <span class="inline-flex w-fit items-center rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700">
+        Ready
       </span>
     <% elsif document.processing? || document.queued? %>
       <span class="inline-flex w-fit items-center rounded-full bg-sky-50 px-2.5 py-1 text-xs font-medium text-sky-700">
@@ -22,16 +27,12 @@
       <span class="inline-flex w-fit items-center rounded-full bg-red-50 px-2.5 py-1 text-xs font-medium text-red-700">
         Needs attention
       </span>
-    <% elsif document.summarized_at.present? %>
-      <span class="inline-flex w-fit items-center rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700">
-        Ready
-      </span>
     <% end %>
   </div>
 
   <% if document.stored? %>
     <p class="mt-4 text-sm leading-6 text-slate-600" data-testid="document-storage-only-notice">Your original file is saved and available to download. PaperBridge does not process this file type, so it has no generated summary and its contents are not included in Ask PaperBridge searches. You can still find it by file name and edit its category and description.</p>
-  <% elsif summary[:summary].present? %>
+  <% elsif summary_available %>
     <p class="mt-4 text-sm leading-6 text-slate-700"><%= summary[:summary] %></p>
 
     <% if key_points.any? %>
@@ -46,9 +47,18 @@
     <% end %>
   <% elsif document.processing? || document.queued? %>
     <p class="mt-4 text-sm text-slate-600">Your summary will appear when it’s ready.</p>
-  <% elsif document.failed? %>
-    <p class="mt-4 text-sm text-red-700">Your file is saved, but we couldn’t finish processing it. Please contact support.</p>
-  <% else %>
+  <% elsif !document.failed? %>
     <p class="mt-4 text-sm text-slate-600">A summary isn’t available yet.</p>
+  <% end %>
+
+  <% if document.failed? %>
+    <% if document.file.attached? && document.processable? %>
+      <p class="mt-4 text-sm text-red-700">Your file is saved, but we couldn’t finish processing it. You can retry using your saved original file.</p>
+      <%= button_to "Retry processing", retry_processing_document_path(document), method: :post,
+          class: "mt-4 inline-flex justify-center rounded-md bg-primary px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary/90 disabled:cursor-wait disabled:opacity-60",
+          data: { testid: "document-retry-processing", turbo_submits_with: "Queuing…" } %>
+    <% else %>
+      <p class="mt-4 text-sm text-red-700">We couldn’t finish processing this document. Please contact support.</p>
+    <% end %>
   <% end %>
 </section>

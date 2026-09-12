@@ -109,6 +109,12 @@ describing the implementation:
   rechecks access to the document.
 - Document states are **Uploaded**, **Getting ready**, **Preparing**, **Ready**,
   and **Needs attention**.
+- Failed supported documents offer **Retry processing** on their detail page.
+  It uses the saved original, keeps the document and saved research, and
+  rebuilds generated results. Successfully generated summaries remain visible
+  after a later stage fails, until the retry worker clears them for rebuilding.
+  A new summary is available as soon as it is generated; Ask PaperBridge
+  retrieval requires the document to finish processing successfully.
 - Internal concepts such as chunks, embeddings, retrieval, run identifiers,
   MIME types, and raw service errors are not shown on family-facing pages.
 - Extracted document text remains internal; families open the original file

@@ -65,6 +65,61 @@ class DocumentsHelperTest < ActionView::TestCase
     assert_equal :complete, stats.fetch("File size")[:state]
   end
 
+  test "generated summary is ready independently while Ask waits for completed processing" do
+    document = documents(:advance_directive)
+    document.summary = { summary: "Successfully generated summary" }
+    document.summarized_at = 1.day.ago
+    document.preparation_status = :prepared
+    document.document_chunks.first.document_embeddings.create!(
+      provider: DocumentEmbedding::PROVIDER,
+      model: DocumentEmbedding::MODEL,
+      dimensions: DocumentEmbedding::DIMENSIONS,
+      distance_metric: DocumentEmbedding::DISTANCE_METRIC,
+      embedding: Array.new(DocumentEmbedding::DIMENSIONS, 0.001)
+    )
+
+    {
+      uploaded: "Not ready", queued: "Getting ready", processing: "Getting ready",
+      failed: "Unavailable", stored: "Not supported", processed: "Ready"
+    }.each do |status, expected_readiness|
+      document.status = status
+      stats = document_processing_stats(document).index_by { |stat| stat[:label] }
+
+      assert_equal(status == :stored ? "Not supported" : "Ready", stats.fetch("Summary")[:value], status)
+      assert_equal expected_readiness, stats.fetch("Ask PaperBridge")[:value], status
+    end
+  end
+
+  test "a queued or running retry takes precedence over the previous preparation failure" do
+    document = documents(:advance_directive)
+    document.preparation_status = :preparation_failed
+    document.summary = { error: { message: "Earlier failure" } }
+    document.summarized_at = 1.day.ago
+
+    %i[queued processing].each do |status|
+      document.status = status
+      stats = document_processing_stats(document).index_by { |stat| stat[:label] }
+
+      assert_equal :working, stats.fetch("Pages")[:state], status
+      assert_equal "Getting ready", stats.fetch("Summary")[:value], status
+      assert_equal "Getting ready", stats.fetch("Ask PaperBridge")[:value], status
+    end
+  end
+
+  test "summary readiness requires generated content rather than a timestamp alone" do
+    document = documents(:advance_directive)
+    document.summarized_at = 1.day.ago
+
+    [ {}, { error: { message: "Earlier failure" } }, { summary: " " } ].each do |payload|
+      document.summary = payload
+      document.status = :failed
+      assert_equal "Unavailable", document_processing_stats(document).find { |stat| stat[:label] == "Summary" }[:value]
+
+      document.status = :processing
+      assert_equal "Getting ready", document_processing_stats(document).find { |stat| stat[:label] == "Summary" }[:value]
+    end
+  end
+
   test "unsupported stats have a neutral accessible indicator without a spinner" do
     markup = processing_stat_indicator(:unsupported, label: "Ask PaperBridge")
 

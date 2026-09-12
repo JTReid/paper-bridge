@@ -385,6 +385,58 @@ class ProcessDocumentJobTest < ActiveJob::TestCase
     assert_match %r{\Adata:image/png;base64,}, image_content.first.dig("image_url", "url")
   end
 
+  %i[text pdf].each do |format|
+    test "preserves and displays the completed #{format} summary when embedding fails" do
+      ProcessDocumentJob.pdf_command_runner = FakePdfCommandRunner.new
+      document = format == :pdf ? create_pdf_document : create_document
+      clear_enqueued_jobs
+      FakeConnection.embedding_failure = true
+      completed_summary = nil
+      FakeConnection.before_request = lambda do
+        if FakeConnection.last_request.fetch(:url).include?("/embeddings")
+          completed_summary = Document.find(document.id).attributes.slice("summary", "summarized_at")
+        end
+      end
+
+      turbo_streams = capture_turbo_stream_broadcasts(document) do
+        assert_enqueued_jobs 1, only: ProcessDocumentJob do
+          ProcessDocumentJob.perform_now(document)
+        end
+      end
+
+      document.reload
+      summary_target = ActionView::RecordIdentifier.dom_id(document, :summary)
+      final_summary_html = turbo_streams
+        .select { |stream| stream["target"] == summary_target }
+        .last
+        .at_css("template")
+        .inner_html
+      status_target = ActionView::RecordIdentifier.dom_id(document, :processing_status)
+      final_status_html = turbo_streams
+        .select { |stream| stream["target"] == status_target }
+        .last
+        .at_css("template")
+        .inner_html
+
+      assert_equal "failed", document.status
+      assert_equal "prepared", document.preparation_status
+      assert_includes document.preparation_error, "Embedding response count did not match chunk count"
+      assert_equal completed_summary, document.attributes.slice("summary", "summarized_at")
+      assert_equal "Summary based on #{format == :pdf ? 'PDF' : 'text'} chunks.", document.summary.fetch("summary")
+      assert_predicate document.summarized_at, :present?
+      assert_equal 1, document.document_chunks.count
+      assert_empty document.document_embeddings
+      assert_equal "failed", document.pipeline_runs.last.state
+      assert_includes final_summary_html, document.summary.fetch("summary")
+      assert_includes final_summary_html, "Uses document chunks as summary evidence."
+      assert_includes final_summary_html, "Ready"
+      assert_includes final_summary_html, "Your file is saved, but we couldn’t finish processing it."
+      assert_includes final_status_html, "Needs attention"
+      assert_includes final_summary_html, "Retry processing"
+      assert_not_includes final_summary_html, document.preparation_error
+    end
+  end
+
   test "keeps completed metadata and later edits through a processing retry" do
     document = create_document
     clear_enqueued_jobs
@@ -443,6 +495,9 @@ class ProcessDocumentJobTest < ActiveJob::TestCase
       assert document.initial_metadata_pending?
       assert_equal "general", document.category
       assert_nil document.description
+      assert_not document.generated_summary?
+      assert_nil document.summarized_at
+      assert_predicate document.summary.dig("error", "message"), :present?
       assert_empty document.document_embeddings
       assert FakeConnection.requests.none? { |request| request.fetch(:url).include?("/embeddings") }
     end

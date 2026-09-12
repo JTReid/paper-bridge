@@ -79,6 +79,8 @@ CURRENT_PRODUCT_FILES = %w[
   app/models/share_event.rb
   app/models/shared_document.rb
   app/models/billing_subscription.rb
+  app/services/documents/retry_processing.rb
+  app/services/documents/reset_processing.rb
   app/services/billing/stripe_config.rb
   app/services/billing/checkout_return_broadcaster.rb
   app/services/billing/stripe_webhook_handler.rb
@@ -100,6 +102,7 @@ CURRENT_PRODUCT_FILES = %w[
   app/views/documents/_form.html.erb
   app/views/documents/_editable_metadata.html.erb
   app/views/documents/_description.html.erb
+  app/views/documents/_summary.html.erb
   app/views/documents/index.html.erb
   app/views/documents/index.turbo_stream.erb
   app/views/documents/_list_counts.html.erb
@@ -132,6 +135,7 @@ CURRENT_PRODUCT_FILES = %w[
   test/controllers/appointment_emails_controller_test.rb
   test/controllers/dependents_controller_test.rb
   test/controllers/documents_controller_test.rb
+  test/controllers/document_retries_controller_test.rb
   test/controllers/document_list_updates_test.rb
   test/models/document_list_broadcast_test.rb
   test/controllers/care_team_memberships_controller_test.rb
@@ -177,6 +181,8 @@ CURRENT_PRODUCT_FILES = %w[
   tests/e2e/product/document_management.spec.js
   tests/e2e/product/document_list_updates.spec.js
   tests/e2e/helpers/document_list_updates.js
+  tests/e2e/helpers/document_retry.js
+  tests/e2e/product/document_retry.spec.js
   tests/e2e/product/calendar.spec.js
   tests/e2e/product/accessibility_suite.spec.js
   tests/e2e/product/mobile_suite.spec.js
@@ -210,6 +216,7 @@ DOCUMENT_UI_TESTS = %w[
   test/models/document_list_broadcast_test.rb
   test/controllers/document_list_updates_test.rb
   test/controllers/documents_controller_test.rb
+  test/controllers/document_retries_controller_test.rb
   test/helpers/documents_helper_test.rb
 ].freeze
 
@@ -326,6 +333,8 @@ RUBOCOP_PATHS = %w[
   app/models/share_event.rb
   app/models/shared_document.rb
   app/models/billing_subscription.rb
+  app/services/documents/retry_processing.rb
+  app/services/documents/reset_processing.rb
   app/services/billing/stripe_config.rb
   app/services/billing/checkout_return_broadcaster.rb
   app/services/billing/stripe_webhook_handler.rb
@@ -344,6 +353,7 @@ RUBOCOP_PATHS = %w[
   test/controllers/appointment_emails_controller_test.rb
   test/controllers/dependents_controller_test.rb
   test/controllers/documents_controller_test.rb
+  test/controllers/document_retries_controller_test.rb
   test/controllers/care_team_memberships_controller_test.rb
   test/controllers/share_events_controller_test.rb
   test/controllers/billing_controller_test.rb
@@ -428,7 +438,7 @@ def usage
       assets      Build generated Tailwind CSS for Rails view tests
       static      Check current product-shape files and runbooks exist
       foundation  Run public/auth/account/dashboard/dependent workflow tests
-      document-ui Run document listing, filename/category filter, upload-form, and presentation tests
+      document-ui Run document listing, filters, uploads, failed-document retries, and presentation tests
       access      Run care team contact and account search-access tests
       saved-answers Run saved research and meeting preparation tests
       sharing     Run current document sharing and mailer tests
