@@ -45,13 +45,6 @@ class DocumentsController < ApplicationController
     upload_params = document_upload_params
     files = uploaded_files(upload_params)
 
-    if files.size > Document::MAX_UPLOAD_FILES
-      @document = build_document
-      @document.errors.add(:base, "You can upload up to #{Document::MAX_UPLOAD_FILES} files at a time. No files were uploaded. Please select fewer files.")
-      render :new, status: :unprocessable_entity
-      return
-    end
-
     if files.empty?
       @document = build_document
       @document.validate

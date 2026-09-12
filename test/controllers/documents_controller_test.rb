@@ -233,8 +233,7 @@ class DocumentsControllerTest < ActionDispatch::IntegrationTest
     assert_select "input[type='file'][accept]", count: 0
     assert_select "textarea[name='document[description]']", count: 0
     assert_select "select[name='document[category]']", count: 0
-    assert_select "form[data-testid='document-upload-form'][data-tour='upload-form'][data-action='input->product-tour#pause submit->file-dropzone#validateSubmission turbo:submit-end->product-tour#advanceAfterSubmit'][data-product-tour-from-phase-param='upload_submit'][data-product-tour-next-phase-param='open_ask']"
-    assert_select "form[data-file-dropzone-max-files-value='50']"
+    assert_select "form[data-testid='document-upload-form'][data-tour='upload-form'][data-action='input->product-tour#pause turbo:submit-end->product-tour#advanceAfterSubmit'][data-product-tour-from-phase-param='upload_submit'][data-product-tour-next-phase-param='open_ask']"
     assert_select "[data-tour='choose-files'] input[data-testid='document-file-field'][data-action='change->file-dropzone#changed change->product-tour#filesSelected']"
     assert_select "button[type='submit'][data-testid='document-upload-submit'][data-tour='upload-submit']", text: "Upload"
   end
@@ -482,34 +481,18 @@ class DocumentsControllerTest < ActionDispatch::IntegrationTest
     assert dependents(:emma).documents.find_by!(original_filename: "records.zip").stored?
   end
 
-  test "rejects more than 50 files before creating documents blobs or jobs" do
+  test "accepts batches larger than 50 distinct files" do
     sign_in users(:family_admin)
     files = Array.new(51) { |index| Rack::Test::UploadedFile.new(StringIO.new("Document #{index}"), "text/plain", original_filename: "record-#{index}.txt") }
 
-    assert_no_enqueued_jobs do
-      assert_no_difference [ -> { Document.count }, -> { ActiveStorage::Blob.count }, -> { ActiveStorage::Attachment.count } ] do
-        post dependent_documents_path(dependents(:emma)), params: { document: { files: files } }
-      end
-    end
-
-    assert_response :unprocessable_entity
-    assert_includes response.body, "You can upload up to 50 files at a time. No files were uploaded."
-  ensure
-    files&.each(&:close)
-  end
-
-  test "accepts exactly 50 distinct files" do
-    sign_in users(:family_admin)
-    files = Array.new(50) { |index| Rack::Test::UploadedFile.new(StringIO.new("Document #{index}"), "text/plain", original_filename: "record-#{index}.txt") }
-
-    assert_enqueued_jobs 50, only: ProcessDocumentJob do
-      assert_difference -> { Document.count }, 50 do
+    assert_enqueued_jobs 51, only: ProcessDocumentJob do
+      assert_difference -> { Document.count }, 51 do
         post dependent_documents_path(dependents(:emma)), params: { document: { files: files } }
       end
     end
 
     assert_redirected_to dependent_documents_path(dependents(:emma))
-    assert_equal "50 documents uploaded and being prepared.", flash[:notice]
+    assert_equal "51 documents uploaded and being prepared.", flash[:notice]
   ensure
     files&.each(&:close)
   end

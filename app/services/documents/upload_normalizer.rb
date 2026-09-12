@@ -20,9 +20,6 @@ module Documents
     ).freeze
     IMAGE_EXTENSIONS = %w[.jpg .jpeg .png .webp .heic .heif .tif .tiff].freeze
     JPEG_QUALITY = 92
-    MAX_SOURCE_IMAGE_BYTES = 50.megabytes
-    MAX_STORED_IMAGE_BYTES = 15.megabytes
-    MAX_IMAGE_PIXELS = 40_000_000
 
     ACCEPT_ATTRIBUTE = [
       ".pdf",
@@ -40,7 +37,6 @@ module Documents
     class UnsupportedTypeError < Error; end
     class InvalidImageError < Error; end
     class MultipleImagesError < Error; end
-    class ImageTooLargeError < Error; end
 
     Result = Struct.new(:attachable, :temporary_file, keyword_init: true) do
       def close
@@ -74,16 +70,13 @@ module Documents
         return Result.new(attachable: file_attachable(content_type).merge(metadata: { analyzed: true }))
       end
 
-      validate_source_size!(content_type)
       image = load_image
       reject_multiple_images!(image)
-      validate_dimensions!(image)
 
       if JPEG_CONVERSION_CONTENT_TYPES.include?(content_type)
         convert_to_jpeg(image)
       else
         verify_pixels!(image)
-        validate_stored_size!(upload_byte_size)
         Result.new(attachable: file_attachable(content_type))
       end
     rescue Vips::Error
@@ -149,7 +142,6 @@ module Documents
           strip: true,
           optimize_coding: true
         )
-        validate_stored_size!(File.size(temporary_file.path))
         temporary_file.rewind
 
         Result.new(
@@ -173,36 +165,6 @@ module Documents
           content_type: content_type,
           identify: false
         }
-      end
-
-      def validate_source_size!(content_type)
-        limit = if JPEG_CONVERSION_CONTENT_TYPES.include?(content_type)
-          MAX_SOURCE_IMAGE_BYTES
-        else
-          MAX_STORED_IMAGE_BYTES
-        end
-        return if upload_byte_size <= limit
-
-        raise ImageTooLargeError, "must be smaller than #{limit / 1.megabyte} MB"
-      end
-
-      def validate_stored_size!(byte_size)
-        return if byte_size <= MAX_STORED_IMAGE_BYTES
-
-        raise ImageTooLargeError, "must be smaller than #{MAX_STORED_IMAGE_BYTES / 1.megabyte} MB after normalization"
-      end
-
-      def validate_dimensions!(image)
-        return if image.width * image.height <= MAX_IMAGE_PIXELS
-
-        raise ImageTooLargeError, "has dimensions that are too large"
-      end
-
-      def upload_byte_size
-        return upload_io.size if upload_io.respond_to?(:size)
-        return File.size(upload_io.path) if upload_io.respond_to?(:path)
-
-        raise UnsupportedTypeError, "has an unsupported file type"
       end
 
       def jpeg_filename

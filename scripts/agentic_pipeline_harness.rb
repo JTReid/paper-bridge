@@ -65,6 +65,7 @@ DOCUMENT_PIPELINE_FILES = %w[
   config/database.yml
   config/environments/development.rb
   config/recurring.yml
+  config/initializers/document_uploads.rb
   app/services/agentic/document_ingestion_pipeline.rb
   app/services/agentic/document_search_pipeline.rb
   app/services/agentic/image_document_ingestion_pipeline.rb
@@ -107,6 +108,7 @@ DOCUMENT_PIPELINE_FILES = %w[
   db/migrate/20260614230727_create_document_embeddings.rb
   db/migrate/20260615020405_create_timeline_events.rb
   test/controllers/documents_controller_test.rb
+  test/integration/document_upload_multipart_test.rb
   test/controllers/ai_assistant_controller_test.rb
   test/helpers/ai_assistant_helper_test.rb
   test/jobs/answer_ai_assistant_query_job_test.rb
@@ -134,6 +136,7 @@ DOCUMENT_PIPELINE_FILES = %w[
   test/services/documents/upload_normalizer_test.rb
   test/services/documents/vector_search_test.rb
   test/services/agents/search_answer_generator_test.rb
+  test/services/agents/document_summarizer_test.rb
   tests/e2e/product/ai_assistant.spec.js
 ].freeze
 
@@ -331,6 +334,7 @@ COMMANDS = {
       "test/models/document_embedding_test.rb",
       "test/models/timeline_event_test.rb",
       "test/controllers/documents_controller_test.rb",
+      "test/integration/document_upload_multipart_test.rb",
       "test/controllers/ai_assistant_controller_test.rb",
       "test/helpers/ai_assistant_helper_test.rb",
       "test/jobs/answer_ai_assistant_query_job_test.rb",
@@ -348,6 +352,7 @@ COMMANDS = {
       "test/services/documents/streaming_answer_extractor_test.rb",
       "test/services/documents/upload_normalizer_test.rb",
       "test/services/agents/search_answer_generator_test.rb",
+      "test/services/agents/document_summarizer_test.rb",
       "test/services/documents/vector_search_test.rb"
     ]
   ],
@@ -366,6 +371,8 @@ COMMANDS = {
       "--cache", "false",
       "app/controllers/ai_assistant_controller.rb",
       "app/controllers/documents_controller.rb",
+      "config/initializers/document_uploads.rb",
+      "test/integration/document_upload_multipart_test.rb",
       "app/helpers/ai_assistant_helper.rb",
       "app/jobs",
       "app/models/agent_type.rb",

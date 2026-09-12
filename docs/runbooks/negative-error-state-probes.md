@@ -98,8 +98,8 @@ Current surface:
 
 - Upload requires an attached file.
 - Intake processes text-like files, PDFs, and JPEG, PNG, WebP, HEIC/HEIF, or TIFF
-  images. Other file types are stored without processing. Batches above 50 files
-  are rejected before persistence, and duplicate contents within a profile are
+  images. Other file types are stored without processing. Upload batches have
+  no configured file-count ceiling, and duplicate contents within a profile are
   rejected without overwriting existing documents.
 - Edit updates metadata only.
 - Controller tests already cover missing file and cross-account access.
@@ -111,8 +111,8 @@ Recommended probes:
 - Upload an invalid supported image and verify useful feedback without a saved
   document or processing job. Upload a non-processable format and verify it is
   saved with download access and no processing job.
-- Verify 51-file rejection and duplicate handling. These now have deterministic
-  coverage in the document workflow/negative suites.
+- Verify large-batch acceptance and duplicate handling. These have deterministic
+  coverage in the document workflow and negative suites, respectively.
 
 Lower priority:
 

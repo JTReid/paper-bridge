@@ -57,33 +57,6 @@ test('partially successful uploads return to Documents with both success and fai
   await expect(page.getByRole('link', { name: /browser-partial-invalid/ })).toHaveCount(0);
 });
 
-test('the server rejects all 51 files when browser batch validation is bypassed', async ({ page }) => {
-  await openDependentWorkspace(page);
-  await page.getByTestId('dependent-documents-link').click();
-  await page.getByTestId('documents-add-link').click();
-  await page.getByTestId('document-file-field').setInputFiles(
-    Array.from({ length: 51 }, (_, index) => ({
-      name: `browser-server-limit-${index + 1}.txt`,
-      mimeType: 'text/plain',
-      buffer: Buffer.from(`Distinct server-side batch limit document ${index + 1}.`),
-    })),
-  );
-
-  const rejectedUpload = page.waitForResponse((response) =>
-    response.request().method() === 'POST' && /\/profiles\/\d+\/documents$/.test(response.url()),
-  );
-  // Native form.submit bypasses both constraint validation and the Stimulus submit guard.
-  await page.getByTestId('document-upload-form').evaluate((form) => HTMLFormElement.prototype.submit.call(form));
-  const response = await rejectedUpload;
-  expect(response.status()).toBe(422);
-  expect(await response.finished()).toBeNull();
-  await expect(page.getByRole('heading', { name: 'Upload Document' })).toBeVisible();
-  await expect(page.getByTestId('document-form-errors')).toContainText('50');
-  await page.getByRole('link', { name: 'Cancel', exact: true }).click();
-  await expect(page).toHaveURL(/\/profiles\/\d+\/documents$/);
-  await expect(page.locator('[data-testid^="document-row-"]').filter({ hasText: 'browser-server-limit-' })).toHaveCount(0);
-});
-
 test('duplicate bytes are rejected without replacing originals while new content and another profile remain allowed', async ({ page }) => {
   await openDependentWorkspace(page);
   await page.getByTestId('dependent-documents-link').click();

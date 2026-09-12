@@ -6,8 +6,6 @@ module Agents
     include PipelineNotifiable
     include Agentic::Instrumented
 
-    MAX_EVIDENCE_CHARS = 60_000
-
     def execute
       call
       set_response
@@ -50,8 +48,7 @@ module Agents
       @response = parsed.merge(
         metadata: {
           source: "document_summarizer",
-          chunk_count: chunks.count,
-          evidence_truncated: evidence_truncated
+          chunk_count: chunks.count
         }
       )
 
@@ -72,7 +69,7 @@ module Agents
 
     private
 
-      attr_reader :document, :chunks, :evidence_truncated
+      attr_reader :document, :chunks
 
       def locate_document!
         gid = data.dig(:context, :document_gid)
@@ -97,43 +94,14 @@ module Agents
           Explain necessary medical or educational terms briefly.
           Never mention chunks, embeddings, retrieval, IDs, pipelines, models, or other system internals.
           #{Documents::MetadataSchemas::INSTRUCTIONS}
-          #{truncation_notice}
 
           Evidence chunks:
           #{content}
         PROMPT
       end
 
-      def truncation_notice
-        return unless evidence_truncated
-
-        "Only the first #{MAX_EVIDENCE_CHARS} characters of chunk evidence are included because this document is large."
-      end
-
       def evidence_text
-        used_chars = 0
-        @evidence_truncated = false
-
-        entries = chunks.filter_map do |chunk|
-          entry = evidence_entry(chunk)
-          remaining_chars = MAX_EVIDENCE_CHARS - used_chars
-
-          if remaining_chars <= 0
-            @evidence_truncated = true
-            next
-          end
-
-          if entry.length > remaining_chars
-            @evidence_truncated = true
-            used_chars += remaining_chars
-            entry[0, remaining_chars]
-          else
-            used_chars += entry.length
-            entry
-          end
-        end
-
-        entries.join("\n")
+        chunks.map { |chunk| evidence_entry(chunk) }.join("\n")
       end
 
       def evidence_entry(chunk)

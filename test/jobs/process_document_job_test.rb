@@ -230,7 +230,6 @@ class ProcessDocumentJobTest < ActiveJob::TestCase
     assert_equal [ "Uses document chunks as summary evidence.", "Includes the processed chunk content." ], document.summary.fetch("key_points")
     assert_equal "document_summarizer", document.summary.dig("metadata", "source")
     assert_equal 1, document.summary.dig("metadata", "chunk_count")
-    assert_not document.summary.dig("metadata", "evidence_truncated")
     assert document.summarized_at.present?
     assert_equal "legal", document.document_chunks.first.label
     assert_equal "text-embedding-3-large", document.document_embeddings.first.model

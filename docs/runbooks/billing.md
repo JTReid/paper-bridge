@@ -13,8 +13,7 @@ profile allowance.
 - Hosted Checkout starts at five (or the current profile count, if higher) and
   lets customers adjust quantity there. No custom plan-selection/payment page
   is added. Quantity has a minimum of five because the base plan always buys
-  five slots; the 999,999 maximum is Stripe's technical quantity bound, not the
-  separate 50-file upload-batch limit.
+  five slots; the 999,999 maximum is Stripe's technical quantity bound.
 - A dedicated hosted Customer Portal configuration permits quantity updates,
   preserves any active trial, immediately invoices prorated increases after the
   trial, and schedules decreases for the end of the current billing period.

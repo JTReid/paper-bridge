@@ -1,6 +1,4 @@
 class Document < ApplicationRecord
-  MAX_UPLOAD_FILES = 50
-
   STATUSES = {
     uploaded: "uploaded",
     stored: "stored",

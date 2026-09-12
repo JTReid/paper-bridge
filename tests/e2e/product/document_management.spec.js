@@ -238,36 +238,27 @@ test('Word and ZIP uploads remain downloadable and immediately editable without 
   }
 });
 
-test('a selection over 50 files can be reduced to the supported batch size and uploaded', async ({ page }) => {
+test('a selection over 50 files can be uploaded in one batch', async ({ page }) => {
   await openDependentWorkspace(page);
   await page.getByTestId('dependent-documents-link').click();
   await page.getByTestId('documents-add-link').click();
 
   const files = Array.from({ length: 51 }, (_, index) => ({
-    name: `browser-limit-recovery-${String(index + 1).padStart(2, '0')}.txt`,
+    name: `browser-large-batch-${String(index + 1).padStart(2, '0')}.txt`,
     mimeType: 'text/plain',
-    buffer: Buffer.from(`Distinct browser batch limit recovery document ${index + 1}.`),
+    buffer: Buffer.from(`Distinct browser large batch document ${index + 1}.`),
   }));
   const fileField = page.getByTestId('document-file-field');
   await fileField.setInputFiles(files);
   await expect(page.getByTestId('document-file-summary')).toContainText('51 files selected');
-  await expect(page.getByTestId('document-file-limit-error')).toContainText('Upload up to 50 files at a time');
-  await expect(fileField).toHaveAttribute('aria-invalid', 'true');
-  expect(await fileField.evaluate((input) => input.validity.customError)).toBe(true);
-  await page.getByTestId('document-upload-submit').click();
-  await expect(page).toHaveURL(/\/profiles\/\d+\/documents\/new$/);
   await expect(page.getByTestId('document-selected-file')).toHaveCount(51);
-
-  await page.getByTestId('document-file-remove-50').click();
-  await expect(page.getByTestId('document-file-summary')).toContainText('50 files selected');
-  await expect(page.getByTestId('document-file-limit-error')).toBeHidden();
   expect(await fileField.evaluate((input) => input.validity.valid)).toBe(true);
   await page.getByTestId('document-upload-submit').click();
 
   await expect(page).toHaveURL(/\/profiles\/\d+\/documents$/, { timeout: 15_000 });
-  await expect(page.getByTestId('flash-notice')).toContainText('50 documents uploaded');
-  await expect(page.locator('[data-testid^="document-row-"]').filter({ hasText: 'browser-limit-recovery-' })).toHaveCount(50);
-  await expect(page.getByRole('link', { name: /browser-limit-recovery-51/ })).toHaveCount(0);
+  await expect(page.getByTestId('flash-notice')).toContainText('51 documents uploaded');
+  await expect(page.locator('[data-testid^="document-row-"]').filter({ hasText: 'browser-large-batch-' })).toHaveCount(51);
+  await expect(page.getByRole('link', { name: /browser-large-batch-51/ })).toBeVisible();
 });
 
 test('document details link to the original file without showing extracted text', async ({ page }) => {

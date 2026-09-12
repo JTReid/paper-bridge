@@ -16,15 +16,15 @@ documents.
   edit-lock, retry, and schema-update behavior.
 - Document intake processes text-like uploads, PDFs, and JPEG, PNG, WebP, HEIC,
   HEIF, or TIFF images. Other file types, including Word, are saved as
-  storage-only without processing. Upload batches are limited to 50 files;
+  storage-only without processing. Upload batches have no application file-count cap;
   identical stored contents within the same profile are rejected without
   overwriting existing files. See [Document Uploads](document-uploads.md).
 - `Documents::UploadNormalizer` decodes image uploads before document creation.
   HEIC, HEIF, and TIFF sources are converted to JPEG before the normalized file
   is attached to Active Storage, so those source formats are never served to a
-  browser. JPEG, PNG, and WebP sources retain their browser-safe formats. Image
-  byte size and decoded pixel count are bounded before persistence and GPT
-  processing.
+  browser. JPEG, PNG, and WebP sources retain their browser-safe formats.
+  PaperBridge imposes no image byte-size or pixel-count cutoff. Invalid and
+  multi-image inputs remain rejected; provider and host constraints still apply.
 - Active Storage upload completion is followed by `Document.after_create_commit`.
 - For processable types, the callback marks the document `queued` and routes image documents to
   `ProcessImageDocumentJob`; PDFs and text-like documents continue through
@@ -39,7 +39,10 @@ documents.
   uploads and PDFs:
   `application/json`, `text/csv`, `text/markdown`, `text/plain`, and
   `application/pdf`.
-- Text uploads are normalized into `documents.prepared_payload`.
+- Text uploads are normalized as UTF-8 into `documents.prepared_payload` without
+  clipping the file. Summarization receives all document chunks without an
+  application character cutoff. See [Document Uploads](document-uploads.md#processing-limits)
+  for the removed limits and remaining provider constraints.
 - PDF uploads are prepared through `Documents::PreparePdf`.
 - PDF preparation renders every page at 300 DPI, OCRs every page, extracts
   embedded text for every page, and stores page-level artifacts in

@@ -38,8 +38,8 @@ operational harness checks until matching implementation exists.
   paths. Processing supports text-like files, PDFs, and one JPEG, PNG, WebP, HEIC,
   HEIF, or TIFF image per document; HEIC/HEIF and TIFF uploads are converted to
   JPEG before Active Storage persistence.
-- Upload selection supports individual removal, Clear selection, and a 50-file
-  per-batch limit enforced in both browser and server. Duplicate contents in the
+- Upload selection supports individual removal and Clear selection, with no
+  application file-count cap. Duplicate contents in the
   same profile are rejected without overwrites; unique files still upload.
   Single and batch uploads return to the profile's Documents list. Category and
   description are generated once during initial processing and editable

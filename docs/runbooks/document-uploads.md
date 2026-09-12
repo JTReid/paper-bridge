@@ -1,17 +1,15 @@
 # Document Uploads
 
 The upload form asks only for files. The native picker has no `accept` filter,
-so all file types are visible. Each batch accepts up to **50 files**, counting
-both processable and storage-only files. Selecting more shows an inline error;
-Remove and Clear selection let the user recover. The server independently
-rejects an oversized request before saving any documents, attachments, or blobs
-or enqueueing any jobs. This is a per-upload limit, not a profile storage limit.
+so all file types are visible. PaperBridge does not impose a file-count limit
+on an upload batch. Remove and Clear selection let the user adjust the files
+before submitting them.
 
 The existing processing formats are unchanged: PDF, plain text, CSV, Markdown,
 JSON, JPEG, PNG, WebP, HEIC, HEIF, and TIFF. Other file types, including Word,
 are saved without conversion or AI processing. The normalizer still rejects
-malformed supported images and enforces the existing image size, pixel, and
-single-image checks. Storage support does not add Word parsing or conversion.
+malformed supported images and requires one image per image document. Storage
+support does not add Word parsing or conversion.
 
 Each selected file has a Remove button, and Clear selection empties the entire
 pending selection. Both update the actual file input as well as the displayed
@@ -24,6 +22,32 @@ unfiltered Documents list. Notices distinguish documents being prepared from
 files saved without processing and include reasons for individual failures.
 If no files succeed, the upload form shows its errors. Category-filtered pages
 do not preassign a category to new uploads.
+
+## Processing Limits
+
+The following application-imposed limits have been removed:
+
+| Previous limit | Current behavior |
+| --- | --- |
+| 50 files per upload batch | All selected files are submitted and handled individually. |
+| Rack's 128-file multipart threshold | The request parser has no configured file-count ceiling. |
+| Rack's 4,096-part multipart threshold | The request parser has no configured part-count ceiling. |
+| First 200,000 bytes of a text upload | Preparation retains the entire text and preserves valid UTF-8 characters. |
+| First 60,000 characters of summary evidence | Summarization receives all available document chunks. |
+| 50 MB for HEIC/HEIF/TIFF source images | No application byte-size cutoff before conversion. |
+| 15 MB for JPEG/PNG/WebP or converted images | No application byte-size cutoff before attachment. |
+| 40,000,000 decoded image pixels | No application pixel-count cutoff; dimensions are preserved. |
+
+`config/initializers/document_uploads.rb` disables Rack's two multipart count
+limits using their supported zero values. Other multipart parsing checks remain
+in place. Parser regressions cover 128 files and 4,097 form parts.
+
+This does not promise processing of arbitrarily large files. Hosting resources,
+request limits, model context windows, output budgets, and provider image
+constraints still apply. See the [OpenAI image-input requirements](https://developers.openai.com/api/docs/guides/images-vision#image-input-requirements).
+PaperBridge does not silently clip source text or summary evidence to avoid a
+provider limit. Supported formats, image decoding checks, single-image
+validation, JPEG conversion settings, and network timeouts remain in place.
 
 ## Storage-Only Files
 
@@ -137,16 +161,16 @@ ruby scripts/paper_bridge_qa_harness.rb negative documents
 ruby scripts/paper_bridge_qa_harness.rb workflow onboarding
 ```
 
-Rails tests cover the 50/51 boundary, mixed batches, exact duplicate detection,
+Rails tests cover batches above the former file-count limits, mixed batches, exact duplicate detection,
 normalized-image duplicates, existing attachments, immediate storage-only edits,
 original download bytes and disposition, and unchanged CSV/text/image routing.
 They also exercise fake AI responses through both processing jobs, completion
 broadcasts, malformed output, retry safety, legacy preservation, access gates,
-and the narrow schema updater. Browser tests use deterministic metadata
+the former text/evidence/image boundaries, and the narrow schema updater. Browser tests use deterministic metadata
 completion rather than live AI. They deliver the captured model-generated
 Turbo messages in the browser because the test Cable adapter is process-local;
 this checks in-place rendering, not cross-process Cable transport.
-They cover selection controls, upload routes, the 51-to-50 recovery flow,
-server-side limit enforcement without browser validation, storage-only Word/ZIP
+They cover selection controls, upload routes, batches above 50 files,
+storage-only Word/ZIP
 downloads and edits, duplicates and profile boundaries, errors, edit-field
 unlocking, original-file buttons, and onboarding recovery.

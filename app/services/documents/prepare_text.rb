@@ -2,8 +2,6 @@
 
 module Documents
   class PrepareText
-    MAX_INPUT_BYTES = 200_000
-
     def self.call(document)
       new(document).call
     end
@@ -40,10 +38,7 @@ module Documents
       end
 
       def normalize_content(raw_content)
-        raw_content.to_s
-                   .byteslice(0, MAX_INPUT_BYTES)
-                   .encode("UTF-8", invalid: :replace, undef: :replace, replace: "")
-                   .strip
+        raw_content.to_s.dup.force_encoding(Encoding::UTF_8).scrub
       end
 
       def prepare_document_page(text)

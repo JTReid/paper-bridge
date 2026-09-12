@@ -239,7 +239,7 @@ database; a green `doctor` or `review` is not a deployed configuration check.
 The Heroku release command runs the targeted configuration sync and check
 after migrations, failing the release if that transaction cannot complete.
 
-Upload coverage also checks the 50-file batch limit, profile-scoped duplicate
+Upload coverage also checks batches above the removed file-count limits, profile-scoped duplicate
 rejection without overwrites, storage-only originals/downloads/editing, no
 pipeline or attachment analysis for non-processable files, and the unchanged
 CSV/text/PDF/image processing allowlist. Browser document workflows exercise

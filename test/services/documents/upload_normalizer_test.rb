@@ -143,28 +143,43 @@ module Documents
       end
     end
 
-    test "rejects browser image uploads above the stored byte limit" do
-      bytes = test_image.write_to_buffer(".png")
+    test "preserves browser image uploads larger than 15 MB without resizing or changing their bytes" do
+      bytes = Vips::Image.black(2_500, 2_500, bands: 3).write_to_buffer(".png", compression: 0)
+      assert_operator bytes.bytesize, :>, 15.megabytes
 
-      with_upload(bytes, filename: "oversized.png", content_type: "image/png") do |upload|
-        upload.tempfile.define_singleton_method(:size) { UploadNormalizer::MAX_STORED_IMAGE_BYTES + 1 }
+      with_upload(bytes, filename: "large.png", content_type: "image/png") do |upload|
+        result = UploadNormalizer.call(upload)
 
-        error = assert_raises(UploadNormalizer::ImageTooLargeError) { UploadNormalizer.call(upload) }
-
-        assert_equal "must be smaller than 15 MB", error.message
+        assert_equal bytes, result.attachable.fetch(:io).read
+        assert_same upload.tempfile, result.attachable.fetch(:io)
+        assert_nil result.temporary_file
       end
     end
 
-    test "rejects images above the decoded pixel limit before evaluating pixels" do
-      bytes = test_image.write_to_buffer(".png")
+    test "converts single-image TIFF sources larger than 50 MB at their original dimensions" do
+      bytes = Vips::Image.black(4_200, 4_200, bands: 3).write_to_buffer(".tiff", compression: :none)
+      assert_operator bytes.bytesize, :>, 50.megabytes
 
-      with_upload(bytes, filename: "too-many-pixels.png", content_type: "image/png") do |upload|
-        normalizer = UploadNormalizer.new(upload)
-        normalizer.define_singleton_method(:load_image) { Vips::Image.black(8_000, 5_001) }
+      with_upload(bytes, filename: "large.tiff", content_type: "image/tiff") do |upload|
+        result = UploadNormalizer.call(upload)
 
-        error = assert_raises(UploadNormalizer::ImageTooLargeError) { normalizer.call }
+        assert_equal "image/jpeg", result.attachable.fetch(:content_type)
+        assert_equal [ 4_200, 4_200 ], jpeg_dimensions(result.attachable.fetch(:io))
+      ensure
+        result&.close
+      end
+    end
 
-        assert_equal "has dimensions that are too large", error.message
+    test "preserves images above 40 million pixels at their original dimensions" do
+      bytes = Vips::Image.black(8_000, 5_001).write_to_buffer(".png")
+
+      with_upload(bytes, filename: "large-dimensions.png", content_type: "image/png") do |upload|
+        result = UploadNormalizer.call(upload)
+        stored_bytes = result.attachable.fetch(:io).read
+        image = Vips::Image.new_from_buffer(stored_bytes, "")
+
+        assert_equal bytes, stored_bytes
+        assert_equal [ 8_000, 5_001 ], [ image.width, image.height ]
       end
     end
 
