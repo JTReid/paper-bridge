@@ -1,5 +1,6 @@
 // @ts-check
 import { readFileSync } from 'node:fs';
+import { randomUUID } from 'node:crypto';
 import { test, expect } from '../fixtures';
 import { expectAccessible } from '../helpers/accessibility';
 import { deleteAccountsAndUsers, setAccountSubscription } from '../helpers/backend';
@@ -7,24 +8,17 @@ import { typeNativeDate } from '../helpers/date_input';
 
 const sampleFile = readFileSync('test/fixtures/files/sample.txt');
 
-const ACCOUNTS = {
-  complete: {
-    accountName: 'Onboarding Tour Complete Family',
-    email: 'onboarding-tour-complete@example.test',
-  },
-  dismiss: {
-    accountName: 'Onboarding Tour Dismiss Family',
-    email: 'onboarding-tour-dismiss@example.test',
-  },
-  mobile: {
-    accountName: 'Onboarding Tour Mobile Family',
-    email: 'onboarding-tour-mobile@example.test',
-  },
-  multi: {
-    accountName: 'Onboarding Tour Multi Family',
-    email: 'onboarding-tour-multi@example.test',
-  },
-};
+const createdAccounts = [];
+
+function createOnboardingAccount(kind) {
+  const token = randomUUID();
+  const account = {
+    accountName: `Onboarding Tour ${kind} Family ${token}`,
+    email: `onboarding-tour-${token}@example.test`,
+  };
+  createdAccounts.push(account);
+  return account;
+}
 
 const ACTIVE_SUBSCRIPTION = {
   status: 'active',
@@ -34,16 +28,12 @@ const ACTIVE_SUBSCRIPTION = {
   metadata: {},
 };
 
-test.beforeEach(() => {
-  deleteAccountsAndUsers(Object.values(ACCOUNTS));
-});
-
 test.afterEach(() => {
-  deleteAccountsAndUsers(Object.values(ACCOUNTS));
+  if (createdAccounts.length) deleteAccountsAndUsers(createdAccounts.splice(0));
 });
 
 test('new customer completes the guided path from signup through their first question', async ({ page }) => {
-  const account = ACCOUNTS.complete;
+  const account = createOnboardingAccount('Complete');
   await registerAndOpenDashboard(page, account);
 
   await expectTourStep(page, 1, 'Create your first Profile');
@@ -164,7 +154,7 @@ test('new customer completes the guided path from signup through their first que
 });
 
 test('multiple files return directly to Documents and a suggested question completes the tour', async ({ page }) => {
-  await registerAndOpenDashboard(page, ACCOUNTS.multi);
+  await registerAndOpenDashboard(page, createOnboardingAccount('Multi'));
   await page.getByTestId('dashboard-add-profile').click();
   await expectTourStep(page, 1, 'Add their details');
   // The date itself is the first interaction with the active form tour.
@@ -209,7 +199,7 @@ test('multiple files return directly to Documents and a suggested question compl
 });
 
 test('skipping stays dismissed until the customer replays the tour', async ({ page }) => {
-  const account = ACCOUNTS.dismiss;
+  const account = createOnboardingAccount('Dismiss');
   await registerAndOpenDashboard(page, account);
   await expectTourStep(page, 1, 'Create your first Profile');
 
@@ -238,7 +228,7 @@ test('skipping stays dismissed until the customer replays the tour', async ({ pa
 
 test('first tooltip fits a phone viewport without horizontal overflow', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
-  await registerAndOpenDashboard(page, ACCOUNTS.mobile);
+  await registerAndOpenDashboard(page, createOnboardingAccount('Mobile'));
   await expectTourStep(page, 1, 'Create your first Profile');
 
   const popover = page.getByTestId('product-tour-popover');

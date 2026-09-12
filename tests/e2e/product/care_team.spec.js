@@ -1,10 +1,9 @@
 // @ts-check
 import { test, expect } from '../fixtures';
-import { openDependentWorkspace } from '../helpers/auth';
 import { expectAccessible } from '../helpers/accessibility';
 
-test('care team page shows saved contact details', async ({ page }) => {
-  await openDependentWorkspace(page);
+test('care team page shows saved contact details', async ({ page, family }) => {
+  await family.openDependentWorkspace(page);
   await page.getByTestId('dependent-care-team-link').click();
 
   await expect(page.getByRole('heading', { name: 'Care Team' })).toBeVisible();
@@ -17,11 +16,11 @@ test('care team page shows saved contact details', async ({ page }) => {
   await expectAccessible(page);
 });
 
-test('admin can add and edit a care team contact and recall their email for sharing', async ({ page }) => {
+test('admin can add and edit a care team contact and recall their email for sharing', async ({ page, family }) => {
   const contactEmail = `qa-advocate-${Date.now()}@example.test`;
   const updatedEmail = `updated-${contactEmail}`;
 
-  await openDependentWorkspace(page);
+  await family.openDependentWorkspace(page);
   await page.getByTestId('dependent-care-team-link').click();
   await expect(page.getByRole('heading', { name: 'Care Team', level: 1 })).toBeVisible();
   await page.getByTestId('care-team-add-link').click();

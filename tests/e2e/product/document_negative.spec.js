@@ -1,9 +1,8 @@
 // @ts-check
 import { test, expect } from '../fixtures';
-import { openDependentWorkspace } from '../helpers/auth';
 
-test('upload form keeps required file validation in the browser', async ({ page }) => {
-  await openDependentWorkspace(page);
+test('upload form keeps required file validation in the browser', async ({ page, family }) => {
+  await family.openDependentWorkspace(page);
   await page.getByTestId('dependent-documents-link').click();
   await page.getByTestId('documents-add-link').click();
 
@@ -15,8 +14,8 @@ test('upload form keeps required file validation in the browser', async ({ page 
   expect(await page.getByTestId('document-file-field').evaluate((input) => input.validity.valueMissing)).toBe(true);
 });
 
-test('a corrupt supported image is still rejected after choosing from all file types', async ({ page }) => {
-  await openDependentWorkspace(page);
+test('a corrupt supported image is still rejected after choosing from all file types', async ({ page, family }) => {
+  await family.openDependentWorkspace(page);
   await page.getByTestId('dependent-documents-link').click();
   await page.getByTestId('documents-add-link').click();
 
@@ -37,8 +36,8 @@ test('a corrupt supported image is still rejected after choosing from all file t
   await expect(page.getByTestId('document-description-field')).toHaveCount(0);
 });
 
-test('partially successful uploads return to Documents with both success and failure feedback', async ({ page }) => {
-  await openDependentWorkspace(page);
+test('partially successful uploads return to Documents with both success and failure feedback', async ({ page, family }) => {
+  await family.openDependentWorkspace(page);
   await page.getByTestId('dependent-documents-link').click();
   await page.getByTestId('documents-add-link').click();
   await page.getByTestId('document-file-field').setInputFiles([
@@ -57,8 +56,8 @@ test('partially successful uploads return to Documents with both success and fai
   await expect(page.getByRole('link', { name: /browser-partial-invalid/ })).toHaveCount(0);
 });
 
-test('duplicate bytes are rejected without replacing originals while new content and another profile remain allowed', async ({ page }) => {
-  await openDependentWorkspace(page);
+test('duplicate bytes are rejected without replacing originals while new content and another profile remain allowed', async ({ page, family }) => {
+  await family.openDependentWorkspace(page);
   await page.getByTestId('dependent-documents-link').click();
   await page.getByTestId('documents-add-link').click();
 
@@ -115,12 +114,12 @@ test('duplicate bytes are rejected without replacing originals while new content
   await expect(page.getByRole('link', { name: /browser-duplicate-original/ })).toHaveCount(1);
 });
 
-test('editing document with blank title shows a validation error', async ({ page }) => {
-  await openDependentWorkspace(page);
+test('editing document with blank title shows a validation error', async ({ page, family }) => {
+  await family.openDependentWorkspace(page);
   await page.getByTestId('dependent-documents-link').click();
   await expect(page).toHaveURL(/\/profiles\/\d+\/documents$/);
   await expect(page.getByRole('heading', { name: "Emma Greenfield's Documents" })).toBeVisible();
-  await page.getByRole('link', { name: /Advance Directive|QA Planning Document/ }).first().click();
+  await page.getByRole('link', { name: /Advance Directive/ }).first().click();
   await page.getByTestId('document-edit-link').click();
 
   await page.getByTestId('document-title-field').fill('');

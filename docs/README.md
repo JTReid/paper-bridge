@@ -13,7 +13,7 @@ check enforces that every tracked, non-ignored Markdown file is linked here.
 | [Agent Instructions](../AGENTS.md) | Short repo entry point for AI-assisted work. |
 | [Agent Harness](agent-harness.md) | Operating loop for agent-assisted development in this repo. |
 | [Architecture Map](architecture-map.md) | High-level map of the Rails app, domain areas, and code ownership landmarks. |
-| [Validation](validation.md) | Local and CI validation commands, plus when to use each one. |
+| [Validation](validation.md) | Local and CI validation commands, including Chromium, captured email, and real PDF preparation checks. |
 | [Agentic Pipeline Runbook](agentic-pipeline-runbook.md) | Legacy entry point for focused agentic runbooks. |
 
 ## Runbooks
@@ -32,7 +32,7 @@ check enforces that every tracked, non-ignored Markdown file is linked here.
 | [Care Team Contacts](runbooks/care-team-access.md) | Profile-scoped contact details, email-sharing recipients, and account access boundaries. |
 | [Document Sharing](runbooks/document-sharing.md) | Current email-attachment sharing behavior and validation surface. |
 | [QA Troubleshooting](runbooks/qa-troubleshooting.md) | Local QA harness for browser bug reproduction, artifacts, password reset, document sharing and answer email SMTP checks, and verification. |
-| [Browser QA](runbooks/browser-qa.md) | Playwright folder structure, environment, and direct iteration commands. |
+| [Browser QA](runbooks/browser-qa.md) | Playwright folder structure, isolated test data, CI coverage, and direct iteration commands. |
 | [QA Seed Data](runbooks/qa-seed-data.md) | Synthetic processed-document corpus for development QA and bug hunting. |
 | [Negative Error-State Probes](runbooks/negative-error-state-probes.md) | Recommended future QA probes for invalid, empty, failed, and edge-case product states. |
 

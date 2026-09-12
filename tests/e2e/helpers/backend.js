@@ -32,29 +32,6 @@ export function createAccountProfiles(accountName, profiles) {
   );
 }
 
-export function deleteAccountProfilesByLastName(accountName, lastName) {
-  runRailsRunner(
-    `
-      account = Account.find_by!(name: ENV.fetch("QA_ACCOUNT_NAME"))
-      account.dependents.where(last_name: ENV.fetch("QA_PROFILE_LAST_NAME")).find_each(&:destroy!)
-    `,
-    {
-      QA_ACCOUNT_NAME: accountName,
-      QA_PROFILE_LAST_NAME: lastName,
-    },
-  );
-}
-
-export function clearAiAssistantQueries(accountName) {
-  runRailsRunner(
-    `
-      account = Account.find_by!(name: ENV.fetch("QA_ACCOUNT_NAME"))
-      AiAssistantQuery.where(account: account).find_each(&:destroy!)
-    `,
-    { QA_ACCOUNT_NAME: accountName },
-  );
-}
-
 export function resetLatestAiAssistantQueryStart(accountName) {
   runRailsRunner(
     `

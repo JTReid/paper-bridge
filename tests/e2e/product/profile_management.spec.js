@@ -1,12 +1,11 @@
 // @ts-check
 import { randomUUID } from 'node:crypto';
 import { test, expect } from '../fixtures';
-import { openDependentWorkspace, signIn } from '../helpers/auth';
 import { replaceNativeYear, typeNativeDate } from '../helpers/date_input';
 
-test('admin can create, edit, and delete a profile with separate name fields', async ({ page }) => {
+test('admin can create, edit, and delete a profile with separate name fields', async ({ page, family }) => {
   const lastName = `Morgan ${randomUUID()}`;
-  await signIn(page);
+  await family.signIn(page);
   await page.goto('/profiles/new');
 
   await expect(page.locator('#dependent_first_name')).toBeVisible();
@@ -59,8 +58,8 @@ test('admin can create, edit, and delete a profile with separate name fields', a
   await expect(page.getByRole('link', { name: new RegExp(lastName) })).toHaveCount(0);
 });
 
-test('admin receives instructions when a profile still has documents', async ({ page }) => {
-  await openDependentWorkspace(page);
+test('admin receives instructions when a profile still has documents', async ({ page, family }) => {
+  await family.openDependentWorkspace(page);
   const profileURL = page.url();
   await page.getByRole('link', { name: 'Edit', exact: true }).click();
 

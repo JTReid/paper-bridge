@@ -20,8 +20,8 @@ export async function signIn(page, { user = QA_USER, dependentName = 'Emma Green
   await expect(page.getByText(dependentName).first()).toBeVisible();
 }
 
-export async function openDependentWorkspace(page) {
-  await signIn(page);
+export async function openDependentWorkspace(page, options = {}) {
+  await signIn(page, options);
   await page.getByRole('link', { name: /Emma Greenfield/ }).first().click();
   await expect(page.getByRole('heading', { name: 'Emma Greenfield' })).toBeVisible();
 }

@@ -1,10 +1,9 @@
 // @ts-check
 import { test, expect } from '../fixtures';
-import { openDependentWorkspace } from '../helpers/auth';
 import { expectAccessible } from '../helpers/accessibility';
 
-test('document share modal opens and selects a care team recipient', async ({ page }) => {
-  await openDependentWorkspace(page);
+test('document share modal opens and selects a care team recipient', async ({ page, family }) => {
+  await family.openDependentWorkspace(page);
   await page.getByTestId('dependent-documents-link').click();
 
   await expect(page.getByRole('heading', { name: "Emma Greenfield's Documents" })).toBeVisible();

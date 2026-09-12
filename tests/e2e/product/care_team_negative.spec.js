@@ -1,9 +1,8 @@
 // @ts-check
 import { test, expect } from '../fixtures';
-import { openDependentWorkspace } from '../helpers/auth';
 
-test('care team contact with blank email shows validation errors', async ({ page }) => {
-  await openDependentWorkspace(page);
+test('care team contact with blank email shows validation errors', async ({ page, family }) => {
+  await family.openDependentWorkspace(page);
   await page.getByTestId('dependent-care-team-link').click();
   await page.getByTestId('care-team-add-link').click();
 
@@ -14,8 +13,8 @@ test('care team contact with blank email shows validation errors', async ({ page
   await expect(page.getByTestId('care-team-form-errors')).toContainText(/Email|can't be blank|invalid/i);
 });
 
-test('care team contact with malformed email is blocked by browser validation', async ({ page }) => {
-  await openDependentWorkspace(page);
+test('care team contact with malformed email is blocked by browser validation', async ({ page, family }) => {
+  await family.openDependentWorkspace(page);
   await page.getByTestId('dependent-care-team-link').click();
   await page.getByTestId('care-team-add-link').click();
 
@@ -27,8 +26,8 @@ test('care team contact with malformed email is blocked by browser validation', 
   expect(await page.getByTestId('care-team-email-field').evaluate((input) => input.validity.typeMismatch)).toBe(true);
 });
 
-test('duplicate care team contact shows validation errors', async ({ page }) => {
-  await openDependentWorkspace(page);
+test('duplicate care team contact shows validation errors', async ({ page, family }) => {
+  await family.openDependentWorkspace(page);
   await page.getByTestId('dependent-care-team-link').click();
   await page.getByTestId('care-team-add-link').click();
 

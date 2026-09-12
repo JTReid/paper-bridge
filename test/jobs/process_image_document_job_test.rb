@@ -345,7 +345,7 @@ class ProcessImageDocumentJobTest < ActiveJob::TestCase
     assert_empty FakeConnection.requests
   end
 
-  test "keeps completed metadata and later edits through an image processing retry" do
+  test "the scheduled automatic image retry rebuilds results and keeps later metadata edits" do
     document = create_image_document
     clear_enqueued_jobs
     FakeConnection.embedding_failure = true
@@ -359,15 +359,25 @@ class ProcessImageDocumentJobTest < ActiveJob::TestCase
     assert_equal "An amoxicillin prescription with dosage instructions.", document.description
     assert_not document.initial_metadata_pending?
     document.update!(category: :therapy, description: "My corrected image description.")
+    original_blob_id = document.file.blob_id
+    previous_chunk_ids = document.document_chunks.ids
     FakeConnection.embedding_failure = false
     FakeConnection.metadata_response = { category: "medical", description: "A different generated image description." }
 
-    ProcessImageDocumentJob.perform_now(document)
+    assert_performed_jobs 1, only: ProcessImageDocumentJob do
+      perform_enqueued_jobs only: ProcessImageDocumentJob
+    end
 
     assert_equal "processed", document.reload.status
     assert_equal "therapy", document.category
     assert_equal "My corrected image description.", document.description
     assert_not document.initial_metadata_pending?
+    assert_equal original_blob_id, document.file.blob_id
+    assert_equal %w[failed completed], document.pipeline_runs.order(:id).pluck(:state)
+    assert_empty previous_chunk_ids & document.document_chunks.ids
+    assert_equal 2, document.document_chunks.count
+    assert_equal 2, document.document_embeddings.count
+    assert_no_enqueued_jobs only: ProcessImageDocumentJob
   end
 
   {

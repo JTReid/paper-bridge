@@ -64,7 +64,7 @@ class AnswerAiAssistantQueryJobTest < ActiveJob::TestCase
     self.llm_connection = Object.new
   end
 
-  test "runs the existing search pipeline and stores the final answer" do
+  test "stores the pipeline response and broadcasts throttled drafts followed by the final answer" do
     query = create_query
     job_class = configured_job_class(SuccessfulPipeline)
 

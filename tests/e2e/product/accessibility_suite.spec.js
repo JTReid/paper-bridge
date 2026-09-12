@@ -1,34 +1,15 @@
 // @ts-check
 import { test, expect } from '../fixtures';
-import { QA_USER, signIn, openDependentWorkspace, openSeededDependentWorkspace } from '../helpers/auth';
+import { signIn, openDependentWorkspace, openSeededDependentWorkspace } from '../helpers/auth';
 import { expectAccessible } from '../helpers/accessibility';
 import { setAccountSubscription } from '../helpers/backend';
 
-const ACCOUNT_NAME = 'Greenfield Family';
-const QA_SEEDED_ACCOUNT_NAME = 'PaperBridge QA Harness';
-const ACTIVE_SUBSCRIPTION = {
-  status: 'active',
-  stripe_customer_id: 'cus_qa_accessibility',
-  stripe_subscription_id: 'sub_qa_accessibility',
-  stripe_price_id: 'price_qa_accessibility',
-};
-const SEEDED_ACTIVE_SUBSCRIPTION = {
-  status: 'active',
-  stripe_customer_id: 'cus_qa_seed_accessibility',
-  stripe_subscription_id: 'sub_qa_seed_accessibility',
-  stripe_price_id: 'price_qa_seed_accessibility',
-};
 const INACTIVE_SUBSCRIPTION = {
   status: 'incomplete',
   stripe_customer_id: 'cus_qa_accessibility_incomplete',
   stripe_subscription_id: null,
   stripe_price_id: 'price_qa_accessibility',
 };
-
-test.afterEach(() => {
-  setAccountSubscription(ACCOUNT_NAME, ACTIVE_SUBSCRIPTION);
-  setAccountSubscription(QA_SEEDED_ACCOUNT_NAME, SEEDED_ACTIVE_SUBSCRIPTION);
-});
 
 test('public and auth surfaces pass axe checks', async ({ page }) => {
   await page.goto('/');
@@ -41,8 +22,6 @@ test('public and auth surfaces pass axe checks', async ({ page }) => {
 });
 
 test('active product surfaces pass axe checks', async ({ page }) => {
-  setAccountSubscription(ACCOUNT_NAME, ACTIVE_SUBSCRIPTION);
-
   await signIn(page);
   await expect(page.getByRole('heading', { name: 'Good to see you.' })).toBeVisible();
   await expectAccessible(page);
@@ -93,8 +72,6 @@ test('active product surfaces pass axe checks', async ({ page }) => {
 });
 
 test('care team and AI surfaces pass axe checks', async ({ page }) => {
-  setAccountSubscription(ACCOUNT_NAME, ACTIVE_SUBSCRIPTION);
-
   await openDependentWorkspace(page);
   await page.getByTestId('dependent-care-team-link').click();
   await expect(page.getByRole('heading', { name: 'Care Team' })).toBeVisible();
@@ -112,19 +89,16 @@ test('care team and AI surfaces pass axe checks', async ({ page }) => {
   await expectAccessible(page);
 });
 
-test('billing gate passes axe checks', async ({ page }) => {
-  setAccountSubscription(ACCOUNT_NAME, INACTIVE_SUBSCRIPTION);
+test('billing gate passes axe checks', async ({ page, family }) => {
+  setAccountSubscription(family.accountName, INACTIVE_SUBSCRIPTION);
 
-  await signInWithoutDashboardExpectation(page);
+  await signInWithoutDashboardExpectation(page, family.user);
   await expect(page).toHaveURL(/\/billing$/);
   await expect(page.getByTestId('billing-status')).toContainText('Subscription required');
   await expectAccessible(page);
 });
 
 test('seeded document edge states pass axe checks', async ({ page }) => {
-  setAccountSubscription(ACCOUNT_NAME, ACTIVE_SUBSCRIPTION);
-  setAccountSubscription(QA_SEEDED_ACCOUNT_NAME, SEEDED_ACTIVE_SUBSCRIPTION);
-
   await openSeededDependentWorkspace(page);
   await page.getByTestId('dependent-documents-link').click();
   await expect(page.getByRole('heading', { name: "Avery Morgan's Documents" })).toBeVisible();
@@ -135,9 +109,9 @@ test('seeded document edge states pass axe checks', async ({ page }) => {
   await expectAccessible(page);
 });
 
-async function signInWithoutDashboardExpectation(page) {
+async function signInWithoutDashboardExpectation(page, user) {
   await page.goto('/users/sign_in');
-  await page.getByTestId('sign-in-email').fill(QA_USER.email);
-  await page.getByTestId('sign-in-password').fill(QA_USER.password);
+  await page.getByTestId('sign-in-email').fill(user.email);
+  await page.getByTestId('sign-in-password').fill(user.password);
   await page.getByTestId('sign-in-submit').click();
 }

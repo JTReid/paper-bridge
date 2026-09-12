@@ -1,18 +1,13 @@
 // @ts-check
 import { test, expect } from '../fixtures';
-import { openDependentWorkspace } from '../helpers/auth';
 import { expectAccessible } from '../helpers/accessibility';
 import {
-  clearAiAssistantQueries,
   completeLatestAiAssistantQueryWithoutBroadcast,
   resetLatestAiAssistantQueryStart,
 } from '../helpers/backend';
 
-test.beforeEach(() => clearAiAssistantQueries('Greenfield Family'));
-test.afterEach(() => clearAiAssistantQueries('Greenfield Family'));
-
-test('ai assistant loads without submitting a query', async ({ page }) => {
-  await openDependentWorkspace(page);
+test('ai assistant loads without submitting a query', async ({ page, family }) => {
+  await family.openDependentWorkspace(page);
   await page.getByTestId('dependent-ai-assistant-link').click();
 
   await expect(page.getByRole('heading', { name: 'Ask PaperBridge' })).toBeVisible();
@@ -23,8 +18,8 @@ test('ai assistant loads without submitting a query', async ({ page }) => {
   await expectAccessible(page);
 });
 
-test('ai assistant shows immediate progress and queues without leaving the profile', async ({ page }) => {
-  await openDependentWorkspace(page);
+test('ai assistant shows immediate progress and queues without leaving the profile', async ({ page, family }) => {
+  await family.openDependentWorkspace(page);
   await page.getByTestId('dependent-ai-assistant-link').click();
   await expect(page).toHaveURL(/\/profiles\/\d+\/ai-assistant$/);
   const assistantPath = new URL(page.url()).pathname;
@@ -61,7 +56,7 @@ test('ai assistant shows immediate progress and queues without leaving the profi
   await expect(page.getByText('Emma Greenfield').first()).toBeVisible();
   await expectAccessible(page);
 
-  resetLatestAiAssistantQueryStart('Greenfield Family');
+  resetLatestAiAssistantQueryStart(family.accountName);
   const restartedRequest = page.waitForResponse((response) =>
     response.request().method() === 'POST' && /\/ai-assistant\/\d+\/start$/.test(response.url()),
   );
@@ -72,8 +67,8 @@ test('ai assistant shows immediate progress and queues without leaving the profi
   await expect(page.getByTestId('ai-assistant-query-result')).toHaveAttribute('data-phase', 'queued');
 });
 
-test('ai assistant reconciles a finished answer when its Cable update is missed', async ({ page }) => {
-  await openDependentWorkspace(page);
+test('ai assistant reconciles a finished answer when its Cable update is missed', async ({ page, family }) => {
+  await family.openDependentWorkspace(page);
   await page.getByTestId('dependent-ai-assistant-link').click();
 
   await page.getByTestId('ai-assistant-query').fill('What changed while I was away?');
@@ -84,7 +79,7 @@ test('ai assistant reconciles a finished answer when its Cable update is missed'
   expect((await startRequest).status()).toBe(202);
 
   completeLatestAiAssistantQueryWithoutBroadcast(
-    'Greenfield Family',
+    family.accountName,
     'This answer was restored from the durable query.',
   );
 
@@ -93,8 +88,8 @@ test('ai assistant reconciles a finished answer when its Cable update is missed'
   await expect(page.getByTestId('ai-assistant-submit')).toBeEnabled();
 });
 
-test('ai assistant retries the same query when its start response is ambiguous', async ({ page }) => {
-  await openDependentWorkspace(page);
+test('ai assistant retries the same query when its start response is ambiguous', async ({ page, family }) => {
+  await family.openDependentWorkspace(page);
   await page.getByTestId('dependent-ai-assistant-link').click();
 
   await page.evaluate(() => {
@@ -137,8 +132,8 @@ test('ai assistant retries the same query when its start response is ambiguous',
   await expect(page.getByTestId('ai-assistant-submit')).toBeDisabled();
 });
 
-test('ai assistant ignores a stale status response after a newer update', async ({ page }) => {
-  await openDependentWorkspace(page);
+test('ai assistant ignores a stale status response after a newer update', async ({ page, family }) => {
+  await family.openDependentWorkspace(page);
   await page.getByTestId('dependent-ai-assistant-link').click();
 
   let staleStatusCaptured = () => {};
@@ -180,8 +175,8 @@ test('ai assistant ignores a stale status response after a newer update', async 
   await expect(page.getByText('A newer update is already on screen.')).toBeVisible();
 });
 
-test('ai assistant does not retry a definitive start rejection', async ({ page }) => {
-  await openDependentWorkspace(page);
+test('ai assistant does not retry a definitive start rejection', async ({ page, family }) => {
+  await family.openDependentWorkspace(page);
   await page.getByTestId('dependent-ai-assistant-link').click();
 
   await page.evaluate(() => {
@@ -212,8 +207,8 @@ test('ai assistant does not retry a definitive start rejection', async ({ page }
   await expect(page.locator('html')).toHaveAttribute('data-test-start-attempts', '1');
 });
 
-test('ai assistant bounds temporary start retries', async ({ page }) => {
-  await openDependentWorkspace(page);
+test('ai assistant bounds temporary start retries', async ({ page, family }) => {
+  await family.openDependentWorkspace(page);
   await page.getByTestId('dependent-ai-assistant-link').click();
 
   await page.locator('[data-controller~="ai-assistant-query"]').evaluate((element) => {

@@ -160,12 +160,20 @@ class SavedAnswerTest < ActiveSupport::TestCase
     assert_empty saved_answer.source_documents_by_id
   end
 
-  test "source lookup never exposes a document from another profile" do
+  test "source lookup excludes other profiles within and outside the account" do
+    own_document = documents(:advance_directive)
+    sibling_document = Document.create!(
+      account: accounts(:greenfield), dependent: dependents(:noah), user: users(:family_admin),
+      file: { io: StringIO.new("Noah's school report."), filename: "noah-report.txt", content_type: "text/plain" }
+    )
+    citations = [ own_document, sibling_document, documents(:outside_account) ].map do |document|
+      { document_id: document.id, document_title: document.title }
+    end
     query = create_query
-    query.update!(answer: query.answer.merge("citations" => [ { document_id: documents(:outside_account).id } ]))
+    query.update!(answer: query.answer.merge("citations" => citations))
     saved_answer = SavedAnswer.save_from_query!(query)
 
-    assert_empty saved_answer.source_documents_by_id
+    assert_equal({ own_document.id => own_document }, saved_answer.source_documents_by_id)
   end
 
   test "search matches visible fields literally and case insensitively within its existing scope" do

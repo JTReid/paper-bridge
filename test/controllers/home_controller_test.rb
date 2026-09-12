@@ -5,38 +5,37 @@ class HomeControllerTest < ActionDispatch::IntegrationTest
     get root_path
 
     assert_response :success
-    assert_includes response.body, "PaperBridge"
-    assert_select "img[alt='PaperBridge'][src*='paperbridge-logo']", count: 1
-    assert_includes response.body, "Sign In"
-    assert_includes response.body, "Get Started"
-    assert_includes response.body, "Your child's"
-    assert_includes response.body, "All in one place"
-    assert_includes response.body, "advocacy platform that securely organizes"
-    assert_includes response.body, "Organize. Empower. Advocate."
-    assert_includes response.body, "Citation analysis"
-    assert_includes response.body, "Complete Story"
-    assert_includes response.body, "Know What Comes Next"
-    assert_includes response.body, "AI-tailored summaries"
-    assert_includes response.body, "isn't just storing files"
-    assert_includes response.body, "Meet PaperBridge"
-    assert_not_includes response.body, "Watch How It Works"
-    assert_not_includes response.body, "Share by Email"
-    assert_not_includes response.body, "Advocacy Copilot"
-    assert_not_includes response.body, "AI-Powered Care Advocacy"
-    assert_select "#how-it-works h2 .block", text: "Ready to advocate."
-    assert_select "#features article", count: 3
+    assert_select "a[href='#{root_path}'][aria-label='PaperBridge home'] img[alt='PaperBridge']"
+    %w[nav mobile].each do |location|
+      assert_select "a[data-testid='home-#{location}-secondary'][href='#{new_user_session_path}']", text: "Sign In"
+      assert_select "a[data-testid='home-#{location}-primary'][href='#{new_user_registration_path}']", text: "Get Started"
+    end
+    assert_select "a[data-testid='home-hero-primary'][href='#{new_user_registration_path}']", text: /Get Started/
+    assert_select "a[href='#{new_user_registration_path}']", text: /Start with PaperBridge/
+    assert_select "a[href='#{dashboard_path}']", count: 0
+    assert_select "a[href='#how-it-works']", text: /Meet PaperBridge/
+    assert_select "#how-it-works"
+  end
+
+  test "describes the product and its approved privacy boundaries" do
+    get root_path
+
+    assert_response :success
+    [ "Document Library", "PaperBridge Summaries", "Care Team" ].each do |feature|
+      assert_select "#features h3", text: feature
+    end
     assert_select "#privacy" do
-      assert_select "article", count: 4
       assert_select "h3", text: "Your family’s own space"
       assert_select "h3", text: "Answers stay with the right Profile"
       assert_select "h3", text: "Protected connection"
       assert_select "h3", text: "Privacy-first design"
+      assert_select "p", text: "Your records stay behind sign-in and separate from other families’ accounts."
+      assert_select "p", text: "Ask PaperBridge searches only the records belonging to the Profile you’re viewing."
+      assert_select "p", text: "PaperBridge requires a secure HTTPS connection while you use the app."
       assert_select "h3", text: "Parent-controlled sharing", count: 0
       assert_select "h3", text: "Read-only access", count: 0
       assert_select "h3", text: "Choose which records to share", count: 0
     end
-    assert_select "[data-testid='home-nav-secondary']", count: 1
-    assert_select "[data-controller='reveal']"
   end
 
   test "shows workspace actions for signed in users" do
@@ -45,11 +44,12 @@ class HomeControllerTest < ActionDispatch::IntegrationTest
     get root_path
 
     assert_response :success
-    assert_not_includes response.body, "Open dashboard"
-    assert_includes response.body, "Dashboard"
-    assert_includes response.body, "preserves the complete narrative"
+    %w[nav mobile].each do |location|
+      assert_select "a[data-testid='home-#{location}-primary'][href='#{dashboard_path}']", text: "Dashboard"
+      assert_select "[data-testid='home-#{location}-secondary']", count: 0
+    end
+    assert_select "a[href='#{dashboard_path}']", text: /Start with PaperBridge/
     assert_select "[data-testid='home-hero-primary']", count: 0
-    assert_select "[data-testid='home-nav-secondary']", count: 0
-    assert_select "[data-testid='home-mobile-secondary']", count: 0
+    assert_select "a[href='#{new_user_session_path}'], a[href='#{new_user_registration_path}']", count: 0
   end
 end

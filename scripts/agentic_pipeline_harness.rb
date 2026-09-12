@@ -121,16 +121,18 @@ DOCUMENT_PIPELINE_FILES = %w[
   test/controllers/ai_assistant_controller_test.rb
   test/helpers/ai_assistant_helper_test.rb
   test/jobs/answer_ai_assistant_query_job_test.rb
+  test/jobs/answer_ai_assistant_query_pipeline_test.rb
   test/jobs/process_document_job_test.rb
   test/jobs/process_image_document_job_test.rb
   test/models/document_chunk_test.rb
-  test/models/document_embedding_test.rb
   test/models/document_page_test.rb
   test/models/document_test.rb
   test/models/timeline_event_test.rb
   test/models/ai_assistant_query_test.rb
   test/services/documents/pdf_command_runner_test.rb
   test/services/documents/prepare_pdf_test.rb
+  test/services/documents/prepare_pdf_integration_test.rb
+  test/fixtures/files/multipage_school_record.pdf
   test/services/documents/prepare_text_test.rb
   test/services/documents/reconcile_failed_processing_test.rb
   test/services/documents/retry_processing_test.rb
@@ -305,7 +307,6 @@ COMMANDS = {
       "test/models/ai_assistant_query_test.rb",
       "test/models/document_page_test.rb",
       "test/models/document_chunk_test.rb",
-      "test/models/document_embedding_test.rb",
       "test/models/timeline_event_test.rb",
       "test/controllers/documents_controller_test.rb",
       "test/controllers/document_retries_controller_test.rb",
@@ -313,6 +314,7 @@ COMMANDS = {
       "test/controllers/ai_assistant_controller_test.rb",
       "test/helpers/ai_assistant_helper_test.rb",
       "test/jobs/answer_ai_assistant_query_job_test.rb",
+      "test/jobs/answer_ai_assistant_query_pipeline_test.rb",
       "test/jobs/process_document_job_test.rb",
       "test/jobs/process_image_document_job_test.rb",
       "test/lib/setup/ai_configuration_test.rb",
@@ -324,6 +326,7 @@ COMMANDS = {
       "test/services/documents/retry_processing_test.rb",
       "test/services/documents/reset_processing_test.rb",
       "test/services/documents/prepare_pdf_test.rb",
+      "test/services/documents/prepare_pdf_integration_test.rb",
       "test/services/documents/search_access_profile_test.rb",
       "test/services/documents/search_answer_citation_normalizer_test.rb",
       "test/services/documents/streaming_answer_extractor_test.rb",
@@ -381,7 +384,6 @@ COMMANDS = {
       "test/models/ai_assistant_query_test.rb",
       "test/models/document_page_test.rb",
       "test/models/document_chunk_test.rb",
-      "test/models/document_embedding_test.rb",
       "test/models/timeline_event_test.rb",
       "test/models/user_test.rb",
       "scripts/check_docs_index.rb",

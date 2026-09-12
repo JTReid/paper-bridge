@@ -1,6 +1,5 @@
 // @ts-check
 import { test, expect } from '../fixtures';
-import { openDependentWorkspace } from '../helpers/auth';
 import {
   clearMailpit,
   expectNoMailpitMessages,
@@ -14,11 +13,11 @@ test.beforeEach(async ({ request }) => {
   await clearMailpit(request);
 });
 
-test('document sharing sends an email captured by Mailpit', async ({ page, request }) => {
+test('document sharing sends an email captured by Mailpit', async ({ page, request, family }) => {
   const subject = `QA Mailpit share ${Date.now()}`;
   const messageBody = 'Sent from the Mailpit QA harness.';
 
-  await openDependentWorkspace(page);
+  await family.openDependentWorkspace(page);
   await page.getByTestId('dependent-documents-link').click();
 
   await expect(page.getByRole('heading', { name: "Emma Greenfield's Documents" })).toBeVisible();
@@ -49,8 +48,8 @@ test('document sharing sends an email captured by Mailpit', async ({ page, reque
   expect(text).toContain('Advance Directive');
 });
 
-test('document sharing with no selected documents does not send email', async ({ page, request }) => {
-  await openDependentWorkspace(page);
+test('document sharing with no selected documents does not send email', async ({ page, request, family }) => {
+  await family.openDependentWorkspace(page);
   await page.getByTestId('dependent-documents-link').click();
   await expect(page.getByRole('heading', { name: "Emma Greenfield's Documents" })).toBeVisible();
 
@@ -69,8 +68,8 @@ test('document sharing with no selected documents does not send email', async ({
   await expectNoMailpitMessages(request);
 });
 
-test('document sharing with a blank recipient stays in the browser and sends no email', async ({ page, request }) => {
-  await openDependentWorkspace(page);
+test('document sharing with a blank recipient stays in the browser and sends no email', async ({ page, request, family }) => {
+  await family.openDependentWorkspace(page);
   await page.getByTestId('dependent-documents-link').click();
   await page.locator('[data-testid^="document-share-button-"]').first().click();
 
@@ -81,8 +80,8 @@ test('document sharing with a blank recipient stays in the browser and sends no 
   await expectNoMailpitMessages(request);
 });
 
-test('document sharing with malformed recipient is rejected before email delivery', async ({ page, request }) => {
-  await openDependentWorkspace(page);
+test('document sharing with malformed recipient is rejected before email delivery', async ({ page, request, family }) => {
+  await family.openDependentWorkspace(page);
   await page.getByTestId('dependent-documents-link').click();
 
   const documentId = await page.locator('[data-testid^="document-share-checkbox-"]').first().inputValue();
@@ -102,7 +101,7 @@ test('document sharing with malformed recipient is rejected before email deliver
   await expectNoMailpitMessages(request);
 });
 
-test('sharing multiple selected documents delivers both original attachments through Mailpit', async ({ page, request }) => {
+test('sharing multiple selected documents delivers both original attachments through Mailpit', async ({ page, request, family }) => {
   const attemptId = Date.now();
   const subject = `QA Mailpit bulk share ${attemptId}`;
   const files = [
@@ -110,7 +109,7 @@ test('sharing multiple selected documents delivers both original attachments thr
     { name: `qa-mailpit-bulk-second-${attemptId}.txt`, mimeType: 'text/plain', buffer: Buffer.from('Second original document for bulk sharing.\r\n') },
   ];
 
-  await openDependentWorkspace(page);
+  await family.openDependentWorkspace(page);
   await page.getByTestId('dependent-documents-link').click();
   await page.getByTestId('documents-add-link').click();
   await page.getByTestId('document-file-field').setInputFiles(files);

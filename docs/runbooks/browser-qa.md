@@ -61,6 +61,27 @@ the `Avery Morgan` workspace.
 
 ## Direct Playwright Iteration
 
+Mutable workflows should use test-owned records with fixture teardown. Do not
+rename shared seed documents or leave uploaded bytes, profiles, contacts, or
+appointments for later tests to encounter. A test should pass when repeated
+against the same prepared database, including after a failed attempt. Keep
+shared seed records for read-only scenarios and use the existing scenario
+helpers when they already own their records.
+
+The shared `family` fixture creates a private copy of the familiar Emma/Noah
+family, including separate original-file blobs, and deletes that account and
+user during teardown. Request it with `async ({ page, family })` and use
+`family.openDependentWorkspace(page)` or `family.signIn(page)`. Backend helpers
+should receive `family.accountName` instead of the shared fixture account name.
+Before a test deletes documents in the browser, call `family.rememberBlobs()`
+so teardown can also purge originals whose attachment rows were already removed.
+
+To check repeatability through the harness:
+
+```bash
+ruby scripts/paper_bridge_qa_harness.rb bughunt repeatability tests/e2e/product/document_management.spec.js --repeat-each=2 --workers=1
+```
+
 When a QA server is already running, a single spec can be run directly:
 
 ```bash
@@ -72,3 +93,18 @@ For bug recording:
 ```bash
 QA_ARTIFACT_MODE=always QA_ARTIFACT_DIR=tmp/qa-artifacts/bugs/share-modal QA_BASE_URL=http://127.0.0.1:3100 npx playwright test --project=chromium
 ```
+
+## Continuous Integration
+
+The `system-test` job in `.github/workflows/ci.yml` runs the full Chromium suite
+through the QA harness on pull requests and pushes to `main`, followed by the
+Mailpit email checks.
+It installs locked npm dependencies and Chromium using the
+[Playwright CI setup](https://playwright.dev/docs/ci-intro), supplies PostgreSQL
+with pgvector plus the native PDF/image tools, and captures email locally.
+The workflow retains separate browser and email reports plus failure evidence
+under the `browser-results` artifact. Firefox and WebKit remain separate local
+checks; they are not part of this CI job.
+
+`bin/ci` also runs the Chromium suite. Local Mailpit checks remain opt-in and
+require a running inbox as described above.

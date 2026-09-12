@@ -105,6 +105,8 @@ STATIC_FILES = %w[
   docs/runbooks/qa-seed-data.md
   db/seeds/qa_harness.rb
   scripts/paper_bridge_qa_harness.rb
+  .github/workflows/ci.yml
+  config/ci.rb
   app/javascript/controllers/document_search_controller.js
   app/javascript/controllers/document_list_controller.js
   app/javascript/controllers/ai_assistant_query_controller.js
@@ -119,6 +121,7 @@ STATIC_FILES = %w[
   package.json
   package-lock.json
   tests/e2e/helpers/auth.js
+  tests/e2e/helpers/family.js
   tests/e2e/helpers/date_input.js
   tests/e2e/helpers/backend.js
   tests/e2e/helpers/document_list_updates.js

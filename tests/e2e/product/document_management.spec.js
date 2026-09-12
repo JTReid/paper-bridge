@@ -1,14 +1,13 @@
 // @ts-check
 import { readFileSync } from 'node:fs';
 import { test, expect } from '../fixtures';
-import { openDependentWorkspace } from '../helpers/auth';
 import { completeDocumentInitialMetadata } from '../helpers/backend';
 import { expectAccessible } from '../helpers/accessibility';
 
 const sampleFile = readFileSync('test/fixtures/files/sample.txt');
 
-test('category filters lead to a file-only upload form with an unfiltered picker', async ({ page }) => {
-  await openDependentWorkspace(page);
+test('category filters lead to a file-only upload form with an unfiltered picker', async ({ page, family }) => {
+  await family.openDependentWorkspace(page);
   await page.getByTestId('dependent-category-prescriptions').click();
 
   await expect(page).toHaveURL(/\/profiles\/\d+\/documents\?category=prescriptions$/);
@@ -29,8 +28,8 @@ test('category filters lead to a file-only upload form with an unfiltered picker
   expect(await page.getByTestId('document-file-field').getAttribute('accept')).toBeNull();
 });
 
-test('filename search stays on the document index and composes with category filters', async ({ page }) => {
-  await openDependentWorkspace(page);
+test('filename search stays on the document index and composes with category filters', async ({ page, family }) => {
+  await family.openDependentWorkspace(page);
   await page.getByTestId('dependent-documents-link').click();
 
   await page.getByTestId('documents-search-field').fill('ADVANCE-DIRECTIVE');
@@ -55,8 +54,8 @@ test('filename search stays on the document index and composes with category fil
   await expect(page.getByRole('heading', { name: 'No insurance documents yet' })).toBeVisible();
 });
 
-test('admin can upload multiple documents at once', async ({ page }) => {
-  await openDependentWorkspace(page);
+test('admin can upload multiple documents at once', async ({ page, family }) => {
+  await family.openDependentWorkspace(page);
   await page.getByTestId('dependent-documents-link').click();
   await page.getByTestId('documents-add-link').click();
 
@@ -78,8 +77,8 @@ test('admin can upload multiple documents at once', async ({ page }) => {
   await expect(page.getByRole('link', { name: /browser-multi-two/ })).toBeVisible();
 });
 
-test('removing and clearing pending files changes the submitted selection', async ({ page }) => {
-  await openDependentWorkspace(page);
+test('removing and clearing pending files changes the submitted selection', async ({ page, family }) => {
+  await family.openDependentWorkspace(page);
   await page.getByTestId('dependent-documents-link').click();
   await page.getByTestId('documents-add-link').click();
 
@@ -122,8 +121,8 @@ test('removing and clearing pending files changes the submitted selection', asyn
   await expect(page.getByRole('link', { name: /browser-remove-before-upload/ })).toHaveCount(0);
 });
 
-test('initial processing unlocks metadata editing and never replaces later corrections', async ({ page }) => {
-  await openDependentWorkspace(page);
+test('initial processing unlocks metadata editing and never replaces later corrections', async ({ page, family }) => {
+  await family.openDependentWorkspace(page);
   await page.getByTestId('dependent-documents-link').click();
   await page.getByTestId('documents-add-link').click();
   await page.getByTestId('document-file-field').setInputFiles({
@@ -181,8 +180,8 @@ test('initial processing unlocks metadata editing and never replaces later corre
   await expect(page.getByTestId('document-description-field')).toHaveValue('My corrected description of the therapy record.');
 });
 
-test('Word and ZIP uploads remain downloadable and immediately editable without AI processing', async ({ page }) => {
-  await openDependentWorkspace(page);
+test('Word and ZIP uploads remain downloadable and immediately editable without AI processing', async ({ page, family }) => {
+  await family.openDependentWorkspace(page);
   await page.getByTestId('dependent-documents-link').click();
   await page.getByTestId('documents-add-link').click();
 
@@ -238,8 +237,8 @@ test('Word and ZIP uploads remain downloadable and immediately editable without 
   }
 });
 
-test('a selection over 50 files can be uploaded in one batch', async ({ page }) => {
-  await openDependentWorkspace(page);
+test('a selection over 50 files can be uploaded in one batch', async ({ page, family }) => {
+  await family.openDependentWorkspace(page);
   await page.getByTestId('dependent-documents-link').click();
   await page.getByTestId('documents-add-link').click();
 
@@ -261,8 +260,8 @@ test('a selection over 50 files can be uploaded in one batch', async ({ page }) 
   await expect(page.getByRole('link', { name: /browser-large-batch-51/ })).toBeVisible();
 });
 
-test('document details link to the original file without showing extracted text', async ({ page }) => {
-  await openDependentWorkspace(page);
+test('document details link to the original file without showing extracted text', async ({ page, family }) => {
+  await family.openDependentWorkspace(page);
   await page.getByTestId('dependent-documents-link').click();
   await expect(page).toHaveURL(/\/profiles\/\d+\/documents$/);
   await expect(page.getByRole('heading', { name: "Emma Greenfield's Documents" })).toBeVisible();
@@ -277,8 +276,8 @@ test('document details link to the original file without showing extracted text'
   await expect(downloadOriginal.locator('..').getByTestId('document-edit-link')).toBeVisible();
 });
 
-test('admin can edit document metadata', async ({ page }) => {
-  await openDependentWorkspace(page);
+test('admin can edit document metadata', async ({ page, family }) => {
+  await family.openDependentWorkspace(page);
   await page.getByTestId('dependent-documents-link').click();
   await expect(page).toHaveURL(/\/profiles\/\d+\/documents$/);
   await expect(page.getByRole('heading', { name: "Emma Greenfield's Documents" })).toBeVisible();
@@ -301,8 +300,8 @@ async function selectedFileNames(fileField) {
   return fileField.evaluate((input) => Array.from(input.files).map((file) => file.name));
 }
 
-test('selected documents can be bulk deleted after a named confirmation', async ({ page }) => {
-  await openDependentWorkspace(page);
+test('selected documents can be bulk deleted after a named confirmation', async ({ page, family }) => {
+  await family.openDependentWorkspace(page);
   await page.getByTestId('dependent-documents-link').click();
   await page.getByTestId('documents-add-link').click();
   await page.getByTestId('document-file-field').setInputFiles([
@@ -346,6 +345,7 @@ test('selected documents can be bulk deleted after a named confirmation', async 
   await expect(dialog).toBeHidden();
   await expect(rowOne).toBeVisible();
 
+  family.rememberBlobs();
   await page.getByTestId('documents-selection-delete').click();
   await page.getByTestId('documents-delete-submit').click();
 

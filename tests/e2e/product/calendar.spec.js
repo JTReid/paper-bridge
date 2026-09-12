@@ -1,6 +1,5 @@
 // @ts-check
 import { test, expect } from '../fixtures';
-import { openDependentWorkspace, signIn } from '../helpers/auth';
 import { expectAccessible } from '../helpers/accessibility';
 import { replaceNativeYear } from '../helpers/date_input';
 
@@ -12,8 +11,8 @@ const APPOINTMENT = {
 };
 const RECIPIENT_EMAIL = 'caregiver@example.test';
 
-test('family calendar panel preserves unfinished profile work', async ({ page }) => {
-  await openDependentWorkspace(page);
+test('family calendar panel preserves unfinished profile work', async ({ page, family }) => {
+  await family.openDependentWorkspace(page);
   await page.getByRole('link', { name: 'Edit', exact: true }).click();
 
   const notes = page.getByLabel('Notes');
@@ -79,8 +78,8 @@ test('family calendar panel preserves unfinished profile work', async ({ page })
   await expect(calendarTrigger).toBeFocused();
 });
 
-test('family admin can add, review, and email a profile appointment on the account calendar', async ({ page }) => {
-  await signIn(page);
+test('family admin can add, review, and email a profile appointment on the account calendar', async ({ page, family }) => {
+  await family.signIn(page);
 
   await expect(page.getByTestId('dashboard-calendar-link')).toHaveAttribute('href', '/calendar');
   await page.getByTestId('dashboard-calendar-link').click();
@@ -167,12 +166,12 @@ test('family admin can add, review, and email a profile appointment on the accou
   await expect(page.locator('button[data-testid^="appointment-"]', { hasText: APPOINTMENT.description })).toBeVisible();
 });
 
-test('appointment edits can be canceled, corrected after validation, and saved to another profile and month', async ({ page }) => {
+test('appointment edits can be canceled, corrected after validation, and saved to another profile and month', async ({ page, family }) => {
   const description = `Appointment edit ${Date.now()}`;
   const updatedDescription = `${description} updated`;
   const originalDateTime = '2034-05-16T09:15';
   const updatedDateTime = '2035-06-17T14:45';
-  await signIn(page);
+  await family.signIn(page);
   await page.goto('/calendar?month=2034-05');
   await page.getByTestId('appointment-dependent').selectOption({ label: 'Emma Greenfield' });
   await page.getByTestId('appointment-scheduled-at').fill(originalDateTime);
@@ -262,9 +261,9 @@ test('appointment edits can be canceled, corrected after validation, and saved t
   await expect(updatedAppointment).toHaveCount(0);
 });
 
-test('phone calendar edits and confirmed deletion preserve an unfinished Ask question', async ({ page }) => {
+test('phone calendar edits and confirmed deletion preserve an unfinished Ask question', async ({ page, family }) => {
   await page.setViewportSize({ width: 390, height: 844 });
-  await openDependentWorkspace(page);
+  await family.openDependentWorkspace(page);
   await page.goto(`${page.url()}/ai-assistant`);
   const askURL = page.url();
   const question = 'What should I bring to the upcoming meeting?';
