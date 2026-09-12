@@ -27,7 +27,7 @@ class AccountTest < ActiveSupport::TestCase
   test "profile allowance counts managed profiles and not account or care team members" do
     account = accounts(:greenfield)
     account.billing_subscription.update!(profile_limit: 5)
-    2.times { |index| account.dependents.create!(first_name: "Profile #{index}") }
+    2.times { |index| account.dependents.create!(first_name: "Profile #{index}", last_name: "Allowance") }
 
     assert_equal 5, account.profile_limit
     assert_equal 4, account.dependents.count
@@ -35,7 +35,7 @@ class AccountTest < ActiveSupport::TestCase
     assert_equal 1, account.care_team_memberships.count
     assert_not account.profile_limit_reached?
 
-    account.dependents.create!(first_name: "Fifth")
+    account.dependents.create!(first_name: "Fifth", last_name: "Allowance")
 
     assert account.profile_limit_reached?
   end

@@ -4,7 +4,7 @@ class DependentsControllerTest < ActionDispatch::IntegrationTest
   test "shows allowance and billing link without accepting another profile at the limit" do
     account = accounts(:greenfield)
     account.billing_subscription.update!(profile_limit: 5)
-    3.times { |index| account.dependents.create!(first_name: "Profile #{index}") }
+    3.times { |index| account.dependents.create!(first_name: "Profile #{index}", last_name: "Test") }
     sign_in users(:family_admin)
 
     get dependents_path
@@ -20,7 +20,7 @@ class DependentsControllerTest < ActionDispatch::IntegrationTest
     assert_select "input[data-testid='profile-create-submit'][disabled]"
 
     assert_no_difference "Dependent.count" do
-      post dependents_path, params: { dependent: { first_name: "Sixth" } }
+      post dependents_path, params: { dependent: { first_name: "Sixth", last_name: "Test" } }
     end
 
     assert_response :unprocessable_entity
@@ -30,7 +30,7 @@ class DependentsControllerTest < ActionDispatch::IntegrationTest
 
   test "over-limit accounts can still view and edit all existing profiles" do
     account = accounts(:greenfield)
-    4.times { |index| account.dependents.create!(first_name: "Profile #{index}") }
+    4.times { |index| account.dependents.create!(first_name: "Profile #{index}", last_name: "Test") }
     account.billing_subscription.update!(profile_limit: 5)
     sign_in users(:family_admin)
 
@@ -112,8 +112,7 @@ class DependentsControllerTest < ActionDispatch::IntegrationTest
     assert_select "form[data-testid='profile-create-form'][data-tour='profile-form'][data-action='input->product-tour#pause turbo:submit-end->product-tour#advanceAfterSubmit'][data-product-tour-from-phase-param='profile_form'][data-product-tour-next-phase-param='open_documents']"
     assert_select "input[data-testid='profile-create-submit']"
     assert_select "input[name='dependent[first_name]'][required]"
-    assert_select "input[name='dependent[last_name]']"
-    assert_select "input[name='dependent[last_name]'][required]", count: 0
+    assert_select "input[name='dependent[last_name]'][required]"
     assert_select "input[name='dependent[name]']", count: 0
     assert_select "input[name='dependent[grade]']", count: 0
     assert_select "input[name='dependent[school]']", count: 0
@@ -124,8 +123,8 @@ class DependentsControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_select "form[data-tour='profile-form']", count: 0
     assert_select "input[data-testid='profile-save-submit']"
-    assert_select "input[name='dependent[first_name]'][value='Emma']"
-    assert_select "input[name='dependent[last_name]'][value='Greenfield']"
+    assert_select "input[name='dependent[first_name]'][value='Emma'][required]"
+    assert_select "input[name='dependent[last_name]'][value='Greenfield'][required]"
     assert_select "input[name='dependent[grade]']", count: 0
     assert_select "input[name='dependent[school]']", count: 0
     assert_select "form[action='#{dependent_path(dependents(:emma))}'][method='post']" do
@@ -190,6 +189,24 @@ class DependentsControllerTest < ActionDispatch::IntegrationTest
     assert_select "input[name='dependent[last_name]'][value='Greenfield']"
     assert_select "input[name='dependent[grade]']", count: 0
     assert_select "input[name='dependent[school]']", count: 0
+  end
+
+  test "rejects a blank last name on create and update" do
+    sign_in users(:family_admin)
+    names = { first_name: "River", last_name: "  " }
+
+    assert_no_difference "Dependent.count" do
+      post dependents_path, params: { dependent: names }
+    end
+    assert_response :unprocessable_entity
+    assert_select "[role='alert']", text: /Last name can't be blank/
+    assert_select "input[name='dependent[first_name]'][value='River']"
+
+    dependent = dependents(:emma)
+    patch dependent_path(dependent), params: { dependent: names }
+    assert_response :unprocessable_entity
+    assert_select "[role='alert']", text: /Last name can't be blank/
+    assert_equal "Emma Greenfield", dependent.reload.name
   end
 
   test "updates allowed profile details within the current account and ignores school fields" do

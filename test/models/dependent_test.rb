@@ -15,11 +15,16 @@ class DependentTest < ActiveSupport::TestCase
     assert_equal "Ana de la Cruz", dependent.name
   end
 
-  test "accepts a profile with only a first name" do
+  test "requires a nonblank last name when creating or updating a profile" do
     dependent = Dependent.new(account: accounts(:greenfield), first_name: "River", last_name: "  ")
 
-    assert dependent.valid?
-    assert_equal "River", dependent.name
+    assert_not dependent.valid?
+    assert_includes dependent.errors[:last_name], "can't be blank"
+
+    existing = dependents(:emma)
+    assert_not existing.update(last_name: "  ")
+    assert_includes existing.errors[:last_name], "can't be blank"
+    assert_equal "Greenfield", existing.reload.last_name
   end
 
   test "requires a nonblank first name even when a last name is supplied" do
@@ -73,7 +78,7 @@ class DependentTest < ActiveSupport::TestCase
     account.billing_subscription.update!(profile_limit: 6)
     fill_profile_allowance(account)
 
-    dependent = account.dependents.new(first_name: "Seventh")
+    dependent = account.dependents.new(first_name: "Seventh", last_name: "Test")
 
     assert_not dependent.valid?
     assert_no_difference "Dependent.count" do
@@ -87,7 +92,7 @@ class DependentTest < ActiveSupport::TestCase
     account = accounts(:greenfield)
     account.billing_subscription.update!(profile_limit: 5)
     fill_profile_allowance(account)
-    dependent = account.dependents.new(first_name: "Sixth")
+    dependent = account.dependents.new(first_name: "Sixth", last_name: "Test")
 
     assert_no_difference "Dependent.count" do
       assert_not dependent.save(validate: false)
@@ -98,10 +103,10 @@ class DependentTest < ActiveSupport::TestCase
   test "rechecks the allowance under the account lock instead of trusting a cached subscription" do
     account = accounts(:greenfield)
     account.billing_subscription.update!(profile_limit: 6)
-    3.times { |index| account.dependents.create!(first_name: "Profile #{index}") }
+    3.times { |index| account.dependents.create!(first_name: "Profile #{index}", last_name: "Test") }
     assert_equal 6, account.profile_limit
     BillingSubscription.find(account.billing_subscription.id).update!(profile_limit: 5)
-    dependent = account.dependents.new(first_name: "Sixth")
+    dependent = account.dependents.new(first_name: "Sixth", last_name: "Test")
 
     assert dependent.valid?, "The cached subscription still has room before the locked recheck"
     assert_no_difference "Dependent.count" do
@@ -122,17 +127,17 @@ class DependentTest < ActiveSupport::TestCase
     assert dependents(:emma).update(first_name: "Emilia")
     assert_equal profile_ids.sort, account.dependents.ids.sort
     assert_equal document_ids.sort, account.documents.ids.sort
-    assert_not account.dependents.new(first_name: "Another").save
+    assert_not account.dependents.new(first_name: "Another", last_name: "Test").save
     assert dependents(:noah).destroy
     assert account.profile_limit_reached?, "Five remaining profiles still fill a five-profile allowance"
     account.dependents.find_by!(first_name: "Profile 2").destroy!
-    assert account.dependents.create!(first_name: "Replacement").persisted?
+    assert account.dependents.create!(first_name: "Replacement", last_name: "Test").persisted?
   end
 
   test "preserves unlimited profile creation for legacy subscriptions" do
     account = accounts(:greenfield)
 
-    5.times { |index| account.dependents.create!(first_name: "Legacy #{index}") }
+    5.times { |index| account.dependents.create!(first_name: "Legacy #{index}", last_name: "Test") }
 
     assert_equal 7, account.dependents.count
     assert_nil account.profile_limit
@@ -142,7 +147,7 @@ class DependentTest < ActiveSupport::TestCase
 
     def fill_profile_allowance(account)
       while account.dependents.count < account.profile_limit
-        account.dependents.create!(first_name: "Profile #{account.dependents.count}")
+        account.dependents.create!(first_name: "Profile #{account.dependents.count}", last_name: "Test")
       end
     end
 

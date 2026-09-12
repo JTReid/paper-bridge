@@ -7,7 +7,7 @@ class BackfillProfileNamesTest < ActiveSupport::TestCase
       id = Dependent.insert_all!([ { account_id: accounts(:greenfield).id, legacy_name: name } ]).first.fetch("id")
       Dependent.find(id)
     end
-    entered_profile = Dependent.create!(account: accounts(:greenfield), first_name: "Mary Jane")
+    entered_profile = create_historical_single_name_profile
     assert_equal original_names, profiles.map(&:name)
 
     output, = run_script
@@ -42,7 +42,7 @@ class BackfillProfileNamesTest < ActiveSupport::TestCase
   test "prepares current and newly created names before schema rollback" do
     profile = dependents(:emma)
     profile.update!(first_name: "Emilia", last_name: "de la Cruz")
-    new_profile = Dependent.create!(account: accounts(:greenfield), first_name: "Mary Jane")
+    new_profile = create_historical_single_name_profile
 
     run_script("restore")
 
@@ -51,6 +51,12 @@ class BackfillProfileNamesTest < ActiveSupport::TestCase
   end
 
   private
+
+    def create_historical_single_name_profile
+      # Preserve rows entered before both name fields became required.
+      id = Dependent.insert_all!([ { account_id: accounts(:greenfield).id, first_name: "Mary Jane" } ]).first.fetch("id")
+      Dependent.find(id)
+    end
 
     def run_script(mode = "split")
       capture_io { load_script(mode) }

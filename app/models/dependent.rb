@@ -16,7 +16,7 @@ class Dependent < ApplicationRecord
 
   normalizes :first_name, :last_name, with: ->(value) { value.strip }
 
-  validates :first_name, presence: true
+  validates :first_name, :last_name, presence: true
   validate :acceptable_avatar
   validate :profile_allowance_available, on: :create
 

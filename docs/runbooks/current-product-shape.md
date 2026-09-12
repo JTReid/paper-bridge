@@ -34,7 +34,7 @@ operational harness checks until matching implementation exists.
   Both actions stay inside the family account and preserve the surrounding
   calendar panel and unfinished profile work.
 - Dependent profile listing, display, create, edit, update, and destroy paths,
-  with a required first name, optional last name, date of birth, and notes on
+  with required first and last names, optional date of birth and notes on
   both create and edit, plus confirmed deletion from the edit page. Grade and
   school are absent from both forms. Profiles with documents must
   have those documents removed first. Includes optional JPEG, PNG, or WebP

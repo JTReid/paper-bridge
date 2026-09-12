@@ -1,9 +1,10 @@
 # Profile Management
 
-Profiles store a required first name and an optional last name. Both fields trim
+Profiles require both first and last name when created or edited. Both fields trim
 surrounding whitespace. `Dependent#name` joins the fields for existing display,
-calendar, document, and question-answering callers. A one-name profile remains
-valid, and either field can contain multiple words.
+calendar, document, and question-answering callers. Either field can contain
+multiple words. Existing profiles without a last name need one entered before
+edits can be saved; this change does not rewrite existing names.
 
 Creation and editing use the same fields: first and last name, optional photo,
 date of birth, and notes. Date of birth remains optional. Neither form exposes
@@ -35,7 +36,7 @@ older running code still reads the renamed `name` column. Run both commands
 with the intended Rails environment, then restart the web and worker processes
 on the new code before reopening requests. Existing names can still display
 from `legacy_name` while the backfill is pending, but profile validation requires
-a first name.
+both first and last name when a profile is saved.
 
 The script splits the original name at the first whitespace boundary, retaining
 the remainder as the last name and keeping the original full text. Families

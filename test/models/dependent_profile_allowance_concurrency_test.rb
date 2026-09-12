@@ -7,14 +7,14 @@ class DependentProfileAllowanceConcurrencyTest < ActiveSupport::TestCase
   test "concurrent creations cannot claim the same remaining profile slot" do
     account = Account.create!(name: "Concurrent profile allowance test")
     account.create_billing_subscription!(status: :active, profile_limit: 5)
-    4.times { |index| account.dependents.create!(first_name: "Existing #{index}") }
+    4.times { |index| account.dependents.create!(first_name: "Existing #{index}", last_name: "Allowance") }
     ready = Queue.new
     release = Queue.new
 
     threads = 2.times.map do |index|
       Thread.new do
         ActiveRecord::Base.connection_pool.with_connection do
-          profile = Dependent.new(account_id: account.id, first_name: "Concurrent #{index}")
+          profile = Dependent.new(account_id: account.id, first_name: "Concurrent #{index}", last_name: "Allowance")
           # Both requests pass the ordinary validation before either INSERT.
           # The locked callback must still allow only one of them to save.
           profile.define_singleton_method(:valid?) do |context = nil|

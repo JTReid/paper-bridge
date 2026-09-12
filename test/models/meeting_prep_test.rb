@@ -138,7 +138,7 @@ class MeetingPrepTest < ActiveSupport::TestCase
   end
 
   test "deleting a profile removes its meetings saved answers and entries" do
-    dependent = Dependent.create!(account: accounts(:greenfield), first_name: "Meeting profile")
+    dependent = Dependent.create!(account: accounts(:greenfield), first_name: "Meeting", last_name: "Profile")
     answer = create_saved_answer(dependent: dependent)
     meeting = build_meeting(dependent: dependent)
     meeting.save!
@@ -155,7 +155,7 @@ class MeetingPrepTest < ActiveSupport::TestCase
     account = Account.create!(name: "Meeting account")
     user = users(:family_admin)
     user.account_memberships.create!(account: account, role: :admin)
-    dependent = Dependent.create!(account: account, first_name: "Meeting profile")
+    dependent = Dependent.create!(account: account, first_name: "Meeting", last_name: "Profile")
     answer = create_saved_answer(account: account, dependent: dependent, user: user)
     meeting = build_meeting(account: account, dependent: dependent, user: user)
     meeting.save!

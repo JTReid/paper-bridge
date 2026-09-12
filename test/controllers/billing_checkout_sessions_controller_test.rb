@@ -98,7 +98,7 @@ class BillingCheckoutSessionsControllerTest < ActionDispatch::IntegrationTest
   test "starts checkout with enough quantity for existing managed profiles" do
     account = accounts(:greenfield)
     account.billing_subscription.update!(stripe_customer_id: "cus_test_123")
-    (7 - account.dependents.count).times { |i| account.dependents.create!(first_name: "Profile #{i}") }
+    (7 - account.dependents.count).times { |i| account.dependents.create!(first_name: "Profile #{i}", last_name: "Checkout") }
     sign_in users(:family_admin)
 
     creator = lambda do |params, _options|
@@ -212,7 +212,7 @@ class BillingCheckoutSessionsControllerTest < ActionDispatch::IntegrationTest
         assert_redirected_to billing_path
         first_attempt = account.reload.billing_subscription.checkout_attempt.deep_dup
         assert first_attempt.fetch("token").present?
-        (7 - account.dependents.count).times { |index| account.dependents.create!(first_name: "Profile #{index}") }
+        (7 - account.dependents.count).times { |index| account.dependents.create!(first_name: "Profile #{index}", last_name: "Checkout") }
         with_stubbed_singleton_method(Billing::StripeConfig, :profile_price_id, "price_changed_after_request") do
           post billing_checkout_session_path
         end
