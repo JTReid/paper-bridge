@@ -65,8 +65,6 @@ class DependentsController < ApplicationController
     end
 
     def dependent_params
-      permitted = %i[first_name last_name date_of_birth avatar notes]
-      permitted.concat(%i[grade school]) if action_name == "update"
-      params.require(:dependent).permit(*permitted)
+      params.require(:dependent).permit(:first_name, :last_name, :date_of_birth, :avatar, :notes)
     end
 end

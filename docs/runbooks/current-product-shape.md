@@ -27,8 +27,9 @@ operational harness checks until matching implementation exists.
   add form with the current profile selected while still allowing another
   profile to be chosen.
 - Dependent profile listing, display, create, edit, update, and destroy paths,
-  with a required first name and optional last name, grade/school fields on edit
-  only, and confirmed deletion from the edit page. Profiles with documents must
+  with a required first name, optional last name, date of birth, and notes on
+  both create and edit, plus confirmed deletion from the edit page. Grade and
+  school are absent from both forms. Profiles with documents must
   have those documents removed first. Includes optional JPEG, PNG, or WebP
   avatar uploads up to 5 MB, initials fallbacks, and account-scoped display
   through temporary storage URLs. See [Profile Management](profile-management.md)

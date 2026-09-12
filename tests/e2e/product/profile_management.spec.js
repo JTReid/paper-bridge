@@ -24,15 +24,15 @@ test('admin can create, edit, and delete a profile with separate name fields', a
 
   await expect(page.locator('#dependent_first_name')).toHaveValue('Jamie');
   await expect(page.locator('#dependent_last_name')).toHaveValue(lastName);
-  await expect(page.locator('#dependent_grade')).toBeVisible();
-  await expect(page.locator('#dependent_school')).toBeVisible();
+  await expect(page.locator('#dependent_grade')).toHaveCount(0);
+  await expect(page.locator('#dependent_school')).toHaveCount(0);
   await page.locator('#dependent_first_name').fill('Jordan');
-  await page.locator('#dependent_grade').fill('4th Grade');
-  await page.locator('#dependent_school').fill('QA Profile Elementary');
+  await page.locator('#dependent_date_of_birth').fill('2017-04-12');
+  await page.locator('#dependent_notes').fill('Prefers morning appointments.');
   await page.getByTestId('profile-save-submit').click();
 
   await expect(page.getByRole('heading', { name: `Jordan ${lastName}`, exact: true })).toBeVisible();
-  await expect(page.getByText('4th Grade · QA Profile Elementary', { exact: true })).toBeVisible();
+  await expect(page.getByText('Prefers morning appointments.', { exact: true })).toBeVisible();
   await page.getByRole('link', { name: 'Edit', exact: true }).click();
 
   page.once('dialog', (dialog) => dialog.dismiss());
@@ -40,7 +40,10 @@ test('admin can create, edit, and delete a profile with separate name fields', a
   await expect(page).toHaveURL(`${profileURL}/edit`);
   await page.reload();
   await expect(page.locator('#dependent_first_name')).toHaveValue('Jordan');
-  await expect(page.locator('#dependent_school')).toHaveValue('QA Profile Elementary');
+  await expect(page.locator('#dependent_date_of_birth')).toHaveValue('2017-04-12');
+  await expect(page.locator('#dependent_notes')).toHaveValue('Prefers morning appointments.');
+  await expect(page.locator('#dependent_grade')).toHaveCount(0);
+  await expect(page.locator('#dependent_school')).toHaveCount(0);
 
   page.once('dialog', (dialog) => dialog.accept());
   await page.getByTestId('profile-delete-button').click();
@@ -64,6 +67,8 @@ test('admin receives instructions when a profile still has documents', async ({ 
   await expect(page.getByTestId('flash-alert')).toContainText('Remove this profile’s documents before deleting the profile.');
   await expect(page.locator('#dependent_first_name')).toHaveValue('Emma');
   await expect(page.locator('#dependent_last_name')).toHaveValue('Greenfield');
+  await expect(page.locator('#dependent_grade')).toHaveCount(0);
+  await expect(page.locator('#dependent_school')).toHaveCount(0);
   await documentsLink.click();
 
   await expect(page.getByRole('heading', { name: "Emma Greenfield's Documents" })).toBeVisible();

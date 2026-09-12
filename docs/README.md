@@ -22,7 +22,7 @@ check enforces that every tracked, non-ignored Markdown file is linked here.
 | --- | --- |
 | [Encrypted Credentials](runbooks/credentials.md) | Separate development, staging, and production credentials, independent keys, and Heroku configuration. |
 | [Current Product Shape](runbooks/current-product-shape.md) | Implemented first-run guidance, profile, family calendar, document selection/deletion, access, sharing, and billing behavior plus focused harness commands. |
-| [Profile Management](runbooks/profile-management.md) | Split names, creation/edit fields, profile deletion, and the separate existing-name backfill script. |
+| [Profile Management](runbooks/profile-management.md) | Split names, matching creation/edit fields, preserved legacy school details, profile deletion, and the separate existing-name backfill script. |
 | [Agentic Pipeline Framework](runbooks/agentic-pipeline.md) | Generic `Agentic::Pipeline` contract, AI setup/check Rake tasks, and the distinction between test and deployed configuration checks. |
 | [Billing](runbooks/billing.md) | Hosted profile pricing, opt-in card-required 90-day trial, trial-preserving Portal, Checkout recovery, allowance enforcement, reminder setup, safe company-test webhooks, and rollout boundaries. |
 | [Document Ingestion](runbooks/document-ingestion.md) | Upload, preparation, independent summary/search readiness, full processing retries, and interrupted-worker lifecycle. |

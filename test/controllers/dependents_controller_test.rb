@@ -126,8 +126,8 @@ class DependentsControllerTest < ActionDispatch::IntegrationTest
     assert_select "input[data-testid='profile-save-submit']"
     assert_select "input[name='dependent[first_name]'][value='Emma']"
     assert_select "input[name='dependent[last_name]'][value='Greenfield']"
-    assert_select "input[name='dependent[grade]'][value='3rd Grade']"
-    assert_select "input[name='dependent[school]'][value='Maplewood Elementary']"
+    assert_select "input[name='dependent[grade]']", count: 0
+    assert_select "input[name='dependent[school]']", count: 0
     assert_select "form[action='#{dependent_path(dependents(:emma))}'][method='post']" do
       assert_select "input[name='_method'][value='delete']"
       assert_select "button[data-testid='profile-delete-button']", text: "Delete profile"
@@ -192,8 +192,9 @@ class DependentsControllerTest < ActionDispatch::IntegrationTest
     assert_select "input[name='dependent[school]']", count: 0
   end
 
-  test "updates separate names and optional profile details within the current account" do
+  test "updates allowed profile details within the current account and ignores school fields" do
     dependent = dependents(:emma)
+    original_school_details = dependent.attributes.slice("grade", "school")
     sign_in users(:family_admin)
 
     patch dependent_path(dependent), params: {
@@ -214,8 +215,7 @@ class DependentsControllerTest < ActionDispatch::IntegrationTest
     assert_equal "Emilia", dependent.first_name
     assert_equal "de la Cruz", dependent.last_name
     assert_equal "Emilia de la Cruz", dependent.name
-    assert_equal "4th Grade", dependent.grade
-    assert_equal "New Elementary", dependent.school
+    assert_equal original_school_details, dependent.attributes.slice("grade", "school")
     assert_equal Date.new(2016, 4, 13), dependent.date_of_birth
     assert_equal "Updated support needs.", dependent.notes
   end
