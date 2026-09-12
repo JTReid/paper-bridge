@@ -49,6 +49,7 @@ class Document < ApplicationRecord
   before_validation :mark_storage_only_upload, on: :create
   after_create_commit :enqueue_processing_pipeline, if: :processable_file_attached?
   after_update_commit :broadcast_processing_update_for_change, if: :processing_broadcastable_change?
+  after_update_commit :broadcast_list_update, if: :list_broadcastable_change?
 
   validates :title, :status, :preparation_status, :category, presence: true
   validate :file_is_attached
@@ -160,6 +161,21 @@ class Document < ApplicationRecord
         previous_changes.key?("summarized_at") ||
         previous_changes.key?("initial_metadata_pending") ||
         previous_changes.key?("description")
+    end
+
+    def list_broadcastable_change?
+      previous_changes.key?("status") || previous_changes.key?("category")
+    end
+
+    def broadcast_list_update
+      broadcast_replace_to(
+        account, dependent, :documents,
+        target: ActionView::RecordIdentifier.dom_id(dependent, :documents_update),
+        partial: "documents/list_update",
+        locals: { dependent: dependent }
+      )
+    rescue StandardError => error
+      Rails.logger.warn("document_list_update_failed document_id=#{id} error_class=#{error.class.name}")
     end
 
     def default_title_from_file

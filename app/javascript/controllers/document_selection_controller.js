@@ -25,7 +25,7 @@ export default class extends Controller {
   }
 
   update() {
-    // The selection bar is only rendered when the list has documents.
+    // Empty lists keep the selection bar hidden until documents are shown.
     if (!this.hasCountTarget || !this.hasActionsTarget) return
 
     const selected = this.selectedCheckboxes

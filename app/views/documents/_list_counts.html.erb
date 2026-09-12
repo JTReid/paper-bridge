@@ -1,0 +1,14 @@
+<section id="<%= dom_id(@dependent, :documents_counts) %>" class="grid grid-cols-1 gap-4 sm:grid-cols-3">
+  <article class="rounded-2xl border border-border/60 bg-white p-5 shadow-sm">
+    <p class="text-xs text-muted-foreground">Total records</p>
+    <p class="mt-1 text-2xl font-bold text-primary"><span data-testid="documents-total-count"><%= @documents.count %></span></p>
+  </article>
+  <article class="rounded-2xl border border-border/60 bg-white p-5 shadow-sm">
+    <p class="text-xs text-muted-foreground">Ready</p>
+    <p class="mt-1 text-2xl font-bold text-primary"><span data-testid="documents-ready-count"><%= @processed_count %></span></p>
+  </article>
+  <article class="rounded-2xl border border-border/60 bg-white p-5 shadow-sm">
+    <p class="text-xs text-muted-foreground">In progress</p>
+    <p class="mt-1 text-2xl font-bold text-primary"><span data-testid="documents-processing-count"><%= @processing_count %></span></p>
+  </article>
+</section>

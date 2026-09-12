@@ -36,6 +36,9 @@ workflow buttons.
 
 Shared browser diagnostics fail tests on uncaught page errors, console errors,
 failed browser requests, and HTTP responses with status `>= 500`.
+They allow `net::ERR_ABORTED` for identified Turbo prefetches and document-list
+background refreshes, which navigation intentionally cancels. Other failed
+requests and server errors still fail the test.
 
 Shared accessibility checks use `@axe-core/playwright`.
 

@@ -15,6 +15,11 @@ class DocumentsController < ApplicationController
     @processed_count = @documents.count(&:processed?)
     @processing_count = @documents.count { |document| document.queued? || document.processing? }
     @share_recipient_options = share_recipient_options
+
+    # Turbo form redirects also accept streams; they still need the full page.
+    if request.format.turbo_stream? && request.headers["X-Document-List-Refresh"] != "true"
+      render :index, formats: [ :html ], content_type: "text/html"
+    end
   end
 
   def show

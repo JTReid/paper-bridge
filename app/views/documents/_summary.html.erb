@@ -47,7 +47,7 @@
   <% elsif document.processing? || document.queued? %>
     <p class="mt-4 text-sm text-slate-600">Your summary will appear when it’s ready.</p>
   <% elsif document.failed? %>
-    <p class="mt-4 text-sm text-red-700">We couldn’t prepare a summary for this file. Try uploading it again, or contact support if the problem continues.</p>
+    <p class="mt-4 text-sm text-red-700">Your file is saved, but we couldn’t finish processing it. Please contact support.</p>
   <% else %>
     <p class="mt-4 text-sm text-slate-600">A summary isn’t available yet.</p>
   <% end %>

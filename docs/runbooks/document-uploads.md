@@ -23,6 +23,17 @@ files saved without processing and include reasons for individual failures.
 If no files succeed, the upload form shows its errors. Category-filtered pages
 do not preassign a category to new uploads.
 
+The Documents list subscribes to account- and profile-scoped Turbo updates.
+When a document's status or category changes, it fetches the current committed
+filename/category filters and replaces only the rows and counts. Unsubmitted
+search text, checked documents that remain visible, and open sharing/deletion
+dialogs stay intact. It also reconciles the list after the Cable subscription
+connects or reconnects. There is no periodic browser polling.
+
+Failed processing leaves the saved file available. The detail page explains
+that processing did not finish and asks the user to contact support; it does
+not recommend uploading an identical file that the duplicate guard rejects.
+
 ## Processing Limits
 
 The following application-imposed limits have been removed:

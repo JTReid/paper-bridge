@@ -34,7 +34,8 @@ dependent workspace navigation, dependent profile access, appointment creation,
 read-only calendar details, appointment-detail email delivery, account-scoped
 full-page and in-profile calendar rendering, upcoming-appointment display,
 document listing,
-filename-search/category-filter/file-only-upload behavior, selected-document bulk
+filename-search/category-filter/file-only-upload behavior, live processing
+status/category/count updates that preserve selection and unfinished forms, selected-document bulk
 delete with a named confirmation dialog, family-facing document
 status and AI language, care team contacts, private saved research and ordered
 meeting preparation, account-scoped search access, email-attachment document
@@ -124,6 +125,14 @@ the first-run Driver.js prompts, Profile creation, one-file upload, Ask
 PaperBridge submission, dismissal/replay persistence, and a phone-width layout
 check. It uses synthetic subscription state and the test job adapter; it does
 not open Stripe Checkout, run document processing, or call a live model.
+
+Use `workflow documents` for upload selection, batches above the former 50-file
+limit, and live list refreshes that preserve active filters, selected rows, and
+unfinished sharing/deletion dialogs. The list tests deliver captured Turbo
+broadcasts in the browser; they do not run a production Cable server or a live
+ingestion worker. The agentic `documents` group separately covers confirmed
+Solid Queue worker-failure reconciliation, complete text and summary evidence,
+and real images above the removed byte-size and pixel-count limits.
 
 The Phase 4 negative/error-state selector contract is
 `ruby scripts/paper_bridge_qa_harness.rb negative MODE`. The deterministic

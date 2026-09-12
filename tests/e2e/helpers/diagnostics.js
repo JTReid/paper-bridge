@@ -10,9 +10,10 @@ const IGNORED_PAGE_ERROR_PATTERNS = [
   /AbortError: The user aborted a request/i,
 ];
 
-function isCanceledTurboPrefetch(request, errorText) {
+function isCanceledBackgroundRequest(request, errorText) {
   return errorText === 'net::ERR_ABORTED'
-    && request.headers()['x-sec-purpose'] === 'prefetch';
+    && (request.headers()['x-sec-purpose'] === 'prefetch'
+      || request.headers()['x-document-list-refresh'] === 'true');
 }
 
 export function installDiagnostics(page) {
@@ -45,8 +46,8 @@ export function installDiagnostics(page) {
 
   page.on('requestfailed', (request) => {
     const errorText = request.failure()?.errorText || 'failed';
-    // Turbo prefetches are intentionally canceled when a full-page navigation wins the race.
-    if (isCanceledTurboPrefetch(request, errorText)) return;
+    // Navigation cancels Turbo prefetches and the departing document list's refresh.
+    if (isCanceledBackgroundRequest(request, errorText)) return;
 
     failedRequests.push(`${errorText} ${request.url()}`);
   });

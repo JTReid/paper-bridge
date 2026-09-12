@@ -55,6 +55,7 @@ CURRENT_PRODUCT_FILES = %w[
   app/helpers/ai_assistant_helper.rb
   app/jobs/answer_ai_assistant_query_job.rb
   app/javascript/controllers/document_search_controller.js
+  app/javascript/controllers/document_list_controller.js
   app/javascript/controllers/ai_assistant_query_controller.js
   app/javascript/controllers/ai_assistant_email_controller.js
   app/javascript/controllers/meeting_prep_controller.js
@@ -100,6 +101,10 @@ CURRENT_PRODUCT_FILES = %w[
   app/views/documents/_editable_metadata.html.erb
   app/views/documents/_description.html.erb
   app/views/documents/index.html.erb
+  app/views/documents/index.turbo_stream.erb
+  app/views/documents/_list_counts.html.erb
+  app/views/documents/_list_rows.html.erb
+  app/views/documents/_list_update.html.erb
   app/views/documents/show.html.erb
   app/views/ai_assistant/index.html.erb
   app/views/ai_assistant/_query_result.html.erb
@@ -127,6 +132,8 @@ CURRENT_PRODUCT_FILES = %w[
   test/controllers/appointment_emails_controller_test.rb
   test/controllers/dependents_controller_test.rb
   test/controllers/documents_controller_test.rb
+  test/controllers/document_list_updates_test.rb
+  test/models/document_list_broadcast_test.rb
   test/controllers/care_team_memberships_controller_test.rb
   test/controllers/share_events_controller_test.rb
   test/controllers/billing_controller_test.rb
@@ -168,6 +175,8 @@ CURRENT_PRODUCT_FILES = %w[
   test/controllers/meeting_preps_controller_test.rb
   test/controllers/meeting_prep_answers_controller_test.rb
   tests/e2e/product/document_management.spec.js
+  tests/e2e/product/document_list_updates.spec.js
+  tests/e2e/helpers/document_list_updates.js
   tests/e2e/product/calendar.spec.js
   tests/e2e/product/accessibility_suite.spec.js
   tests/e2e/product/mobile_suite.spec.js
@@ -198,6 +207,8 @@ FOUNDATION_TESTS = %w[
 
 DOCUMENT_UI_TESTS = %w[
   test/models/document_test.rb
+  test/models/document_list_broadcast_test.rb
+  test/controllers/document_list_updates_test.rb
   test/controllers/documents_controller_test.rb
   test/helpers/documents_helper_test.rb
 ].freeze
@@ -257,6 +268,8 @@ CALENDAR_TESTS = %w[
 ].freeze
 
 RUBOCOP_PATHS = %w[
+  test/models/document_list_broadcast_test.rb
+  test/controllers/document_list_updates_test.rb
   db/migrate/20260911000100_create_saved_answers_and_meeting_preps.rb
   db/migrate/20260911135356_simplify_saved_answer_query_index.rb
   app/models/saved_answer.rb
