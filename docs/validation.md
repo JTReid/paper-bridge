@@ -234,19 +234,29 @@ synthesis with citations, pipeline records, and exact final usage telemetry with
 fake PDF tooling and fake LLM/embedding calls.
 It also covers one-time category/description generation, retry preservation,
 pending-document search exclusion, edit-field completion broadcasts, and the
-document configuration synchronization, read-only configuration checks, and the
-legacy document-schema updater described in
-[Document Uploads](runbooks/document-uploads.md).
+AI configuration setup, read-only checks, and public Rake tasks described in
+[AI Setup](runbooks/agentic-pipeline.md#ai-setup).
 
-`config-check` inspects stored document pipeline configuration in `RAILS_ENV`
-(default: `development`) without loading seeds, changing records, or calling
-AI. For a deployed production Rails environment, run
+`config-check` runs `paper_bridge:check_ai` in `RAILS_ENV` (default:
+`development`) without loading seeds, changing records, or calling AI. For a
+deployed production Rails environment, run
 `RAILS_ENV=production ruby scripts/agentic_pipeline_harness.rb config-check`.
 It exits unsuccessfully if the configuration does not meet the current
-contract. This is separate from `doctor`, which seeds and checks the test
-database; a green `doctor` or `review` is not a deployed configuration check.
-The Heroku release command runs the targeted configuration sync and check
-after migrations, failing the release if that transaction cannot complete.
+contract. `doctor` runs the actual `paper_bridge:setup_ai` and
+`paper_bridge:check_ai` tasks in the test database; a green `doctor` or `review`
+is not a deployed configuration check.
+
+The public tasks can also be run directly:
+
+```bash
+bundle exec rake db:migrate paper_bridge:setup_ai
+bundle exec rake paper_bridge:check_ai
+```
+
+The Heroku release command uses the first command. Setup supplies missing
+model/agent/prompt defaults, preserves existing choices, updates canonical
+schemas, and validates before committing. A failed check rolls back the setup
+transaction and fails the release. `db:seed` delegates to the same setup code.
 
 Upload coverage also checks batches above the removed file-count limits, profile-scoped duplicate
 rejection without overwrites, storage-only originals/downloads/editing, no

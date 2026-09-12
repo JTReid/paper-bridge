@@ -1,15 +1,9 @@
 # frozen_string_literal: true
 
-module Documents
-  class PipelineConfigurationCheck
-    AGENT_OPERATIONS = {
-      "document_chunker" => :chat,
-      "document_summarizer" => :chat,
-      "document_embedder" => :embeddings,
-      "image_document_extractor" => :chat,
-      "timeline_event_extractor" => :chat,
-      "query_embedder" => :embeddings
-    }.freeze
+require_relative "ai_definitions"
+
+module Setup
+  class AiConfigurationCheck
     SCHEMA_ANNOTATIONS = %w[$comment title description examples default].freeze
 
     def self.call
@@ -29,9 +23,10 @@ module Documents
       attr_reader :errors
 
       def check_agents
-        agents = AgentType.includes(:llm, :prompts).where(name: AGENT_OPERATIONS.keys).index_by(&:name)
+        definitions = AiDefinitions.agents
+        agents = AgentType.includes(:llm, :prompts).where(name: definitions.keys).index_by(&:name)
 
-        AGENT_OPERATIONS.each do |name, operation|
+        definitions.each do |name, definition|
           agent = agents[name]
           unless agent
             errors << "AgentType #{name} is missing; initialize its model and active prompt."
@@ -45,7 +40,7 @@ module Documents
             errors << "AgentType #{name} has a blank active prompt."
           end
 
-          check_model(agent, operation)
+          check_model(agent, definition.fetch(:operation))
         end
       end
 
@@ -79,48 +74,22 @@ module Documents
       end
 
       def check_schemas
-        definitions = {
-          "document_chunks" => PipelineSchemas.document_chunks,
-          "document_summary" => MetadataSchemas.document_summary,
-          "image_document_extraction" => MetadataSchemas.image_document_extraction,
-          "timeline_events" => PipelineSchemas.timeline_events
-        }
-        names = definitions.keys.flat_map { |name| [ "openai_#{name}", "anthropic_#{name}" ] }
-        records = JsonSchema.where(name: names).index_by(&:name)
+        definitions = AiDefinitions.schemas
+        records = JsonSchema.where(name: definitions.keys).index_by(&:name)
 
         definitions.each do |name, definition|
-          %w[openai anthropic].each do |provider|
-            record_name = "#{provider}_#{name}"
-            record = records[record_name]
-            unless record
-              errors << "JsonSchema #{record_name} is missing; initialize this document pipeline schema."
-              next
-            end
-
-            expected = functional_shape(wrapped_schema(provider, name, definition))
-            differences = difference_paths(expected, functional_shape(record.schema))
-            next if differences.empty?
-
-            paths = differences.first(6).join(", ")
-            paths += ", and other fields" if differences.length > 6
-            errors << "JsonSchema #{record_name} is incompatible at #{paths}; refresh its document pipeline schema."
+          record = records[name]
+          unless record
+            errors << "JsonSchema #{name} is missing; initialize this AI configuration schema."
+            next
           end
-        end
-      end
 
-      def wrapped_schema(provider, name, definition)
-        if provider == "openai"
-          {
-            response_format: {
-              type: "json_schema",
-              json_schema: { name: name, strict: true, schema: definition }
-            }
-          }
-        else
-          {
-            tools: [ { name: name, input_schema: definition } ],
-            tool_choice: { type: "tool", name: name }
-          }
+          differences = difference_paths(functional_shape(definition), functional_shape(record.schema))
+          next if differences.empty?
+
+          paths = differences.first(6).join(", ")
+          paths += ", and other fields" if differences.length > 6
+          errors << "JsonSchema #{name} is incompatible at #{paths}; refresh its AI configuration schema."
         end
       end
 

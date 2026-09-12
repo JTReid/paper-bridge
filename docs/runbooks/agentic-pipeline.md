@@ -30,6 +30,42 @@ sharing, or care team contacts.
 - Every provider/model combination in production data.
 - Cost ceilings beyond making provider/model drift visible.
 
+## AI Setup
+
+Use the same setup task locally and during deployment:
+
+```bash
+bundle exec rake db:migrate paper_bridge:setup_ai
+```
+
+`paper_bridge:setup_ai` creates missing defaults for three `Llm` records, nine
+`AgentType` records and their active `Prompt` records, and updates fourteen
+canonical `JsonSchema` records. Existing model/provider choices, agent model
+assignments, and prompt content are preserved. Setup checks the resulting
+configuration before committing; a failure rolls back its changes and exits
+unsuccessfully. It does not call AI or process existing documents.
+
+`db:seed` delegates to the same `Setup::AiConfiguration.call`, then retains the
+existing optional QA-data seed guard. The Heroku release command runs
+`bundle exec rake db:migrate paper_bridge:setup_ai`.
+
+Setup definitions and validation live in `lib/setup/ai_definitions.rb`,
+`ai_configuration.rb`, and `ai_configuration_check.rb`. They are loaded
+explicitly by setup tasks and excluded from application autoloading. Runtime
+agents read the persisted model, prompt, and schema records; the shared document
+metadata instructions remain in `Documents::MetadataInstructions::TEXT`.
+
+To validate stored configuration without modifying it:
+
+```bash
+bundle exec rake paper_bridge:check_ai
+RAILS_ENV=production bundle exec rake paper_bridge:check_ai
+```
+
+`paper_bridge:check_ai` checks the current AI configuration without loading seeds
+or calling a provider. It exits unsuccessfully when required records, model
+bindings, provider operations, prompts, or schema contracts are invalid.
+
 ## Validation
 
 ```bash
@@ -38,20 +74,19 @@ ruby scripts/agentic_pipeline_harness.rb doctor
 ruby scripts/agentic_pipeline_harness.rb tests
 ```
 
-`doctor` loads seeds in the test database before checking provider setup.
-It is a local framework check, not a check of deployed records. To inspect the
-document pipeline configuration as stored in a selected environment, use:
+`doctor` runs the actual `paper_bridge:setup_ai` and `paper_bridge:check_ai` tasks
+in the test database. It is a local setup check, not a check of deployed records.
+The harness also provides a shortcut to inspect a selected environment:
 
 ```bash
 ruby scripts/agentic_pipeline_harness.rb config-check
 RAILS_ENV=production ruby scripts/agentic_pipeline_harness.rb config-check
 ```
 
-This read-only check defaults to `development`, preserves `RAILS_ENV`, and
-does not load seeds or call AI. It is separate from `review`, which validates
-seeded test configuration. Release-time synchronization and the document
-configuration contract are documented in
-[Document Uploads](document-uploads.md#deployment).
+`config-check` calls `paper_bridge:check_ai`, defaults to `development`, and
+preserves a supplied `RAILS_ENV`. It is separate from `review`, which sets up and
+validates test configuration. A passing `doctor` or `review` does not verify a
+deployed environment.
 
 Live provider smoke checks are opt-in:
 

@@ -13,7 +13,7 @@ documents.
 - New processable web uploads receive a category and short description once during initial
   processing, before becoming searchable. Existing documents and later edits
   are preserved. See [Document Uploads](document-uploads.md) for completion,
-  edit-lock, retry, and schema-update behavior.
+  edit-lock, retry, and release-time AI setup behavior.
 - Document intake processes text-like uploads, PDFs, and JPEG, PNG, WebP, HEIC,
   HEIF, or TIFF images. Other file types, including Word, are saved as
   storage-only without processing. Upload batches have no application file-count cap;

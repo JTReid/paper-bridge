@@ -36,6 +36,15 @@ AGENTIC_CORE_FILES = %w[
   app/services/agents/structured_text_validator.rb
   app/services/concerns/locally_interactable.rb
   app/services/concerns/pipeline_notifiable.rb
+  config/application.rb
+  db/seeds.rb
+  lib/setup/ai_configuration.rb
+  lib/setup/ai_configuration_check.rb
+  lib/setup/ai_definitions.rb
+  lib/tasks/paper_bridge.rake
+  test/lib/setup/ai_configuration_test.rb
+  test/lib/setup/ai_configuration_check_test.rb
+  test/tasks/paper_bridge_tasks_test.rb
   db/migrate/20260614023700_create_agentic_pipeline.rb
   docs/agentic-pipeline-runbook.md
   docs/runbooks/agentic-pipeline.md
@@ -78,10 +87,7 @@ DOCUMENT_PIPELINE_FILES = %w[
   app/services/agents/timeline_event_extractor.rb
   app/services/agents/vector_retriever.rb
   app/services/documents/pdf_command_runner.rb
-  app/services/documents/metadata_schemas.rb
-  app/services/documents/pipeline_configuration.rb
-  app/services/documents/pipeline_configuration_check.rb
-  app/services/documents/pipeline_schemas.rb
+  app/services/documents/metadata_instructions.rb
   app/services/documents/prepare.rb
   app/services/documents/prepare_pdf.rb
   app/services/documents/prepare_text.rb
@@ -114,10 +120,6 @@ DOCUMENT_PIPELINE_FILES = %w[
   test/jobs/answer_ai_assistant_query_job_test.rb
   test/jobs/process_document_job_test.rb
   test/jobs/process_image_document_job_test.rb
-  test/scripts/update_document_metadata_schemas_test.rb
-  scripts/update_document_metadata_schemas.rb
-  scripts/check_document_pipeline_configuration.rb
-  scripts/sync_document_pipeline_configuration.rb
   test/models/document_chunk_test.rb
   test/models/document_embedding_test.rb
   test/models/document_page_test.rb
@@ -125,8 +127,6 @@ DOCUMENT_PIPELINE_FILES = %w[
   test/models/timeline_event_test.rb
   test/models/ai_assistant_query_test.rb
   test/services/documents/pdf_command_runner_test.rb
-  test/services/documents/pipeline_configuration_test.rb
-  test/services/documents/pipeline_configuration_check_test.rb
   test/services/documents/prepare_pdf_test.rb
   test/services/documents/prepare_text_test.rb
   test/services/documents/reconcile_failed_processing_test.rb
@@ -145,37 +145,6 @@ PROVIDER_FILES = %w[
   app/services/agentic/providers/anthropic.rb
 ].freeze
 PROVIDER_INSTANCE_METHODS = %w[call parse_response].freeze
-
-DOCTOR_RUNNER = <<~"RUBY"
-  Rails.application.load_seed
-  errors = []
-  provider_classes = Llm.distinct.pluck(:provider_class).compact_blank.sort
-  provider_classes.each do |provider_class|
-    begin
-      klass = provider_class.constantize
-      errors << "\#{provider_class} does not implement .default_operation_type" unless klass.respond_to?(:default_operation_type)
-    rescue NameError => e
-      errors << "\#{provider_class} could not be constantized: \#{e.message}"
-    end
-  end
-  AgentType.includes(:llm, :prompts).find_each do |agent_type|
-    errors << "AgentType \#{agent_type.name} has no llm" if agent_type.llm.blank?
-    errors << "AgentType \#{agent_type.name} has no active prompt" if agent_type.prompts.active.empty?
-  end
-  required_agent_types = %w[structured_text_summarizer structured_text_validator document_chunker document_summarizer document_embedder image_document_extractor query_embedder search_answer_generator timeline_event_extractor]
-  missing_agent_types = required_agent_types - AgentType.pluck(:name)
-  errors.concat(missing_agent_types.map { |name| "Required AgentType \#{name} is missing" })
-  errors << "openai_document_summary JsonSchema is missing" unless JsonSchema.exists?(name: "openai_document_summary")
-  errors << "openai_document_chunks JsonSchema is missing" unless JsonSchema.exists?(name: "openai_document_chunks")
-  errors << "openai_image_document_extraction JsonSchema is missing" unless JsonSchema.exists?(name: "openai_image_document_extraction")
-  errors << "openai_search_answer JsonSchema is missing" unless JsonSchema.exists?(name: "openai_search_answer")
-  errors << "openai_timeline_events JsonSchema is missing" unless JsonSchema.exists?(name: "openai_timeline_events")
-  puts "Agentic provider classes in test DB: \#{provider_classes.any? ? provider_classes.join(", ") : "none"}"
-  puts "OpenAI credential present: \#{Agentic::Providers::Openai.api_key_present?}"
-  puts "Anthropic credential present: \#{Agentic::Providers::Anthropic.api_key_present?}"
-  abort("Agentic pipeline doctor failed:\\n- \#{errors.join("\\n- ")}") if errors.any?
-  puts "Agentic pipeline doctor passed."
-RUBY
 
 LIVE_RUNNER = <<~"RUBY"
   provider_name = ENV.fetch("AGENTIC_LIVE_PROVIDER", "").downcase
@@ -306,10 +275,10 @@ COMMANDS = {
     [ "bin/rails", "tailwindcss:build" ]
   ],
   "doctor" => [
-    [ "bin/rails", "runner", "-e", "test", DOCTOR_RUNNER ]
+    [ "bundle", "exec", "rake", "paper_bridge:setup_ai", "paper_bridge:check_ai", "RAILS_ENV=test" ]
   ],
   "config-check" => [
-    [ "bin/rails", "runner", "-e", ENV.fetch("RAILS_ENV", "development"), "scripts/check_document_pipeline_configuration.rb" ]
+    [ "bundle", "exec", "rake", "paper_bridge:check_ai", "RAILS_ENV=#{ENV.fetch("RAILS_ENV", "development")}" ]
   ],
   "tests" => [
     [
@@ -340,9 +309,9 @@ COMMANDS = {
       "test/jobs/answer_ai_assistant_query_job_test.rb",
       "test/jobs/process_document_job_test.rb",
       "test/jobs/process_image_document_job_test.rb",
-      "test/scripts/update_document_metadata_schemas_test.rb",
-      "test/services/documents/pipeline_configuration_test.rb",
-      "test/services/documents/pipeline_configuration_check_test.rb",
+      "test/lib/setup/ai_configuration_test.rb",
+      "test/lib/setup/ai_configuration_check_test.rb",
+      "test/tasks/paper_bridge_tasks_test.rb",
       "test/services/documents/pdf_command_runner_test.rb",
       "test/services/documents/prepare_text_test.rb",
       "test/services/documents/reconcile_failed_processing_test.rb",
@@ -407,10 +376,12 @@ COMMANDS = {
       "test/models/timeline_event_test.rb",
       "test/models/user_test.rb",
       "scripts/check_docs_index.rb",
-      "scripts/update_document_metadata_schemas.rb",
-      "scripts/check_document_pipeline_configuration.rb",
-      "scripts/sync_document_pipeline_configuration.rb",
-      "test/scripts/update_document_metadata_schemas_test.rb",
+      "config/application.rb",
+      "db/seeds.rb",
+      "lib/setup",
+      "lib/tasks/paper_bridge.rake",
+      "test/lib/setup",
+      "test/tasks/paper_bridge_tasks_test.rb",
       "db/migrate/20260905000100_add_initial_metadata_pending_to_documents.rb",
       "db/migrate/20260912030542_add_processing_job_id_to_documents.rb",
       "scripts/agentic_pipeline_harness.rb"
@@ -429,8 +400,8 @@ def usage
       docs      Check agent-facing docs are indexed
       assets    Build generated Tailwind CSS for Rails view tests
       static    Check generic agentic pipeline file shape and provider interface
-      doctor    Seed/check local test DB provider records and API key visibility
-      config-check Read document pipeline configuration in RAILS_ENV (default: development); no seeds or AI calls
+      doctor    Run the AI setup and check Rake tasks in the test database
+      config-check Run paper_bridge:check_ai in RAILS_ENV (default: development); read-only, no AI
       tests     Run deterministic generic pipeline Minitest coverage
       documents Run deterministic document upload, ingestion, timeline, and search lifecycle coverage
       pdf-tools Check local Poppler/Tesseract binaries for live PDF preparation
@@ -445,7 +416,7 @@ def usage
       RAILS_ENV=production ruby scripts/agentic_pipeline_harness.rb config-check
 
     config-check inspects the selected environment without changing records.
-    doctor and review use seeded test configuration and do not verify deployed configuration.
+    doctor and review set up test configuration and do not verify deployed configuration.
   USAGE
 end
 

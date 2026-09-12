@@ -120,47 +120,32 @@ must explicitly set pending=true to opt into the new upload behavior.
 
 ## Deployment
 
-The Heroku release command runs migrations, then synchronizes the document
-pipeline configuration and checks it before the new release starts. The same
-sequence can be run in the intended Rails environment:
+The Heroku release command runs migrations and the shared AI setup task:
 
 ```bash
-bin/rails db:migrate
-bin/rails runner scripts/sync_document_pipeline_configuration.rb
+bundle exec rake db:migrate paper_bridge:setup_ai
 ```
 
-The sync updates the OpenAI and Anthropic document-summary and image-extraction
-schemas, creating missing records. It also supplies a missing
-`image_document_extractor` agent and active prompt, using the existing OpenAI
-`gpt-5.4-mini` model record when the agent needs to be created. Existing agent
-model assignments, active prompt contents, and model records are preserved.
+The task supplies missing model/agent/prompt defaults, updates canonical JSON
+schemas, and checks the result in one transaction. Existing model assignments
+and prompt content are preserved. A failed check rolls back the setup changes
+and fails the release. It does not call AI or retry documents; previously failed
+uploads still need a separate processing retry after configuration is repaired.
 
-`Documents::PipelineConfiguration.sync!` runs the configuration check inside
-the same transaction. Invalid existing configuration rolls back the sync and
-fails the release. It does not reseed the application, process documents, or
-call an AI provider. Existing failed uploads still need a separate processing
-retry after their configuration is repaired.
-
-To inspect the currently stored configuration without changing it:
+Inspect stored configuration without changing it:
 
 ```bash
-ruby scripts/agentic_pipeline_harness.rb config-check
-RAILS_ENV=production ruby scripts/agentic_pipeline_harness.rb config-check
+bundle exec rake paper_bridge:check_ai
+RAILS_ENV=production bundle exec rake paper_bridge:check_ai
 ```
 
-`config-check` uses the selected `RAILS_ENV`, defaulting to `development`, and
-exits unsuccessfully when stored schemas, agents, prompts, or model bindings
-do not meet the current document pipeline contract. It never loads seeds or
-calls AI. Heroku normally uses `RAILS_ENV=production` even when the app name
-includes development. The harness's `doctor` command instead loads seeds in
-the test database; passing it does not verify a deployed environment.
+The harness's `config-check` command calls the same read-only task, preserving
+`RAILS_ENV` and defaulting to `development`. Heroku normally uses
+`RAILS_ENV=production` even when the app name includes development. The harness's
+`doctor` instead runs setup and checking in the test database.
 
-`Documents::MetadataSchemas` defines summary/image output contracts;
-`Documents::PipelineSchemas` defines chunk/timeline output contracts. Seeds
-and configuration checks use these shared definitions. The older
-`scripts/update_document_metadata_schemas.rb` remains a targeted update of
-only the four summary/image schema records, including creating missing ones.
-It does not replace the release configuration check.
+See [AI Setup](agentic-pipeline.md#ai-setup) for the shared configuration records,
+setup-only code, and `db:seed` behavior.
 
 ## Validation
 

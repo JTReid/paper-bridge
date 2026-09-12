@@ -112,7 +112,7 @@ module Agents
               Extract as much visible text as possible from this uploaded image document, including printed and handwritten text.
               Preserve uncertainty instead of guessing; use [illegible] where text cannot be read reliably.
               Create a concise caregiver-facing summary and key points grounded only in the image.
-              #{Documents::MetadataSchemas::INSTRUCTIONS}
+              #{Documents::MetadataInstructions::TEXT}
               Create coherent search chunks containing the useful extracted facts and wording.
               Each chunk must use exactly one search label: #{DocumentChunk::LABELS.join(", ")}.
 

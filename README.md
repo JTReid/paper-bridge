@@ -23,6 +23,29 @@ Things you may want to cover:
 
 * ...
 
+## AI Configuration
+
+After creating the database, run migrations and set up the AI records:
+
+```bash
+bundle exec rake db:migrate paper_bridge:setup_ai
+```
+
+`paper_bridge:setup_ai` supplies missing model, agent, and prompt records,
+updates the canonical JSON schemas, and validates the result in one transaction.
+It preserves existing model/provider assignments and prompt content. The same
+task runs during Heroku releases, and `db:seed` uses the same setup code.
+
+To check an environment without changing its records or calling AI:
+
+```bash
+bundle exec rake paper_bridge:check_ai
+RAILS_ENV=production bundle exec rake paper_bridge:check_ai
+```
+
+See [AI Setup](docs/runbooks/agentic-pipeline.md#ai-setup) for the configuration
+contract and test commands.
+
 ## Encrypted Credentials
 
 Use `CREDENTIALS_ENV` to select development, staging, or production credentials

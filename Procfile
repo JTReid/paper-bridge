@@ -1,3 +1,3 @@
-release: bundle exec rails db:migrate && bundle exec rails runner scripts/sync_document_pipeline_configuration.rb
+release: bundle exec rake db:migrate paper_bridge:setup_ai
 web: bundle exec puma -C config/puma.rb
 worker: bundle exec bin/jobs

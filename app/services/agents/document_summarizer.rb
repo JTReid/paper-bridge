@@ -93,7 +93,7 @@ module Agents
           Write for a parent or caregiver in plain language.
           Explain necessary medical or educational terms briefly.
           Never mention chunks, embeddings, retrieval, IDs, pipelines, models, or other system internals.
-          #{Documents::MetadataSchemas::INSTRUCTIONS}
+          #{Documents::MetadataInstructions::TEXT}
 
           Evidence chunks:
           #{content}

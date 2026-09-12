@@ -71,7 +71,10 @@ ported from Scoutspace.
 - `PipelineRun` is the durable workflow envelope for agentic work. It owns
   state, source context, activity entries, logs, and telemetry summaries.
 - `Llm`, `AgentType`, `Prompt`, and `JsonSchema` store provider/model/prompt
-  configuration in the database.
+  configuration in the database. The `paper_bridge:setup_ai` and
+  `paper_bridge:check_ai` Rake tasks explicitly load setup code from `lib/setup`;
+  that directory is excluded from runtime autoloading. See
+  [AI Setup](runbooks/agentic-pipeline.md#ai-setup).
 - Provider classes under `Agentic::Providers` expose the common provider
   interface used by agents: `call`, `parse_response`, and
   `.default_operation_type`.
