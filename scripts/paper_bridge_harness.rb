@@ -91,6 +91,8 @@ CURRENT_PRODUCT_FILES = %w[
   app/views/calendar/show.html.erb
   app/views/calendar/_workspace.html.erb
   app/views/calendar/_appointment_button.html.erb
+  app/views/calendar/_appointment_dialog.html.erb
+  app/views/calendar/_appointment_fields.html.erb
   app/views/appointment_mailer/share.html.erb
   app/views/appointment_mailer/share.text.erb
   app/views/dashboard/index.html.erb

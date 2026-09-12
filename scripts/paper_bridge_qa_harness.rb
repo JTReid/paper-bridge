@@ -216,7 +216,7 @@ def workflow_usage
       care-team  Run care team contact workflow checks
       ai         Run AI assistant and answer email workflows without live model calls
       saved-answers Run saved research and meeting preparation without live model calls
-      calendar   Run calendar appointment and month navigation workflow checks
+      calendar   Run appointment create/edit/delete, email, and month navigation checks
       onboarding Run the post-signup setup tour through the first question
       all        Run all workflow modes above
   USAGE

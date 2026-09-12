@@ -90,10 +90,10 @@ browser group checks the recipient dialog without requiring SMTP. Pair email
 changes with the opt-in Mailpit check documented in
 [AI Assistant Search](runbooks/ai-assistant-search.md#emailing-one-answer).
 
-For appointment persistence, account-wide month rendering, creation, detail
-email delivery, dashboard summaries, calendar navigation, or the in-profile
-family calendar that preserves unfinished profile work, use the focused calendar
-checks:
+For appointment persistence, account-wide month rendering, creation, editing,
+deletion, detail email delivery, dashboard summaries, calendar navigation, or
+the in-profile family calendar that preserves unfinished profile work, use the
+focused calendar checks:
 
 ```bash
 ruby scripts/paper_bridge_harness.rb calendar

@@ -1,0 +1,63 @@
+<dialog class="fixed inset-0 m-auto max-h-[90dvh] w-full max-w-md overflow-y-auto rounded-2xl border border-border/60 bg-white p-0 text-foreground shadow-2xl backdrop:bg-slate-950/35 backdrop:backdrop-blur-sm" data-appointment-dialog-target="dialog" data-action="click->appointment-dialog#closeOnBackdrop close->appointment-dialog#restoreFocus" data-testid="appointment-dialog" aria-labelledby="appointment-dialog-title">
+  <div class="p-6">
+    <div class="flex items-start justify-between gap-4">
+      <div>
+        <p class="text-xs font-medium uppercase tracking-widest text-accent">Appointment Details</p>
+        <h2 id="appointment-dialog-title" class="mt-1 text-xl font-bold text-primary" data-appointment-dialog-target="title">Appointment</h2>
+      </div>
+      <button type="button" class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-border text-muted-foreground transition-colors hover:bg-muted hover:text-foreground" data-action="appointment-dialog#close" data-appointment-dialog-target="closeButton" aria-label="Close appointment details">
+        <%= pb_icon("x", class_name: "h-4 w-4") %>
+      </button>
+    </div>
+
+    <div data-appointment-dialog-target="details">
+      <dl class="mt-6 space-y-4">
+        <div>
+          <dt class="text-xs font-semibold text-muted-foreground">When</dt>
+          <dd class="mt-1 text-sm text-foreground" data-appointment-dialog-target="scheduledAt"></dd>
+        </div>
+        <div>
+          <dt class="text-xs font-semibold text-muted-foreground">Who it’s for</dt>
+          <dd class="mt-1 text-sm text-foreground" data-appointment-dialog-target="dependent"></dd>
+        </div>
+        <div>
+          <dt class="text-xs font-semibold text-muted-foreground">Description</dt>
+          <dd class="mt-1 whitespace-pre-wrap text-sm leading-relaxed text-foreground" data-appointment-dialog-target="description"></dd>
+        </div>
+      </dl>
+
+      <%= form_with url: appointment_emails_path(calendar_params), scope: :appointment_email, class: "mt-6 border-t border-border/60 pt-5", data: { testid: "appointment-email-form" } do |form| %>
+        <%= form.hidden_field :appointment_id, data: { appointment_dialog_target: "appointmentId", testid: "appointment-email-appointment-id" } %>
+
+        <%= form.label :recipient_email, "Email to", class: "text-xs font-semibold text-muted-foreground" %>
+        <div class="mt-1.5 flex gap-2">
+          <%= form.email_field :recipient_email, required: true, autocomplete: "email", placeholder: "Recipient email", class: "h-10 min-w-0 flex-1 rounded-xl border border-border bg-white px-3 text-sm text-foreground outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/10", data: { appointment_dialog_target: "recipientEmail", testid: "appointment-email-recipient" } %>
+          <%= form.submit "Send", class: "inline-flex h-10 shrink-0 items-center justify-center rounded-full bg-primary px-5 text-sm font-medium text-white shadow-sm transition-colors hover:bg-primary/90", data: { testid: "appointment-email-submit" } %>
+        </div>
+      <% end %>
+
+      <div class="mt-6 flex items-center justify-between gap-3 border-t border-border/60 pt-5">
+        <button type="button" class="inline-flex h-10 items-center justify-center rounded-full border border-border px-5 text-sm font-medium text-foreground hover:bg-muted" data-action="appointment-dialog#edit" data-appointment-dialog-target="editButton" data-testid="appointment-edit-button">Edit</button>
+        <%= form_with url: appointments_path(calendar_params), method: :delete, data: { appointment_dialog_target: "deleteForm", turbo_confirm: "Delete this appointment? This cannot be undone." } do %>
+          <%= hidden_field_tag :month, @month.strftime("%Y-%m"), id: nil %>
+          <%= button_tag "Delete", type: :submit, class: "inline-flex h-10 items-center justify-center rounded-full px-5 text-sm font-medium text-red-600 hover:bg-red-50", data: { testid: "appointment-delete-button" } %>
+        <% end %>
+      </div>
+    </div>
+
+    <% editing_appointment = @editing_appointment || Appointment.new %>
+    <%= form_with model: editing_appointment, url: editing_appointment.persisted? ? appointment_path(editing_appointment, calendar_params) : appointments_path(calendar_params), method: :patch, namespace: :edit, class: "mt-6 space-y-4", html: { hidden: true }, data: { appointment_dialog_target: "editForm", testid: "appointment-edit-form" } do |form| %>
+      <%= hidden_field_tag :month, @month.strftime("%Y-%m"), id: nil %>
+      <div class="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700" role="alert" tabindex="-1" data-family-calendar-result-focus data-appointment-dialog-target="editErrors" data-testid="appointment-edit-errors" <%= "hidden" if editing_appointment.errors.empty? %>>
+        <%= editing_appointment.errors.full_messages.to_sentence %>
+      </div>
+
+      <%= render "calendar/appointment_fields", form: form, appointment: editing_appointment, testid_prefix: "appointment-edit" %>
+
+      <div class="flex justify-end gap-3 border-t border-border/60 pt-5">
+        <button type="button" class="inline-flex h-10 items-center justify-center rounded-full px-5 text-sm font-medium text-muted-foreground hover:bg-muted" data-action="appointment-dialog#cancelEdit" data-testid="appointment-edit-cancel">Cancel</button>
+        <%= form.submit "Save changes", class: "inline-flex h-10 items-center justify-center rounded-full bg-primary px-5 text-sm font-medium text-white shadow-sm hover:bg-primary/90", data: { testid: "appointment-edit-submit" } %>
+      </div>
+    <% end %>
+  </div>
+</dialog>

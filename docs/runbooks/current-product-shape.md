@@ -19,13 +19,20 @@ operational harness checks until matching implementation exists.
 - Account-scoped dashboard and dependent profile workspace navigation.
 - Family calendar with persisted, profile-owned appointment creation, a
   Sunday-start desktop month grid, a phone-friendly monthly agenda,
-  previous/next/today navigation, read-only appointment details, on-demand
-  appointment-detail email delivery, and an upcoming-appointments dashboard
+  previous/next/today navigation, appointment details with editing and confirmed
+  deletion, on-demand appointment-detail email delivery, and an upcoming-appointments dashboard
   list. The account navigation opens the calendar as a full page. Inside a
   profile workspace, the same calendar opens in a large panel without replacing
   the page underneath. It shows the whole family's appointments and starts the
   add form with the current profile selected while still allowing another
-  profile to be chosen.
+  profile to be chosen. Edit switches the existing appointment dialog to a
+  prefilled profile, date/time, and description form with Save changes and
+  Cancel. Validation errors retain the attempted values inside that dialog;
+  Cancel returns to the saved details. Saving refreshes the calendar at the
+  updated appointment's month. Deletion requires confirmation and refreshes
+  the viewed month, including its count, desktop grid, and phone agenda.
+  Both actions stay inside the family account and preserve the surrounding
+  calendar panel and unfinished profile work.
 - Dependent profile listing, display, create, edit, update, and destroy paths,
   with a required first name, optional last name, date of birth, and notes on
   both create and edit, plus confirmed deletion from the edit page. Grade and
@@ -165,8 +172,7 @@ operational harness contracts because the app does not implement them yet:
 
 - Additional pricing plans, multi-plan entitlements, invoice history
   screens, taxes, coupons, and dunning workflows beyond Stripe's hosted pages.
-- Appointment editing, deletion, reminders, recurring events, and external
-  calendar integrations.
+- Appointment reminders, recurring events, and external calendar integrations.
 - In-app notification persistence and notification preferences.
 - Audit-log persistence, querying, and exports.
 - Tokenized external document links with expiration, password protection,

@@ -13,7 +13,7 @@
   end
 %>
 
-<div class="space-y-6" data-controller="appointment-dialog" data-testid="<%= panel ? "family-calendar-content" : "calendar-page" %>">
+<div class="space-y-6" data-controller="appointment-dialog" data-appointment-dialog-editing-id-value="<%= @editing_appointment&.id %>" data-action="turbo:before-cache@document->appointment-dialog#close" data-testid="<%= panel ? "family-calendar-content" : "calendar-page" %>">
   <% if panel && (notice.present? || alert.present?) %>
     <div class="space-y-2" aria-live="polite">
       <% if notice.present? %>
@@ -70,7 +70,7 @@
                 <% if appointments.any? %>
                   <div class="mt-1.5 space-y-1">
                     <% appointments.each do |appointment| %>
-                      <%= render "calendar/appointment_button", appointment: appointment, testid: "appointment-#{appointment.id}" %>
+                      <%= render "calendar/appointment_button", appointment: appointment, calendar_params: calendar_params, testid: "appointment-#{appointment.id}" %>
                     <% end %>
                   </div>
                 <% end %>
@@ -89,7 +89,7 @@
               </h3>
               <div class="space-y-2">
                 <% appointments.each do |appointment| %>
-                  <%= render "calendar/appointment_button", appointment: appointment, compact: false, testid: "agenda-appointment-#{appointment.id}" %>
+                  <%= render "calendar/appointment_button", appointment: appointment, calendar_params: calendar_params, compact: false, testid: "agenda-appointment-#{appointment.id}" %>
                 <% end %>
               </div>
             </section>
@@ -127,20 +127,7 @@
             </div>
           <% end %>
 
-          <div>
-            <%= form.label :dependent_id, "Who is it for?", class: "text-xs font-semibold text-foreground" %>
-            <%= form.collection_select :dependent_id, @dependents, :id, :name, { prompt: "Choose a profile" }, required: true, class: "mt-1.5 h-10 w-full rounded-xl border border-border bg-white px-3 text-sm text-foreground outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/10", data: { testid: "appointment-dependent" } %>
-          </div>
-
-          <div>
-            <%= form.label :scheduled_at, "When (Central Time)", class: "text-xs font-semibold text-foreground" %>
-            <%= form.datetime_local_field :scheduled_at, value: @appointment.scheduled_at&.in_time_zone&.strftime("%Y-%m-%dT%H:%M"), required: true, class: "mt-1.5 h-10 w-full rounded-xl border border-border bg-white px-3 text-sm text-foreground outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/10", data: { testid: "appointment-scheduled-at" } %>
-          </div>
-
-          <div>
-            <%= form.label :description, class: "text-xs font-semibold text-foreground" %>
-            <%= form.text_area :description, rows: 4, required: true, placeholder: "For example, speech therapy", class: "mt-1.5 w-full resize-none rounded-xl border border-border bg-white px-3 py-2 text-sm text-foreground outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/10", data: { testid: "appointment-description" } %>
-          </div>
+          <%= render "calendar/appointment_fields", form: form, appointment: @appointment, testid_prefix: "appointment" %>
 
           <%= form.submit "Add Appointment", class: "inline-flex h-10 w-full items-center justify-center rounded-full bg-primary px-5 text-sm font-medium text-white shadow-sm transition-colors hover:bg-primary/90", data: { testid: "appointment-submit" } %>
         <% end %>
@@ -154,42 +141,5 @@
     </aside>
   </div>
 
-  <dialog class="fixed inset-0 m-auto w-full max-w-md rounded-2xl border border-border/60 bg-white p-0 text-foreground shadow-2xl backdrop:bg-slate-950/35 backdrop:backdrop-blur-sm" data-appointment-dialog-target="dialog" data-action="click->appointment-dialog#closeOnBackdrop close->appointment-dialog#restoreFocus" data-testid="appointment-dialog" aria-labelledby="appointment-dialog-title">
-    <div class="p-6">
-      <div class="flex items-start justify-between gap-4">
-        <div>
-          <p class="text-xs font-medium uppercase tracking-widest text-accent">Appointment Details</p>
-          <h2 id="appointment-dialog-title" class="mt-1 text-xl font-bold text-primary">Appointment</h2>
-        </div>
-        <button type="button" class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-border text-muted-foreground transition-colors hover:bg-muted hover:text-foreground" data-action="appointment-dialog#close" data-appointment-dialog-target="closeButton" aria-label="Close appointment details">
-          <%= pb_icon("x", class_name: "h-4 w-4") %>
-        </button>
-      </div>
-
-      <dl class="mt-6 space-y-4">
-        <div>
-          <dt class="text-xs font-semibold text-muted-foreground">When</dt>
-          <dd class="mt-1 text-sm text-foreground" data-appointment-dialog-target="scheduledAt"></dd>
-        </div>
-        <div>
-          <dt class="text-xs font-semibold text-muted-foreground">Who it’s for</dt>
-          <dd class="mt-1 text-sm text-foreground" data-appointment-dialog-target="dependent"></dd>
-        </div>
-        <div>
-          <dt class="text-xs font-semibold text-muted-foreground">Description</dt>
-          <dd class="mt-1 whitespace-pre-wrap text-sm leading-relaxed text-foreground" data-appointment-dialog-target="description"></dd>
-        </div>
-      </dl>
-
-      <%= form_with url: appointment_emails_path(calendar_params), scope: :appointment_email, class: "mt-6 border-t border-border/60 pt-5", data: { testid: "appointment-email-form" } do |form| %>
-        <%= form.hidden_field :appointment_id, data: { appointment_dialog_target: "appointmentId", testid: "appointment-email-appointment-id" } %>
-
-        <%= form.label :recipient_email, "Email to", class: "text-xs font-semibold text-muted-foreground" %>
-        <div class="mt-1.5 flex gap-2">
-          <%= form.email_field :recipient_email, required: true, autocomplete: "email", placeholder: "Recipient email", class: "h-10 min-w-0 flex-1 rounded-xl border border-border bg-white px-3 text-sm text-foreground outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/10", data: { appointment_dialog_target: "recipientEmail", testid: "appointment-email-recipient" } %>
-          <%= form.submit "Send", class: "inline-flex h-10 shrink-0 items-center justify-center rounded-full bg-primary px-5 text-sm font-medium text-white shadow-sm transition-colors hover:bg-primary/90", data: { testid: "appointment-email-submit" } %>
-        </div>
-      <% end %>
-    </div>
-  </dialog>
+  <%= render "calendar/appointment_dialog", calendar_params: calendar_params %>
 </div>

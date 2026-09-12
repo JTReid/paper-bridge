@@ -2,7 +2,7 @@ Rails.application.routes.draw do
   devise_for :users
   get "dashboard" => "dashboard#index"
   resource :calendar, only: :show, controller: :calendar
-  resources :appointments, only: :create
+  resources :appointments, only: %i[create update destroy]
   resources :appointment_emails, only: :create, path: "appointment-emails"
   # Dependents are exposed as "profiles" in URLs. Controllers, models, and the
   # dependent_* route helpers keep their existing names.

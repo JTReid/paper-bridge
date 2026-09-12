@@ -31,7 +31,7 @@ ruby scripts/paper_bridge_harness.rb review
 This product-level harness covers behavior implemented in the Rails app today:
 public/auth entry points, registration-created accounts, dashboard and
 dependent workspace navigation, dependent profile access, appointment creation,
-read-only calendar details, appointment-detail email delivery, account-scoped
+editing and confirmed deletion, appointment-detail email delivery, account-scoped
 full-page and in-profile calendar rendering, upcoming-appointment display,
 document listing,
 filename-search/category-filter/file-only-upload behavior, live processing
@@ -42,7 +42,7 @@ meeting preparation, account-scoped search access, email-attachment document
 sharing, and the Stripe billing foundation.
 
 Future product requirements that are not implemented yet, such as appointment
-editing, deletion, reminders, recurrence, and external calendar integrations;
+reminders, recurrence, and external calendar integrations;
 in-app notifications; audit-log exports; tokenized sharing links; document
 version history; additional billing plans beyond the hosted managed-profile
 subscription, invoice history screens, and native mobile app
@@ -75,9 +75,11 @@ server, and runs Playwright browser checks against `http://127.0.0.1:3100` by
 default.
 
 Use `workflow calendar` to prove the family calendar preserves unfinished
-profile work while creating and emailing appointments. Use `mobile surfaces`
-for the phone-sized agenda and profile panel, and `accessibility surfaces` for
-the loaded panel and nested appointment dialog.
+profile work while creating, editing, deleting, and emailing appointments.
+It also checks canceled edits and deletions, retained validation errors,
+rescheduling to another month, and editing/deleting from the phone agenda.
+Use `mobile surfaces` for the phone-sized agenda and profile panel, and
+`accessibility surfaces` for the loaded panel and nested appointment dialog.
 
 Use `seed` when development needs the synthetic processed-document and edge-case
 corpus. This loads 11 documents, 25 pages, 71 chunks, 67 embeddings, 54 timeline

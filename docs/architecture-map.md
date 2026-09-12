@@ -16,6 +16,10 @@ ported from Scoutspace.
 - `Appointment` belongs to one dependent and stores the scheduled time plus a
   family-facing description. Account calendar access is derived through the
   dependent so appointment queries stay inside the account tenant boundary.
+- `AppointmentsController` creates, updates, and deletes appointments inside
+  the current account. The existing details dialog also hosts editing;
+  invalid edits use separate state from the new-appointment form. Successful
+  changes refresh the calendar through Turbo while preserving profile context.
 - `CalendarWorkspace` loads the account-scoped month, appointments, profiles,
   and optional current-profile context used by both calendar entry points. The
   account entry renders a normal page; profile navigation targets a lazy Turbo
@@ -82,8 +86,8 @@ ported from Scoutspace.
 ## Current Boundaries
 
 - Public entry, authentication, account registration, accounts, dependents,
-  account memberships, appointment creation, full-page and in-profile family
-  calendar display, on-demand detail emails, document uploads, document
+  account memberships, appointment creation/editing/deletion, full-page and
+  in-profile family calendar display, on-demand detail emails, document uploads, document
   categories, care team memberships, current email-attachment document sharing,
   and document pages are real.
 - Admin/member authorization lives on `AccountMembership`. Care team contacts

@@ -1,0 +1,14 @@
+<div>
+  <%= form.label :dependent_id, "Who is it for?", class: "text-xs font-semibold text-foreground" %>
+  <%= form.collection_select :dependent_id, @dependents, :id, :name, { prompt: "Choose a profile" }, required: true, class: "mt-1.5 h-10 w-full rounded-xl border border-border bg-white px-3 text-sm text-foreground outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/10", data: { testid: "#{testid_prefix}-dependent" } %>
+</div>
+
+<div>
+  <%= form.label :scheduled_at, "When (Central Time)", class: "text-xs font-semibold text-foreground" %>
+  <%= form.datetime_local_field :scheduled_at, value: appointment.scheduled_at&.in_time_zone&.strftime("%Y-%m-%dT%H:%M"), required: true, class: "mt-1.5 h-10 w-full rounded-xl border border-border bg-white px-3 text-sm text-foreground outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/10", data: { testid: "#{testid_prefix}-scheduled-at" } %>
+</div>
+
+<div>
+  <%= form.label :description, class: "text-xs font-semibold text-foreground" %>
+  <%= form.text_area :description, rows: 4, required: true, placeholder: "For example, speech therapy", class: "mt-1.5 w-full resize-none rounded-xl border border-border bg-white px-3 py-2 text-sm text-foreground outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/10", data: { testid: "#{testid_prefix}-description" } %>
+</div>
