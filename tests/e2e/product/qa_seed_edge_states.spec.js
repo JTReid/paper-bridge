@@ -55,7 +55,10 @@ test('QA seeded empty and failed document details render safely', async ({ page 
 
   await expect(page.getByRole('heading', { name: 'QA Edge Preparation Failed' })).toBeVisible();
   await expect(page.getByTestId('document-processing-status')).toContainText('Needs attention');
-  await expect(page.getByText('We couldn’t prepare a summary for this file.')).toBeVisible();
+  await expect(page.getByText('Your file is saved, but we couldn’t finish processing it. You can retry using your saved original file.')).toBeVisible();
+  const retryButton = page.getByRole('button', { name: 'Retry processing', exact: true });
+  await expect(retryButton).toBeVisible();
+  await expect(retryButton).toBeEnabled();
   await expect(page.getByText('Synthetic QA preparation failure.')).toHaveCount(0);
   await expect(page.getByText('View document text')).toHaveCount(0);
 });
