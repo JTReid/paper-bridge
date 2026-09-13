@@ -48,11 +48,13 @@ contract and test commands.
 
 ## Encrypted Credentials
 
-Use `CREDENTIALS_ENV` to select development, staging, or production credentials
-independently of `RAILS_ENV`. Heroku staging and production apps can both run
-in production mode while loading separate encrypted files and decryption keys.
-See [Encrypted Credentials](docs/runbooks/credentials.md) for creation commands,
-Heroku settings, and migration from the existing shared credentials file.
+Both Heroku apps run with `RAILS_ENV=production`. `paper-bridge-staging` sets
+`CREDENTIALS_ENV=development` to load the existing development credentials and
+Stripe test settings. `paper-bridge-production` sets `CREDENTIALS_ENV=production`
+to load production credentials and live Stripe settings. Each app uses its
+matching decryption key, separate database, and separate S3 bucket.
+See [Encrypted Credentials](docs/runbooks/credentials.md) for editing commands
+and Heroku configuration.
 
 ## Production Email
 

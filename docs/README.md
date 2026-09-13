@@ -20,7 +20,7 @@ check enforces that every tracked, non-ignored Markdown file is linked here.
 
 | Doc | Purpose |
 | --- | --- |
-| [Encrypted Credentials](runbooks/credentials.md) | Separate development, staging, and production credentials, independent keys, and Heroku configuration. |
+| [Encrypted Credentials](runbooks/credentials.md) | Staging and production Heroku apps, explicit credential selection, independent keys, Stripe modes, and separate storage. |
 | [Current Product Shape](runbooks/current-product-shape.md) | Implemented first-run guidance and input focus, profile, family calendar with appointment editing/deletion, document selection/deletion, access, sharing, and billing behavior plus focused harness commands. |
 | [Profile Management](runbooks/profile-management.md) | Required first/last names, matching creation/edit fields, preserved legacy school details, profile deletion, and the separate existing-name backfill script. |
 | [Agentic Pipeline Framework](runbooks/agentic-pipeline.md) | Generic `Agentic::Pipeline` contract, AI setup/check Rake tasks, and the distinction between test and deployed configuration checks. |
@@ -46,6 +46,11 @@ Local planning notes stored beside this checkout:
 [Meeting Preparation Ideas](../../paper-bridge-to-dos/meeting-preparation-ideas.md)
 records five proposed additions and suggested priorities for parent meeting
 preparation. It is a brainstorm for future work, not an implementation plan.
+
+[Stripe and Heroku Environment Checklist](../../paper-bridge-to-dos/stripe-production-checklist.md)
+tracks the staging and production app configuration, verified Stripe setup,
+remaining deployment and delivery checks, and the launch-trial decision. This
+is a local rollout checklist stored beside the checkout.
 
 ## Maintenance
 
