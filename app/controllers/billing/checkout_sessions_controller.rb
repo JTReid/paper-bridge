@@ -9,6 +9,11 @@ module Billing
       # Stripe errors are rescued inside the transaction so an uncertain API
       # result does not discard the idempotency token needed on the next try.
       current_account.with_lock do
+        if current_account.non_billable?
+          redirect_to billing_path, notice: "This account does not require a subscription."
+          next
+        end
+
         billing_subscription = current_account.reload.billing_subscription || current_account.build_billing_subscription
         unless billing_subscription.can_start_checkout? || billing_subscription.can_resume_checkout?
           redirect_to billing_path, alert: "You already have a subscription. Use Manage billing to make changes."

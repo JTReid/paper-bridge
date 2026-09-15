@@ -13,7 +13,7 @@ operational harness checks until matching implementation exists.
 - Devise email/password registration and sign-in.
 - Registration-created family accounts with an admin `AccountMembership`.
 - A six-step first-run setup tour for new account admins. It starts on the first
-  empty Dashboard reached after subscription activation, then guides Profile
+  empty Dashboard reached with product access, then guides Profile
   creation, Documents, upload, and the first Ask PaperBridge question without
   changing or gating those workflows.
 - Account-scoped dashboard and dependent profile workspace navigation.
@@ -95,6 +95,11 @@ operational harness checks until matching implementation exists.
   an account-scoped Turbo broadcast, signed-in account subscription enforcement,
   a reusable `require_subscription!` controller gate, and a super-admin account
   billing overview.
+- Console-managed non-billable accounts have product access and unlimited
+  managed profiles under their normal account roles. Billing is informational;
+  Checkout and Portal requests do not call Stripe. Revoking the flag restores
+  normal subscription and allowance rules. The existing admin overview labels
+  these accounts **Non-billable**, without an editing control.
 - Managed-profile subscription pricing: $25 USD/month includes five profiles,
   plus $5/month each beyond five, selected in hosted Checkout. Dedicated hosted
   Portal configuration handles prorated increases and renewal-time decreases.
@@ -152,7 +157,8 @@ The tour has six customer-facing milestones:
 5. Open Ask PaperBridge from Documents after either a single or batch upload.
 6. Submit a suggested or custom question.
 
-Only an active account admin with no Profiles is eligible for automatic start.
+Only an account admin with product access and no Profiles is eligible for
+automatic start. Product access includes non-billable accounts.
 Progress is stored as a version, status, and phase in account-scoped browser
 `localStorage`; it never stores Profile names, file names, or question text.
 Closing or pressing Escape stores `dismissed` in that browser. Completion stores

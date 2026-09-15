@@ -5,7 +5,7 @@
     <header class="pt-2">
       <p class="mb-1 text-xs font-medium uppercase tracking-widest text-accent">Super Admin</p>
       <h1 class="text-3xl font-bold tracking-tight text-primary">Accounts</h1>
-      <p class="mt-1.5 text-sm text-muted-foreground">Review Stripe subscription state across PaperBridge accounts.</p>
+      <p class="mt-1.5 text-sm text-muted-foreground">Review billing status across PaperBridge accounts.</p>
     </header>
 
     <section class="overflow-hidden rounded-2xl border border-border/50 bg-white shadow-sm">
@@ -28,8 +28,8 @@
                 <td class="px-5 py-4 font-medium text-foreground"><%= account.name %></td>
                 <td class="px-5 py-4 text-muted-foreground"><%= account.users.size %></td>
                 <td class="px-5 py-4">
-                  <span class="inline-flex rounded-full px-2.5 py-1 text-xs font-medium <%= account.subscription_active? ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-700" %>">
-                    <%= subscription&.status&.humanize || "Not started" %>
+                  <span class="inline-flex rounded-full px-2.5 py-1 text-xs font-medium <%= account.product_access? ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-700" %>">
+                    <%= account.non_billable? ? "Non-billable" : (subscription&.status&.humanize || "Not started") %>
                   </span>
                 </td>
                 <td class="max-w-[180px] truncate px-5 py-4 text-muted-foreground"><%= subscription&.stripe_customer_id || "-" %></td>

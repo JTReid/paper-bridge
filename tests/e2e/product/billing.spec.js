@@ -1,4 +1,5 @@
 // @ts-check
+import { execFileSync } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
 import { test, expect } from '../fixtures';
 import { createAccountProfiles, setAccountSubscription } from '../helpers/backend';
@@ -68,6 +69,48 @@ test('active account can use product and billing portal form uses full-page navi
   const portalForm = page.locator('form[action="/billing/portal_session"]');
   await expect(portalForm).toHaveAttribute('data-turbo', 'false');
   await expect(page.getByTestId('manage-subscription-button')).toHaveText(/Manage Subscription/);
+  await expectAccessible(page);
+});
+
+test('non-billable account without a subscription can sign in, use the setup tour, and create profiles', async ({ page, family }) => {
+  execFileSync('bin/rails', ['runner', `
+    raise "Non-billable browser setup requires test" unless Rails.env.test?
+    account = Account.find(ENV.fetch("QA_NON_BILLABLE_ACCOUNT_ID"))
+    user = account.users.find(ENV.fetch("QA_NON_BILLABLE_USER_ID"))
+    raise "Expected an ordinary browser family" unless account.name.start_with?("Browser QA Family ") && !user.super_admin?
+    account.billing_subscription.destroy!
+    account.update!(non_billable: true)
+    raise "Expected no billing subscription" if account.reload.billing_subscription
+  `], {
+    cwd: process.cwd(),
+    env: { ...process.env, RAILS_ENV: 'test', QA_NON_BILLABLE_ACCOUNT_ID: String(family.accountId), QA_NON_BILLABLE_USER_ID: String(family.userId) },
+    stdio: 'pipe',
+  });
+
+  await family.signIn(page);
+  await expect(page).toHaveURL(/\/dashboard$/);
+  for (const item of ['dashboard', 'calendar', 'billing']) {
+    await expect(page.getByTestId(`nav-${item}`)).toBeVisible();
+  }
+  await page.getByTestId('product-tour-replay').click();
+  await expect(page.getByTestId('product-tour-popover')).toContainText('Open a Profile');
+  await page.getByTestId('product-tour-close').click();
+
+  await page.getByTestId('dashboard-add-profile').click();
+  await page.locator('#dependent_first_name').fill('Non-billable');
+  await page.locator('#dependent_last_name').fill('Profile');
+  await page.getByTestId('profile-create-submit').click();
+  await expect(page.getByRole('heading', { name: 'Non-billable Profile', exact: true })).toBeVisible();
+  for (const item of ['overview', 'documents', 'calendar', 'ai-assistant', 'care-team']) {
+    await expect(page.getByTestId(`nav-${item}`)).toBeVisible();
+  }
+
+  await page.goto('/billing');
+  await expect(page.getByTestId('non-billable-notice')).toContainText('This account does not require a subscription');
+  await expect(page.getByTestId('subscribe-button')).toHaveCount(0);
+  await expect(page.getByTestId('manage-subscription-button')).toHaveCount(0);
+  await expect(page.getByTestId('profile-plan-pricing')).toHaveCount(0);
+  await expect(page.getByTestId('nav-dashboard')).toBeVisible();
   await expectAccessible(page);
 });
 

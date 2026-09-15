@@ -5,6 +5,44 @@ class BillingCheckoutSessionsControllerTest < ActionDispatch::IntegrationTest
     accounts(:greenfield).billing_subscription.update!(status: :incomplete)
   end
 
+  test "non billable accounts cannot create a billing record or start Stripe checkout" do
+    account = accounts(:greenfield)
+    account.billing_subscription.destroy!
+    account.update!(non_billable: true)
+    sign_in users(:family_admin)
+    unexpected_stripe_call = ->(*) { flunk "Non-billable accounts must not call Stripe" }
+
+    with_checkout_config do
+      with_stubbed_singleton_method(Stripe::Customer, :create, unexpected_stripe_call) do
+        with_stubbed_singleton_method(Stripe::Checkout::Session, :create, unexpected_stripe_call) do
+          assert_no_difference("BillingSubscription.count") { post billing_checkout_session_path }
+        end
+      end
+    end
+
+    assert_redirected_to billing_path
+    assert_equal "This account does not require a subscription.", flash[:notice]
+    assert_nil account.reload.billing_subscription
+  end
+
+  test "non billable accounts cannot resume a saved Stripe checkout" do
+    account = accounts(:greenfield)
+    subscription = seed_checkout_attempt
+    account.update!(non_billable: true)
+    sign_in users(:family_admin)
+
+    with_checkout_config do
+      with_stubbed_singleton_method(Stripe::Checkout::Session, :retrieve, ->(*) { flunk "Must not resume Stripe checkout" }) do
+        assert_no_changes -> { subscription.reload.attributes } do
+          post billing_checkout_session_path
+        end
+      end
+    end
+
+    assert_redirected_to billing_path
+    assert_equal "This account does not require a subscription.", flash[:notice]
+  end
+
   test "requires an account admin" do
     sign_in users(:account_member)
 

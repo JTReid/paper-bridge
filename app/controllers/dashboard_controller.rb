@@ -15,7 +15,9 @@ class DashboardController < ApplicationController
   private
 
     def handle_successful_checkout_return
-      if current_account.subscription_active?
+      if current_account.non_billable?
+        redirect_to dashboard_path
+      elsif current_account.subscription_active?
         redirect_to dashboard_path, notice: "You’re all set. Your PaperBridge subscription is active."
       elsif current_account.billing_subscription&.checkout_pending?
         render :checkout_pending

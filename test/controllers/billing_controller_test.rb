@@ -1,6 +1,25 @@
 require "test_helper"
 
 class BillingControllerTest < ActionDispatch::IntegrationTest
+  test "non billable accounts see their access without payment offers or a subscription record" do
+    account = accounts(:greenfield)
+    account.billing_subscription.destroy!
+    account.update!(non_billable: true)
+    sign_in users(:family_admin)
+
+    with_launch_trial_configuration do
+      assert_no_difference("BillingSubscription.count") { get billing_path }
+    end
+
+    assert_response :success
+    assert_select "[data-testid='non-billable-notice']", text: /This account does not require a subscription/
+    assert_select "[data-testid='subscribe-button']", count: 0
+    assert_select "[data-testid='manage-subscription-button']", count: 0
+    assert_select "[data-testid='profile-plan-pricing']", count: 0
+    assert_select "[data-testid='launch-trial-offer']", count: 0
+    assert_nil account.reload.billing_subscription
+  end
+
   test "new subscriptions show monthly profile pricing" do
     accounts(:greenfield).billing_subscription.update!(status: :canceled)
     sign_in users(:family_admin)
