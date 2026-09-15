@@ -79,6 +79,7 @@ class BillingCheckoutSessionsControllerTest < ActionDispatch::IntegrationTest
     checkout_session = stripe_checkout_session
     checkout_session_creator = lambda do |params, options|
       assert_equal "subscription", params[:mode]
+      assert_equal true, params[:allow_promotion_codes]
       assert_equal "cus_test_123", params[:customer]
       assert_equal [ {
         price: "price_profile_123", quantity: 5,
@@ -385,6 +386,7 @@ class BillingCheckoutSessionsControllerTest < ActionDispatch::IntegrationTest
     subscription.update!(stripe_customer_id: "cus_test_123", stripe_price_id: nil)
     sign_in users(:family_admin)
     creator = lambda do |params, _options|
+      assert_equal true, params[:allow_promotion_codes]
       assert_equal "always", params[:payment_method_collection]
       assert_equal "pmc_cards", params[:payment_method_configuration]
       assert_not_includes params, :payment_method_types
