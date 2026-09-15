@@ -36,6 +36,19 @@ profile allowance, and console-managed non-billable accounts.
   migration. New Checkout uses separate profile-price settings, and legacy
   subscriptions continue to use the existing default Portal configuration.
 
+## Promotion Codes
+
+New hosted Checkout sessions enable `allow_promotion_codes: true`, so customers
+can enter a Stripe promotion code before subscribing. Manage coupons and their
+customer-facing promotion codes in the Stripe account and mode used by the app.
+Stripe validates eligibility and applies percentage, fixed-amount, and 100%-off
+discounts according to the coupon's terms. PaperBridge does not store or validate
+codes, and enabling the field does not create a coupon or change the launch trial.
+
+Already-open Checkout sessions retain their original settings when resumed.
+The billing harness checks promotion-code support on normal and trial Checkout
+requests; local browser tests do not exercise Stripe's hosted redemption UI.
+
 ## Launch Trial
 
 - The opt-in launch offer gives a new family account 90 days free for its entire

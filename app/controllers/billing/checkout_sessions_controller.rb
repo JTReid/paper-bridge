@@ -95,6 +95,7 @@ module Billing
         subscription.save! if subscription.changed?
         parameters = {
           mode: "subscription",
+          allow_promotion_codes: true,
           customer: subscription.stripe_customer_id,
           client_reference_id: current_account.id.to_s,
           line_items: [ {
