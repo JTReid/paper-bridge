@@ -1,7 +1,7 @@
 # Billing Runbook
 
-This runbook defines PaperBridge's hosted Stripe subscription flow and managed
-profile allowance.
+This runbook defines PaperBridge's hosted Stripe subscription flow, managed
+profile allowance, and console-managed non-billable accounts.
 
 ## Managed Profile Plan
 
@@ -104,13 +104,14 @@ and [trial disclosure and reminder requirements](https://docs.stripe.com/billing
 - Billing is account-level. `BillingSubscription` belongs to one `Account` and
   records Stripe customer, subscription, price, status, period end,
   cancellation, and latest webhook event state.
-- `Account#subscription_active?` is the current paid-access predicate. Active
-  and trialing subscriptions grant access.
+- `Account#subscription_active?` reports actual subscription access: active and
+  trialing subscriptions qualify. `Account#product_access?` also permits an
+  account explicitly marked non-billable.
 - `SubscriptionGate` exposes `require_subscription!` for controller-level paid
   gates.
 - Signed-in account users are globally redirected to `/billing` when their
-  account is not active or trialing. Billing, Checkout, and Customer Portal
-  routes are exempt so inactive users can subscribe.
+  account has neither subscription access nor non-billable access. Billing,
+  Checkout, and Customer Portal routes are exempt so inactive users can subscribe.
 - Super admins are platform users with `User#site_role` set to
   `super_admin`. They bypass subscription gates and can access the account
   billing overview.
@@ -154,7 +155,53 @@ and [trial disclosure and reminder requirements](https://docs.stripe.com/billing
   within the same second trigger a targeted current-subscription lookup instead
   of guessing their order. Ordinary webhooks do not fetch Stripe. A failed
   conflict lookup leaves the saved state intact and lets Stripe retry.
-- `/admin/accounts` lets super admins review billing status across accounts.
+- `/admin/accounts` lets super admins review billing status across accounts,
+  including a **Non-billable** label. The flag cannot be edited from this page.
+
+## Non-Billable Accounts
+
+`Account#non_billable` is a non-null boolean that defaults to false. Setting it
+to true grants product access without a subscription and removes the managed
+profile allowance. Account membership, admin permissions, and data access
+boundaries stay the same; it does not make a user a super admin or grant access
+to another account.
+
+Billing shows **This account does not require a subscription.** Checkout and
+Customer Portal actions are unavailable, and direct requests to those endpoints
+return without calling Stripe. Subscription records still describe the actual
+Stripe state; the flag does not create a subscription or mark one active.
+
+Manage the flag through the Rails console for the intended environment. Look up
+the user, inspect their memberships, and select the matching account ID before
+enabling it:
+
+```ruby
+user = User.find_by!(email: "person@example.com")
+user.account_memberships.includes(:account).map do |membership|
+  [membership.account_id, membership.account.name, membership.role]
+end
+account = user.accounts.find(123) # Replace with the intended ID from the list.
+[account.id, account.name, account.non_billable?]
+account.update!(non_billable: true)
+account.reload.non_billable? # => true
+```
+
+Provision an account without an ongoing Stripe subscription or open Checkout.
+Enabling the flag does not cancel a Stripe subscription or expire a previously
+opened Checkout session. Any existing Stripe cancellation is a separate,
+deliberate action; the flag itself does not stop Stripe charges.
+
+To revoke the exemption for the same verified account:
+
+```ruby
+account.update!(non_billable: false)
+account.reload.non_billable? # => false
+```
+
+The normal subscription gate and saved profile allowance apply again. An active
+or trialing subscription still grants access; otherwise the account returns to
+Billing. Existing profiles are retained even if their count exceeds the restored
+allowance.
 
 ## Configuration
 
@@ -303,7 +350,7 @@ For a focused Portal setup check without Stripe calls:
 bin/rails test test/services/billing/profile_plan_setup_test.rb
 ```
 
-For the browser-visible pending, success, failure, and cancellation states, run:
+For browser billing states, including non-billable access, run:
 
 ```bash
 ruby scripts/paper_bridge_qa_harness.rb workflow billing
@@ -312,9 +359,13 @@ ruby scripts/paper_bridge_qa_harness.rb workflow billing
 The browser harness server uses dummy Stripe credentials/configuration and
 cannot charge the configured Stripe account. The workflow uses synthetic
 subscription records and a synthetic Turbo refresh. It also exercises the
-profile allowance boundary, a simulated upgrade,
-and retained access after a simulated renewal-time decrease. It does not call
-Stripe or prove hosted payment collection or live webhook-to-WebSocket delivery.
+profile allowance boundary, a simulated upgrade, and retained access after a
+simulated renewal-time decrease. For non-billable accounts it covers sign-in,
+product navigation, tour eligibility, profile creation, and informational
+Billing. The billing Rails checks cover unlimited profiles beyond a saved
+subscription allowance, revocation, normal role boundaries, and blocked
+Checkout/Portal requests without Stripe calls. These checks do not prove hosted
+payment collection or live webhook-to-WebSocket delivery.
 
 Before rollout, separately verify an actual company-test hosted signup with
 payment details, signed subscription webhooks, trial access and allowance,

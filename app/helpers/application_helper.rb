@@ -1,7 +1,7 @@
 module ApplicationHelper
   def app_shell(active:, dependent: nil, product_tour_auto_start: false, &block)
     product_tour_enabled = current_account.present? &&
-      current_account.subscription_active? &&
+      current_account.product_access? &&
       current_user.present? &&
       !current_user.super_admin? &&
       current_user.can_manage_account?(current_account)

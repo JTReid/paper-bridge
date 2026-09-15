@@ -32,7 +32,7 @@ class ApplicationController < ActionController::Base
 
     def after_sign_in_path_for(_resource)
       return admin_accounts_path if current_user&.super_admin?
-      return billing_path if current_account.present? && !current_account.subscription_active?
+      return billing_path if current_account.present? && !current_account.product_access?
 
       dashboard_path
     end
@@ -43,7 +43,7 @@ class ApplicationController < ActionController::Base
       return if subscription_exempt_controller?
       return if current_user.super_admin?
       return if current_account.blank?
-      return if current_account.subscription_active?
+      return if current_account.product_access?
       return if successful_checkout_return?
 
       redirect_to billing_path, alert: "A subscription is required to continue."

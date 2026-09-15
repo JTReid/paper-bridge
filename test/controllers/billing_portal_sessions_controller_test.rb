@@ -1,6 +1,25 @@
 require "test_helper"
 
 class BillingPortalSessionsControllerTest < ActionDispatch::IntegrationTest
+  test "non billable accounts cannot open Stripe billing even with a saved customer" do
+    account = accounts(:greenfield)
+    subscription = account.billing_subscription
+    subscription.update!(stripe_customer_id: "cus_existing")
+    account.update!(non_billable: true)
+    sign_in users(:family_admin)
+
+    with_stubbed_singleton_method(Billing::StripeConfig, :portal_ready?, true) do
+      with_stubbed_singleton_method(Stripe::BillingPortal::Session, :create, ->(*) { flunk "Must not open Stripe billing" }) do
+        assert_no_changes -> { subscription.reload.attributes } do
+          post billing_portal_session_path
+        end
+      end
+    end
+
+    assert_redirected_to billing_path
+    assert_equal "This account does not require a subscription.", flash[:notice]
+  end
+
   test "requires an account admin" do
     sign_in users(:account_member)
 

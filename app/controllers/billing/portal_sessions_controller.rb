@@ -5,6 +5,11 @@ module Billing
     before_action :require_account_admin!
 
     def create
+      if current_account.non_billable?
+        redirect_to billing_path, notice: "This account does not require a subscription."
+        return
+      end
+
       unless Billing::StripeConfig.portal_ready?(current_account)
         redirect_to billing_path, alert: "Billing settings aren’t available right now."
         return

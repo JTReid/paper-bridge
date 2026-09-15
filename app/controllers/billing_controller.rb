@@ -3,6 +3,8 @@ class BillingController < ApplicationController
   before_action :require_current_account!
 
   def show
+    return render :non_billable if current_account.non_billable?
+
     case params[:checkout]
     when "cancel"
       clear_checkout_pending
