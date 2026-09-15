@@ -18,6 +18,7 @@ CURRENT_PRODUCT_FILES = %w[
   db/migrate/20260905000100_add_initial_metadata_pending_to_documents.rb
   db/migrate/20260911000100_create_saved_answers_and_meeting_preps.rb
   db/migrate/20260911135356_simplify_saved_answer_query_index.rb
+  db/migrate/20260915000100_add_non_billable_to_accounts.rb
   docs/runbooks/current-product-shape.md
   docs/runbooks/profile-management.md
   docs/runbooks/document-uploads.md
@@ -97,6 +98,7 @@ CURRENT_PRODUCT_FILES = %w[
   app/views/appointment_mailer/share.text.erb
   app/views/dashboard/index.html.erb
   app/views/dashboard/checkout_pending.html.erb
+  app/views/billing/non_billable.html.erb
   app/views/layouts/application.html.erb
   app/views/shared/_app_shell.html.erb
   app/views/dependents/_form.html.erb
@@ -249,6 +251,8 @@ SHARING_TESTS = %w[
 ].freeze
 
 BILLING_TESTS = %w[
+  test/controllers/devise_registrations_controller_test.rb
+  test/controllers/devise_sessions_controller_test.rb
   test/models/billing_subscription_test.rb
   test/models/account_test.rb
   test/models/dependent_test.rb
@@ -278,6 +282,7 @@ CALENDAR_TESTS = %w[
 ].freeze
 
 RUBOCOP_PATHS = %w[
+  db/migrate/20260915000100_add_non_billable_to_accounts.rb
   test/models/document_list_broadcast_test.rb
   test/controllers/document_list_updates_test.rb
   db/migrate/20260911000100_create_saved_answers_and_meeting_preps.rb

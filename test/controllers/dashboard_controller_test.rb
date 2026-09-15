@@ -1,6 +1,61 @@
 require "test_helper"
 
 class DashboardControllerTest < ActionDispatch::IntegrationTest
+  test "non billable accounts can use the dashboard and create profiles without a subscription" do
+    account = accounts(:greenfield)
+    account.billing_subscription.destroy!
+    account.update!(non_billable: true)
+    sign_in users(:family_admin)
+
+    assert_no_difference("BillingSubscription.count") { get dashboard_path }
+
+    assert_response :success
+    assert_select "a[data-testid='nav-dashboard'][href='#{dashboard_path}']"
+    assert_select "a[data-testid='nav-calendar']"
+    assert_select "main[data-controller~='product-tour']"
+    assert_select "button[data-testid='product-tour-replay']"
+    assert_select "[data-testid='profile-allowance']", count: 0
+    assert_not_includes response.body, dependents(:other_dependent).name
+
+    assert_difference -> { account.dependents.count } do
+      post dependents_path, params: { dependent: { first_name: "New", last_name: "Profile" } }
+    end
+    assert_redirected_to dependent_path(account.dependents.order(:id).last)
+    assert_nil account.reload.billing_subscription
+
+    get dependent_path(dependents(:other_dependent))
+    assert_response :not_found
+  end
+
+  test "revoking non billable access returns an unsubscribed account to billing" do
+    account = accounts(:greenfield)
+    account.billing_subscription.destroy!
+    account.update!(non_billable: true)
+    sign_in users(:family_admin)
+    get dashboard_path
+    assert_response :success
+
+    account.update!(non_billable: false)
+    get dashboard_path
+
+    assert_redirected_to billing_path
+  end
+
+  test "non billable accounts ignore a checkout success parameter without claiming a subscription" do
+    account = accounts(:greenfield)
+    account.billing_subscription.destroy!
+    account.update!(non_billable: true)
+    sign_in users(:family_admin)
+
+    assert_no_difference("BillingSubscription.count") { get dashboard_path(checkout: "success") }
+
+    assert_redirected_to dashboard_path
+    assert_nil flash[:notice]
+    follow_redirect!
+    assert_response :success
+    assert_select "[data-testid='checkout-pending-page']", count: 0
+  end
+
   test "shows managed profile allowance beside the existing profile workflow" do
     accounts(:greenfield).billing_subscription.update!(profile_limit: 5)
     sign_in users(:family_admin)

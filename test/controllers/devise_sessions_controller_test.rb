@@ -1,6 +1,19 @@
 require "test_helper"
 
 class DeviseSessionsControllerTest < ActionDispatch::IntegrationTest
+  test "signs non billable accounts without subscriptions in to the dashboard" do
+    account = accounts(:greenfield)
+    account.billing_subscription.destroy!
+    account.update!(non_billable: true)
+
+    post user_session_path, params: {
+      user: { email: users(:family_admin).email, password: "password" }
+    }
+
+    assert_redirected_to dashboard_path
+    assert_nil account.reload.billing_subscription
+  end
+
   test "shows styled sign in form" do
     get new_user_session_path
 

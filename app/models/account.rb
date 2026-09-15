@@ -16,6 +16,10 @@ class Account < ApplicationRecord
 
   validates :name, presence: true
 
+  def product_access?
+    non_billable? || subscription_active?
+  end
+
   def subscription_active?
     billing_subscription&.active_for_access? || false
   end
@@ -25,6 +29,8 @@ class Account < ApplicationRecord
   end
 
   def profile_limit
+    return if non_billable?
+
     billing_subscription&.profile_limit
   end
 

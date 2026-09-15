@@ -110,6 +110,13 @@ live AI, document ingestion, seeded edge-state scenarios, or the complete
 negative/error-state matrix. The detailed contract is in
 `docs/runbooks/qa-troubleshooting.md`.
 
+Use `workflow billing` for subscription states and non-billable sign-in,
+navigation, tour eligibility, profile creation, and informational Billing. Pair
+it with `ruby scripts/paper_bridge_harness.rb billing` for unlimited profiles
+beyond a saved allowance, revocation, account-role checks, and Checkout/Portal
+guards that must not call Stripe. These are deterministic tests, not hosted
+Stripe payment checks.
+
 For keyboard date entry, run `workflow profiles`, `workflow onboarding`, and
 `workflow calendar`. These checks type individual digits into native date
 fields, edit an existing year, and cover visible, dismissed, and completed tour

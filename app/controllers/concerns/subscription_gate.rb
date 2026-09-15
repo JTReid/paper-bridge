@@ -11,7 +11,7 @@ module SubscriptionGate
 
     def require_active_subscription!
       return if current_user&.super_admin?
-      return if current_account&.subscription_active?
+      return if current_account&.product_access?
 
       redirect_to billing_path, alert: "A subscription is required to continue."
     end

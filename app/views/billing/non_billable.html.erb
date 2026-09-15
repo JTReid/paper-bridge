@@ -1,0 +1,17 @@
+<% content_for :title, "Billing | PaperBridge" %>
+
+<%= app_shell(active: :billing) do %>
+  <div class="space-y-8 pb-10" data-testid="billing-page">
+    <header class="pt-2">
+      <p class="mb-1 text-xs font-medium uppercase tracking-widest text-accent">Family Billing</p>
+      <h1 class="text-3xl font-bold tracking-tight text-primary">Billing</h1>
+      <p class="mt-1.5 text-sm text-muted-foreground"><%= current_account.name %></p>
+    </header>
+
+    <section class="rounded-2xl border border-border/50 bg-white p-6 shadow-sm" data-testid="non-billable-notice">
+      <h2 class="text-base font-semibold text-foreground" data-testid="billing-status">Non-billable account</h2>
+      <p class="mt-2 text-sm text-muted-foreground">This account does not require a subscription.</p>
+      <%= link_to "Back to dashboard", dashboard_path, class: "mt-4 inline-block text-sm font-medium text-primary underline" %>
+    </section>
+  </div>
+<% end %>

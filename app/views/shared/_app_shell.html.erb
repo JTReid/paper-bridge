@@ -2,7 +2,7 @@
   dependent_context = dependent.present?
   account_name = current_account&.name || "PaperBridge"
   actor_label = current_user.name.presence || current_user.email
-  product_access = current_user&.super_admin? || current_account&.subscription_active?
+  product_access = current_user&.super_admin? || current_account&.product_access?
   shell_home_path = if dependent_context || (product_access && current_account.present?)
     dashboard_path
   elsif current_user&.super_admin?
