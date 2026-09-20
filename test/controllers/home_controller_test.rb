@@ -1,6 +1,8 @@
 require "test_helper"
 
 class HomeControllerTest < ActionDispatch::IntegrationTest
+  VIDEO_URL = "https://paper-bridge-public-media.s3.us-east-1.amazonaws.com/marketing/meet-paperbridge-v1.mp4".freeze
+
   test "shows public entry actions" do
     get root_path
 
@@ -13,7 +15,7 @@ class HomeControllerTest < ActionDispatch::IntegrationTest
     assert_select "a[data-testid='home-hero-primary'][href='#{new_user_registration_path}']", text: /Get Started/
     assert_select "a[href='#{new_user_registration_path}']", text: /Start with PaperBridge/
     assert_select "a[href='#{dashboard_path}']", count: 0
-    assert_select "a[href='#how-it-works']", text: /Meet PaperBridge/
+    assert_select "a[data-marketing-video-target='trigger'][href='#{VIDEO_URL}'][aria-haspopup='dialog'][data-turbo='false']", text: /Meet PaperBridge/
     assert_select "#how-it-works"
   end
 
@@ -51,5 +53,6 @@ class HomeControllerTest < ActionDispatch::IntegrationTest
     assert_select "a[href='#{dashboard_path}']", text: /Start with PaperBridge/
     assert_select "[data-testid='home-hero-primary']", count: 0
     assert_select "a[href='#{new_user_session_path}'], a[href='#{new_user_registration_path}']", count: 0
+    assert_select "a[data-marketing-video-target='trigger'][href='#{VIDEO_URL}']", text: /Meet PaperBridge/
   end
 end

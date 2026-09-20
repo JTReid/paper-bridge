@@ -10,6 +10,9 @@ operational harness checks until matching implementation exists.
 ## Implemented Product Surface
 
 - Public home page with signed-out entry actions and signed-in dashboard access.
+- The public homepage's Meet PaperBridge action opens the commercial in a
+  responsive video dialog, loads media on demand, and stops playback on close
+  or navigation. See [Meet PaperBridge Video](marketing-video.md).
 - Devise email/password registration and sign-in.
 - Registration-created family accounts with an admin `AccountMembership`.
 - A six-step first-run setup tour for new account admins. It starts on the first

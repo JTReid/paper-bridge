@@ -1,0 +1,29 @@
+<dialog id="marketing-video-dialog"
+        class="m-auto max-h-[calc(100dvh_-_2rem)] w-[calc(100%_-_2rem)] max-w-5xl overflow-y-auto rounded-2xl border border-border bg-background p-0 text-foreground shadow-2xl backdrop:bg-black/70"
+        aria-labelledby="marketing-video-title"
+        data-marketing-video-target="dialog"
+        data-action="close->marketing-video#restorePage click->marketing-video#closeOnBackdrop">
+  <div class="flex items-center justify-between gap-4 px-4 py-2 sm:px-6">
+    <h2 id="marketing-video-title" class="text-lg font-semibold">Meet PaperBridge</h2>
+    <button type="button"
+            class="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+            aria-label="Close video"
+            data-marketing-video-target="closeButton"
+            data-action="marketing-video#close">
+      <%= pb_icon("x", class_name: "h-5 w-5") %>
+    </button>
+  </div>
+
+  <video controls playsinline preload="none"
+         class="block aspect-video max-h-[calc(100dvh_-_7rem)] w-full bg-black"
+         aria-label="Meet PaperBridge video"
+         data-marketing-video-target="video"
+         data-action="error->marketing-video#showError">
+    <%= link_to "Watch the Meet PaperBridge video", meet_paperbridge_video_url, data: { turbo: false } %>
+  </video>
+
+  <p hidden role="status" class="px-4 py-4 text-sm sm:px-6" data-marketing-video-target="error">
+    We couldn’t play the video here.
+    <%= link_to "Open the video directly", meet_paperbridge_video_url, target: "_blank", rel: "noopener", class: "font-medium text-primary underline underline-offset-4", data: { turbo: false } %>.
+  </p>
+</dialog>
