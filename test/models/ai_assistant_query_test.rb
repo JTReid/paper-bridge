@@ -70,6 +70,7 @@ class AiAssistantQueryTest < ActiveSupport::TestCase
     end
 
     assert_not_nil query.reload.enqueued_at
+    assert_equal enqueued_jobs.last.fetch("job_id"), query.answer_job_id
     assert_no_enqueued_jobs do
       assert_not query.enqueue_answer!
     end
@@ -79,11 +80,14 @@ class AiAssistantQueryTest < ActiveSupport::TestCase
     query = build_query
     query.save!
 
-    with_stubbed_singleton_method(AnswerAiAssistantQueryJob, :perform_later, false) do
-      assert_raises(ActiveJob::EnqueueError) { query.enqueue_answer! }
-    end
+    abort_enqueue = -> { throw :abort }
+    AnswerAiAssistantQueryJob.set_callback(:enqueue, :before, abort_enqueue)
+    assert_raises(ActiveJob::EnqueueError) { query.enqueue_answer! }
 
     assert_nil query.reload.enqueued_at
+    assert_nil query.answer_job_id
+  ensure
+    AnswerAiAssistantQueryJob.skip_callback(:enqueue, :before, abort_enqueue)
   end
 
   private

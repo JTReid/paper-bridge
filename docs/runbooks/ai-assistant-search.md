@@ -22,6 +22,13 @@ lifecycle.
 - The durable state flow is `queued` to `processing` to `completed`. Retryable
   provider errors return to `queued`; terminal or configuration errors become
   `failed` with a family-safe message.
+- Each enqueued question records its Active Job UUID, which remains the same
+  across automatic retries. Each pipeline run also records the attempt's Solid
+  Queue ID. The recurring `ReconcileAiAssistantQueriesJob` checks confirmed
+  worker failures every minute and marks interrupted questions failed so the
+  user can ask again. It preserves running, queued, and scheduled retry attempts
+  and completed answers; elapsed time alone never marks a question failed.
+  Jobs queued before this tracking was added acquire their UUID when they start.
 - `AnswerAiAssistantQueryJob` creates a `PipelineRun` whose subject is the
   `AiAssistantQuery`. The stripped question is also stored in
   `PipelineRun.context["query"]` for reproduction and diagnosis.

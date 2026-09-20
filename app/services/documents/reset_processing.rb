@@ -4,7 +4,18 @@ module Documents
   class ResetProcessing
     def self.call(document, processing_job_id: nil)
       document.with_lock do
-        return false if document.processing? || document.processed?
+        restarting = document.processing? && processing_job_id.present? &&
+          document.processing_job_id.to_s == processing_job_id.to_s
+        return false if document.processed? || (document.processing? && !restarting)
+
+        # A released Solid Queue job keeps its ID when another worker claims it.
+        # Close only that interrupted attempt before rebuilding from the original.
+        if restarting
+          document.pipeline_runs.where(state: %w[pending processing])
+            .where("context->>'processing_job_id' = ?", processing_job_id.to_s).find_each do |run|
+              run.mark_failed!(message: "Document processing was interrupted and restarted from the original file.")
+            end
+        end
 
         # Image documents use the original upload as their prepared page image.
         # Remove that derived attachment without scheduling its shared blob for purge.

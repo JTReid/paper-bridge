@@ -205,6 +205,48 @@ class ProcessImageDocumentJobTest < ActiveJob::TestCase
     assert_equal 23_456, document.pipeline_runs.last.context.fetch("processing_job_id")
   end
 
+  test "a released Solid Queue image job finishes without purging its original shared image" do
+    capture_io { load Rails.root.join("db/queue_schema.rb") }
+    SolidQueue::Record.descendants.each(&:reset_column_information)
+    document = create_image_document
+    original_blob = document.file.blob
+    clear_enqueued_jobs
+    job = SolidQueue::Job.enqueue(ProcessImageDocumentJob.new(document))
+    worker = SolidQueue::Process.register(kind: "Worker", name: "image-before-restart", pid: 900_003, hostname: "test")
+    claimed = SolidQueue::ReadyExecution.claim([ "default" ], 1, worker.id).sole
+    FakeConnection.before_request = -> { throw :worker_shutdown if FakeConnection.requests.last.fetch(:url).include?("/embeddings") }
+
+    catch(:worker_shutdown) { claimed.perform }
+
+    assert_predicate document.reload, :processing?
+    interrupted_run = document.pipeline_runs.last
+    assert_predicate interrupted_run, :processing?
+    assert_equal original_blob.id, document.document_pages.sole.image.blob_id
+    stale_chunk_ids = document.document_chunks.ids
+    assert_equal 2, stale_chunk_ids.size
+    worker.deregister
+    assert SolidQueue::ReadyExecution.exists?(job_id: job.id)
+    assert_not SolidQueue::FailedExecution.exists?(job_id: job.id)
+
+    FakeConnection.before_request = nil
+    next_worker = SolidQueue::Process.register(kind: "Worker", name: "image-after-restart", pid: 900_004, hostname: "test")
+    assert_no_enqueued_jobs(only: ActiveStorage::PurgeJob) do
+      SolidQueue::ReadyExecution.claim([ "default" ], 1, next_worker.id).sole.perform
+    end
+
+    assert_predicate job.reload, :finished?
+    assert_predicate document.reload, :processed?
+    assert_predicate interrupted_run.reload, :failed?
+    assert_predicate document.pipeline_runs.last, :completed?
+    assert_equal original_blob, document.file.blob
+    assert_equal ONE_BY_ONE_PNG, document.file.download
+    assert_equal original_blob.id, document.document_pages.sole.image.blob_id
+    assert_equal "A prescription for amoxicillin with handwritten dosage instructions.", document.summary.fetch("summary")
+    assert_equal 2, document.document_chunks.count
+    assert_equal 2, document.document_embeddings.count
+    assert_empty document.document_chunks.where(id: stale_chunk_ids)
+  end
+
   test "storage-only documents are not enqueued and ignore a directly invoked image job" do
     {
       "record.docx" => "application/vnd.openxmlformats-officedocument.wordprocessingml.document",

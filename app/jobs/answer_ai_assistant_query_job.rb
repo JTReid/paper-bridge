@@ -17,17 +17,21 @@ class AnswerAiAssistantQueryJob < ApplicationJob
   discard_on ActiveJob::DeserializationError
 
   def perform(ai_assistant_query)
-    return if ai_assistant_query.completed?
-    return mark_failed(ai_assistant_query) unless authorized_for_execution?(ai_assistant_query)
+    ai_assistant_query.with_lock do
+      return if ai_assistant_query.completed?
+      return if ai_assistant_query.answer_job_id.present? && ai_assistant_query.answer_job_id != job_id
+      return mark_failed(ai_assistant_query) unless authorized_for_execution?(ai_assistant_query)
 
-    ai_assistant_query.update!(
-      state: :processing,
-      started_at: ai_assistant_query.started_at || Time.current,
-      completed_at: nil,
-      failed_at: nil,
-      error_message: nil,
-      draft_answer: nil
-    )
+      ai_assistant_query.update!(
+        answer_job_id: job_id,
+        state: :processing,
+        started_at: ai_assistant_query.started_at || Time.current,
+        completed_at: nil,
+        failed_at: nil,
+        error_message: nil,
+        draft_answer: nil
+      )
+    end
 
     pipeline_run = PipelineRun.create!(
       subject: ai_assistant_query,
@@ -84,6 +88,7 @@ class AnswerAiAssistantQueryJob < ApplicationJob
       {
         query: ai_assistant_query.question,
         ai_assistant_query_id: ai_assistant_query.id,
+        processing_job_id: provider_job_id,
         account_id: ai_assistant_query.account_id,
         dependent_id: ai_assistant_query.dependent_id
       }

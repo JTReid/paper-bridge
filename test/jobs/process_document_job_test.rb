@@ -284,6 +284,53 @@ class ProcessDocumentJobTest < ActiveJob::TestCase
     assert_equal 12_345, document.pipeline_runs.last.context.fetch("processing_job_id")
   end
 
+  test "a released Solid Queue job rebuilds an interrupted document and completes its summary and search index" do
+    capture_io { load Rails.root.join("db/queue_schema.rb") }
+    SolidQueue::Record.descendants.each(&:reset_column_information)
+    document = create_document(initial_metadata_pending: false)
+    document.update!(category: :insurance, description: "Keep my description.")
+    original_blob = document.file.blob
+    clear_enqueued_jobs
+    job = SolidQueue::Job.enqueue(ProcessDocumentJob.new(document))
+    worker = SolidQueue::Process.register(kind: "Worker", name: "document-before-restart", pid: 900_001, hostname: "test")
+    claimed = SolidQueue::ReadyExecution.claim([ "default" ], 1, worker.id).sole
+    FakeConnection.before_request = -> { throw :worker_shutdown if FakeConnection.requests.last.fetch(:url).include?("/embeddings") }
+
+    catch(:worker_shutdown) { claimed.perform }
+
+    assert_predicate document.reload, :processing?
+    interrupted_run = document.pipeline_runs.last
+    assert_predicate interrupted_run, :processing?
+    assert document.generated_summary?
+    prior_run = document.pipeline_runs.create!(state: :completed, context: { processing_job_id: job.id })
+    other_attempt = document.pipeline_runs.create!(state: :processing, context: { processing_job_id: job.id + 1 })
+    preserved_runs = [ prior_run, other_attempt ].map(&:attributes)
+    stale_chunk_ids = document.document_chunks.ids
+    assert_not_empty stale_chunk_ids
+    worker.deregister
+    assert SolidQueue::ReadyExecution.exists?(job_id: job.id)
+    assert_not SolidQueue::FailedExecution.exists?(job_id: job.id)
+
+    FakeConnection.before_request = nil
+    next_worker = SolidQueue::Process.register(kind: "Worker", name: "document-after-restart", pid: 900_002, hostname: "test")
+    SolidQueue::ReadyExecution.claim([ "default" ], 1, next_worker.id).sole.perform
+
+    assert_predicate job.reload, :finished?
+    assert_predicate document.reload, :processed?
+    assert_predicate interrupted_run.reload, :failed?
+    assert_predicate document.pipeline_runs.last, :completed?
+    assert_equal preserved_runs, [ prior_run, other_attempt ].map { |run| run.reload.attributes }
+    assert_equal original_blob, document.file.blob
+    assert_equal "This is the uploaded test document.", document.file.download
+    assert_equal "insurance", document.category
+    assert_equal "Keep my description.", document.description
+    assert_equal "Summary based on text chunks.", document.summary.fetch("summary")
+    assert_equal 1, document.document_chunks.count
+    assert_equal 1, document.document_embeddings.count
+    assert_equal 1, document.timeline_events.count
+    assert_empty document.document_chunks.where(id: stale_chunk_ids)
+  end
+
   test "storage-only documents are not enqueued and ignore a directly invoked document job" do
     {
       "record.docx" => "application/vnd.openxmlformats-officedocument.wordprocessingml.document",

@@ -369,6 +369,9 @@ using Poppler and Tesseract. It fails when those tools are missing instead of
 silently skipping. The Ask pipeline integration checks use real database
 retrieval and answer persistence with fake provider HTTP responses. Document
 and image recovery tests execute the automatic retry that was enqueued.
+Recovery coverage also releases and reclaims real Solid Queue document jobs,
+checks that a lost AI worker produces a recoverable failed question, and
+confirms the user can ask again while healthy scheduled retries stay active.
 
 ## Development Workers
 

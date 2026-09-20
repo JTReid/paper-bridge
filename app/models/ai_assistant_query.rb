@@ -41,8 +41,10 @@ class AiAssistantQuery < ApplicationRecord
     with_lock do
       return false unless queued? && enqueued_at.nil?
 
-      enqueued_job = AnswerAiAssistantQueryJob.perform_later(self)
-      unless enqueued_job
+      job = AnswerAiAssistantQueryJob.new(self)
+      update!(answer_job_id: job.job_id)
+      enqueued_job = job.enqueue
+      unless enqueued_job && enqueued_job.successfully_enqueued?
         raise ActiveJob::EnqueueError, "Ask PaperBridge job could not be enqueued"
       end
 

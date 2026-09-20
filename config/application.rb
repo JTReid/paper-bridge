@@ -11,6 +11,9 @@ module PaperBridge
     # Initialize configuration defaults for originally generated Rails version.
     config.load_defaults 8.1
 
+    # Files are uploaded and opened through our account-scoped controllers.
+    config.active_storage.draw_routes = false
+
     # Heroku staging also runs in production mode, but can use its own credentials.
     if (credentials_env = ENV["CREDENTIALS_ENV"].presence)
       config.credentials.content_path = root.join("config/credentials/#{credentials_env}.yml.enc")
