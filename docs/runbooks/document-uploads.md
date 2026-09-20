@@ -78,6 +78,8 @@ account-scoped controllers. Default Active Storage direct-upload, blob, proxy,
 and representation routes are disabled. Only signed, expiring Disk download
 URLs remain for the automated test storage service. Development, staging, and
 production use S3 service URLs after the same account authorization.
+The access harness enables eager loading so these route restrictions are also
+checked during the boot sequence used by deployed web and worker processes.
 
 ## Storage-Only Files
 

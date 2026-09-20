@@ -13,6 +13,9 @@ module PaperBridge
 
     # Files are uploaded and opened through our account-scoped controllers.
     config.active_storage.draw_routes = false
+    # Devise can load routes during eager loading, before Active Storage applies
+    # the configuration above in its after_initialize hook.
+    config.before_initialize { ActiveStorage.draw_routes = false }
 
     # Heroku staging also runs in production mode, but can use its own credentials.
     if (credentials_env = ENV["CREDENTIALS_ENV"].presence)

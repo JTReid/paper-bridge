@@ -413,7 +413,7 @@ COMMANDS = {
     [ "bin/rails", "test", *DOCUMENT_UI_TESTS ]
   ],
   "access" => [
-    [ "bin/rails", "test", *ACCESS_TESTS ]
+    [ "env", "CI=1", "bin/rails", "test", *ACCESS_TESTS ]
   ],
   "saved-answers" => [
     [ "bin/rails", "test", *SAVED_ANSWER_TESTS ]
