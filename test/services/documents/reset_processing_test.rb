@@ -93,11 +93,15 @@ class Documents::ResetProcessingTest < ActiveSupport::TestCase
     assert_predicate @page.reload.image, :attached?
   end
 
-  test "a duplicate job cannot reset a running or completed document" do
-    %i[processing processed].each do |status|
-      @document.update!(status: status, processing_job_id: 10)
+  test "only the same identified job can reset a running document and no job can reset a completed document" do
+    [
+      [ :processing, 10, 11 ],
+      [ :processing, nil, nil ],
+      [ :processed, 10, 10 ]
+    ].each do |status, current_job_id, attempted_job_id|
+      @document.update!(status: status, processing_job_id: current_job_id)
       before = @document.attributes
-      assert_no_enqueued_jobs { assert_not Documents::ResetProcessing.call(@document, processing_job_id: 11) }
+      assert_no_enqueued_jobs { assert_not Documents::ResetProcessing.call(@document, processing_job_id: attempted_job_id) }
       assert_equal before, @document.reload.attributes
       assert DocumentChunk.exists?(@chunk.id)
     end

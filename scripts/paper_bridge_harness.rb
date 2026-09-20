@@ -143,6 +143,7 @@ CURRENT_PRODUCT_FILES = %w[
   test/controllers/document_list_updates_test.rb
   test/models/document_list_broadcast_test.rb
   test/controllers/care_team_memberships_controller_test.rb
+  test/integration/storage_access_test.rb
   test/controllers/share_events_controller_test.rb
   test/controllers/billing_controller_test.rb
   test/controllers/billing_checkout_sessions_controller_test.rb
@@ -228,6 +229,7 @@ DOCUMENT_UI_TESTS = %w[
 ACCESS_TESTS = %w[
   test/models/care_team_membership_test.rb
   test/controllers/care_team_memberships_controller_test.rb
+  test/integration/storage_access_test.rb
   test/services/documents/search_access_profile_test.rb
 ].freeze
 
@@ -363,6 +365,7 @@ RUBOCOP_PATHS = %w[
   test/controllers/documents_controller_test.rb
   test/controllers/document_retries_controller_test.rb
   test/controllers/care_team_memberships_controller_test.rb
+  test/integration/storage_access_test.rb
   test/controllers/share_events_controller_test.rb
   test/controllers/billing_controller_test.rb
   test/controllers/billing_checkout_sessions_controller_test.rb
@@ -447,7 +450,7 @@ def usage
       static      Check current product-shape files and runbooks exist
       foundation  Run public/auth/account/dashboard/dependent workflow tests
       document-ui Run document listing, filters, uploads, failed-document retries, and presentation tests
-      access      Run care team contact and account search-access tests
+      access      Run care team contact, storage access, and account search-access tests
       saved-answers Run saved research and meeting preparation tests
       sharing     Run current document sharing and mailer tests
       billing     Run Stripe billing foundation tests

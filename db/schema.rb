@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_09_15_000100) do
+ActiveRecord::Schema[8.1].define(version: 2026_09_20_000000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "vector"
@@ -74,6 +74,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_09_15_000100) do
   create_table "ai_assistant_queries", force: :cascade do |t|
     t.bigint "account_id", null: false
     t.jsonb "answer", default: {}, null: false
+    t.string "answer_job_id"
     t.datetime "completed_at"
     t.datetime "created_at", null: false
     t.bigint "dependent_id", null: false
@@ -89,6 +90,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_09_15_000100) do
     t.bigint "user_id", null: false
     t.index ["account_id", "dependent_id", "created_at"], name: "idx_on_account_id_dependent_id_created_at_4ecc67b017"
     t.index ["account_id"], name: "index_ai_assistant_queries_on_account_id"
+    t.index ["answer_job_id"], name: "index_ai_assistant_queries_on_answer_job_id"
     t.index ["dependent_id"], name: "index_ai_assistant_queries_on_dependent_id"
     t.index ["user_id", "created_at"], name: "index_ai_assistant_queries_on_user_id_and_created_at"
     t.index ["user_id"], name: "index_ai_assistant_queries_on_user_id"

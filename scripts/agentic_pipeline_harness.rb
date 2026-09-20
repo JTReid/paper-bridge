@@ -65,6 +65,7 @@ DOCUMENT_PIPELINE_FILES = %w[
   app/jobs/process_image_document_job.rb
   app/jobs/process_document_job.rb
   app/jobs/reconcile_document_processing_job.rb
+  app/jobs/reconcile_ai_assistant_queries_job.rb
   app/models/ai_assistant_query.rb
   app/models/document.rb
   app/models/document_chunk.rb
@@ -86,6 +87,7 @@ DOCUMENT_PIPELINE_FILES = %w[
   app/services/agents/search_answer_generator.rb
   app/services/agents/timeline_event_extractor.rb
   app/services/agents/vector_retriever.rb
+  app/services/ai_assistant/reconcile_failed_queries.rb
   app/services/documents/pdf_command_runner.rb
   app/services/documents/metadata_instructions.rb
   app/services/documents/prepare.rb
@@ -108,6 +110,7 @@ DOCUMENT_PIPELINE_FILES = %w[
   db/migrate/20260808000200_add_enqueued_at_to_ai_assistant_queries.rb
   db/migrate/20260905000100_add_initial_metadata_pending_to_documents.rb
   db/migrate/20260912030542_add_processing_job_id_to_documents.rb
+  db/migrate/20260920000000_add_answer_job_id_to_ai_assistant_queries.rb
   db/migrate/20260614033907_add_summary_to_documents.rb
   db/migrate/20260614040236_create_document_pages.rb
   db/migrate/20260614040243_add_preparation_to_documents.rb
@@ -129,6 +132,7 @@ DOCUMENT_PIPELINE_FILES = %w[
   test/models/document_test.rb
   test/models/timeline_event_test.rb
   test/models/ai_assistant_query_test.rb
+  test/services/ai_assistant/reconcile_failed_queries_test.rb
   test/services/documents/pdf_command_runner_test.rb
   test/services/documents/prepare_pdf_test.rb
   test/services/documents/prepare_pdf_integration_test.rb
@@ -320,6 +324,7 @@ COMMANDS = {
       "test/lib/setup/ai_configuration_test.rb",
       "test/lib/setup/ai_configuration_check_test.rb",
       "test/tasks/paper_bridge_tasks_test.rb",
+      "test/services/ai_assistant/reconcile_failed_queries_test.rb",
       "test/services/documents/pdf_command_runner_test.rb",
       "test/services/documents/prepare_text_test.rb",
       "test/services/documents/reconcile_failed_processing_test.rb",
@@ -370,6 +375,7 @@ COMMANDS = {
       "app/models/user.rb",
       "app/services/agentic",
       "app/services/agents",
+      "app/services/ai_assistant/reconcile_failed_queries.rb",
       "app/services/concerns",
       "app/services/documents",
       "test/controllers/ai_assistant_controller_test.rb",
@@ -379,6 +385,7 @@ COMMANDS = {
       "test/jobs",
       "test/services/agentic",
       "test/services/agents",
+      "test/services/ai_assistant/reconcile_failed_queries_test.rb",
       "test/services/documents",
       "test/models/document_test.rb",
       "test/models/ai_assistant_query_test.rb",
@@ -395,6 +402,7 @@ COMMANDS = {
       "test/tasks/paper_bridge_tasks_test.rb",
       "db/migrate/20260905000100_add_initial_metadata_pending_to_documents.rb",
       "db/migrate/20260912030542_add_processing_job_id_to_documents.rb",
+      "db/migrate/20260920000000_add_answer_job_id_to_ai_assistant_queries.rb",
       "scripts/agentic_pipeline_harness.rb"
     ]
   ],

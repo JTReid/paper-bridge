@@ -71,6 +71,14 @@ PaperBridge does not silently clip source text or summary evidence to avoid a
 provider limit. Supported formats, image decoding checks, single-image
 validation, JPEG conversion settings, and network timeouts remain in place.
 
+## File Access
+
+File uploads and original downloads go through PaperBridge's authenticated,
+account-scoped controllers. Default Active Storage direct-upload, blob, proxy,
+and representation routes are disabled. Only signed, expiring Disk download
+URLs remain for the automated test storage service. Development, staging, and
+production use S3 service URLs after the same account authorization.
+
 ## Storage-Only Files
 
 Non-processable documents have status `stored`, shown as **Stored—not processed**.

@@ -1,4 +1,10 @@
 Rails.application.routes.draw do
+  # Disk storage still needs its expiring service URL after an authorized download.
+  # S3 supplies its own service URLs in development, staging, and production.
+  scope ActiveStorage.routes_prefix do
+    get "/disk/:encoded_key/*filename" => "active_storage/disk#show", as: :rails_disk_service
+  end
+
   devise_for :users
   get "dashboard" => "dashboard#index"
   resource :calendar, only: :show, controller: :calendar

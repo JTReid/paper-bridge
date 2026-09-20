@@ -124,6 +124,12 @@ queued or processing does not start another user-requested retry.
 images, summary, chunks, embeddings, and extracted timeline events so the
 pipeline rebuilds the document from its original file.
 
+When Solid Queue redelivers an interrupted job, the same recorded queue job ID
+may restart a document still marked `processing`. A different job cannot reset
+an active document, and completed documents are left alone. The reset marks
+unfinished pipeline runs for the interrupted attempt failed before rebuilding;
+their history remains available.
+
 The reset preserves the `Document` and original Active Storage blob, user-edited
 metadata, `SavedAnswer` snapshots, meeting-prep entries, sharing records, and
 previous `PipelineRun` history. Initial category/description generation still
