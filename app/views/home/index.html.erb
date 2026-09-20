@@ -163,7 +163,7 @@
   ]
 %>
 
-<main class="min-h-screen bg-background text-foreground">
+<main class="min-h-screen bg-background text-foreground" data-controller="marketing-video" data-action="turbo:before-cache@document->marketing-video#beforeCache">
   <nav class="fixed left-0 right-0 top-0 z-50 border-b border-border/50 bg-white/80 backdrop-blur-xl" aria-label="Primary navigation">
     <div class="mx-auto flex h-16 max-w-7xl items-center justify-between px-6">
       <%= link_to root_path, class: "flex items-center", aria: { label: "PaperBridge home" } do %>
@@ -230,10 +230,10 @@
               <%= pb_icon("arrow-right", class_name: "ml-2 h-4 w-4") %>
             <% end %>
           <% end %>
-          <a href="#how-it-works" class="inline-flex h-12 items-center justify-center rounded-full border border-border bg-transparent px-8 text-sm font-medium shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground">
+          <%= link_to meet_paperbridge_video_url, class: "inline-flex h-12 items-center justify-center rounded-full border border-border bg-transparent px-8 text-sm font-medium shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground", aria: { haspopup: "dialog", controls: "marketing-video-dialog", expanded: "false" }, data: { marketing_video_target: "trigger", action: "marketing-video#open", turbo: false } do %>
             <%= pb_icon("play", class_name: "mr-2 h-4 w-4") %>
             Meet PaperBridge
-          </a>
+          <% end %>
         </div>
       </div>
 
@@ -559,4 +559,6 @@
       </div>
     </div>
   </footer>
+
+  <%= render "marketing_video" %>
 </main>
