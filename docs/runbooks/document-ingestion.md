@@ -51,8 +51,9 @@ documents.
   and a page image attachment.
 - `ProcessDocumentJob` creates a `PipelineRun` for the document subject.
 - `Agentic::DocumentIngestionPipeline` executes `Agents::DocumentChunker`,
-  `Agents::DocumentSummarizer`, `Agents::DocumentEmbedder`, and
-  `Agents::TimelineEventExtractor`.
+  `Agents::DocumentSummarizer`, and `Agents::DocumentEmbedder`. Timeline
+  extraction runs afterward as a separate job; see
+  [Timeline Extraction](#timeline-extraction).
 - The chunker processes prepared pages with previous/current/next page context,
   sends page text and screenshots through the provider abstraction, and creates
   labeled `DocumentChunk` records.
@@ -109,8 +110,39 @@ documents.
   PDF/text pipeline; nothing is marked failed.
 - The first image iteration does not add conventional OCR, a second extraction
   or verification pass, handwriting-specific model routing, region-level
-  citations, multi-image documents, or timeline-event extraction. Those remain
-  follow-up work informed by real image quality and extraction results.
+  citations, or multi-image documents. Those remain follow-up work informed by
+  real image quality and extraction results.
+- Processed image documents also receive timeline extraction, with the image
+  rules described in [Timeline Extraction](#timeline-extraction).
+
+## Timeline Extraction
+
+- When either processing job marks a document `processed`
+  (`Document#mark_processed!`), it queues `ExtractTimelineEventsJob`. Failed
+  processing never queues it, and a failure to queue it is logged without
+  failing the processed document.
+- The job runs at a lower Solid Queue priority than user-facing work such as
+  Ask PaperBridge answers.
+- The job creates its own `PipelineRun` and runs
+  `Agentic::TimelineExtractionPipeline`, whose only step is
+  `Agents::TimelineEventExtractor`. The extractor reads the document's chunks
+  and links every event to one of them.
+- Timeline extraction never changes the document. A timeline failure marks only
+  its own `PipelineRun` failed; the document stays `processed` and searchable.
+  Retries repeat only the timeline request, not document processing. A
+  malformed event, such as one that ends before it starts, is skipped without
+  discarding the others.
+- Image documents categorized `prescriptions` skip timeline extraction
+  entirely. Other image documents, including insurance paperwork, receive extra
+  instructions to extract only meaningful care events and to ignore routine
+  paperwork such as prescription labels, receipts, and appointment reminders.
+  PDF and text documents use the standard instructions in every category.
+- Deleting a document while its timeline job is queued or running discards the
+  job quietly and leaves no timeline `PipelineRun` behind.
+- Timeline work is not reconciled or re-run automatically. A worker crash or
+  restart can leave its `PipelineRun` `processing`, and a timeline that was
+  never queued or failed every retry stays missing until a re-run path is
+  added. No user-facing screen reads timeline events yet.
 
 ## Processing Retries
 
@@ -139,7 +171,7 @@ preserve the existing category and description.
 An existing generated summary, its key points, and generation time remain
 visible while a failed document waits for its retry. The worker clears them
 when it starts rebuilding the document. A new summary becomes visible as soon
-as it is saved, and a later embedding or timeline failure does not remove it.
+as it is saved, and a later embedding failure does not remove it.
 The failed document still shows **Needs attention** and the retry control.
 Document-sharing emails continue to include an available summary excerpt
 alongside the original attachment.
@@ -147,7 +179,8 @@ alongside the original attachment.
 Ask PaperBridge excludes documents that are queued, processing, or failed,
 even if a summary or embeddings are present. The original remains available
 to open/download, and existing saved answers remain readable as their original
-snapshots. Extracted timeline events are rebuilt with their source chunks;
+snapshots. Extracted timeline events are removed with their source chunks and
+rebuilt by the timeline job after the document finishes processing again;
 there is currently no family-facing extracted-timeline screen.
 
 ## Validation

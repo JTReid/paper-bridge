@@ -158,6 +158,7 @@ class ProcessImageDocumentJobTest < ActiveJob::TestCase
     assert_not document.summary.fetch("metadata").key?("applied_category")
     assert document.summarized_at.present?
     assert_empty document.timeline_events
+    assert_enqueued_with(job: ExtractTimelineEventsJob, args: [ document ])
     assert_equal "completed", pipeline_run.state
 
     assert_equal "gpt-5.4-mini", extraction_payload.fetch("model")
@@ -348,6 +349,7 @@ class ProcessImageDocumentJobTest < ActiveJob::TestCase
       .inner_html
 
     assert_equal "failed", document.status
+    assert_no_enqueued_jobs only: ExtractTimelineEventsJob
     assert_equal "prepared", document.preparation_status
     assert_includes document.preparation_error, "Embedding response count did not match chunk count"
     assert_equal "A prescription for amoxicillin with handwritten dosage instructions.", document.summary.fetch("summary")

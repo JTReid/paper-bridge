@@ -43,9 +43,13 @@ export function finishDocumentRetry(profileId) {
       end
     end
     ProcessDocumentJob.llm_connection = RetryQaConnection
+    ExtractTimelineEventsJob.llm_connection = RetryQaConnection
     ProcessDocumentJob.perform_now(document)
     document.reload
     raise "Synthetic retry did not complete" unless document.processed?
+    # Processing queues timeline extraction as its own job; run it as a worker would.
+    raise "Timeline extraction was not queued" unless ExtractTimelineEventsJob.queue_adapter.enqueued_jobs.any? { |job| job[:job] == ExtractTimelineEventsJob }
+    ExtractTimelineEventsJob.perform_now(document)
     broadcasts = ActionCable.server.pubsub.broadcasts(document.to_gid_param).map { |message| JSON.parse(message) }
     before_summary = checkpoints.fetch("document_summary")
     after_summary = checkpoints.fetch("embeddings")

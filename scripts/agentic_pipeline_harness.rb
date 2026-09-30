@@ -62,6 +62,7 @@ DOCUMENT_PIPELINE_FILES = %w[
   app/helpers/ai_assistant_helper.rb
   app/javascript/controllers/ai_assistant_query_controller.js
   app/jobs/answer_ai_assistant_query_job.rb
+  app/jobs/extract_timeline_events_job.rb
   app/jobs/process_image_document_job.rb
   app/jobs/process_document_job.rb
   app/jobs/reconcile_document_processing_job.rb
@@ -79,6 +80,7 @@ DOCUMENT_PIPELINE_FILES = %w[
   app/services/agentic/document_ingestion_pipeline.rb
   app/services/agentic/document_search_pipeline.rb
   app/services/agentic/image_document_ingestion_pipeline.rb
+  app/services/agentic/timeline_extraction_pipeline.rb
   app/services/agents/document_chunker.rb
   app/services/agents/document_embedder.rb
   app/services/agents/document_summarizer.rb
@@ -125,6 +127,7 @@ DOCUMENT_PIPELINE_FILES = %w[
   test/helpers/ai_assistant_helper_test.rb
   test/jobs/answer_ai_assistant_query_job_test.rb
   test/jobs/answer_ai_assistant_query_pipeline_test.rb
+  test/jobs/extract_timeline_events_job_test.rb
   test/jobs/process_document_job_test.rb
   test/jobs/process_image_document_job_test.rb
   test/models/document_chunk_test.rb
@@ -319,6 +322,7 @@ COMMANDS = {
       "test/helpers/ai_assistant_helper_test.rb",
       "test/jobs/answer_ai_assistant_query_job_test.rb",
       "test/jobs/answer_ai_assistant_query_pipeline_test.rb",
+      "test/jobs/extract_timeline_events_job_test.rb",
       "test/jobs/process_document_job_test.rb",
       "test/jobs/process_image_document_job_test.rb",
       "test/lib/setup/ai_configuration_test.rb",
