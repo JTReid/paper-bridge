@@ -10,7 +10,7 @@ check enforces that every tracked, non-ignored Markdown file is linked here.
 
 | Doc | Purpose |
 | --- | --- |
-| [Agent Instructions](../AGENTS.md) | Short repo entry point for AI-assisted work. |
+| [Agent Instructions](../AGENTS.md) | Short repo entry point for AI-assisted work. The root `CLAUDE.md` imports it so Claude Code loads it in every session, on any version. |
 | [Agent Harness](agent-harness.md) | Operating loop for agent-assisted development in this repo. |
 | [Architecture Map](architecture-map.md) | High-level map of the Rails app, domain areas, and code ownership landmarks. |
 | [Validation](validation.md) | Local and CI validation commands, including Chromium, captured email, and real PDF preparation checks. |
