@@ -91,8 +91,9 @@ test('a failed document keeps its generated summary until retry rebuilds it and 
     expect(finished.state[key][0]).not.toBe(before[key][0]);
   }
   expect(finished.state.runs).toContainEqual([scenario.historyId, 'failed']);
-  expect(finished.state.runs).toHaveLength(2);
+  expect(finished.state.runs).toHaveLength(3); // History, document processing, then timeline extraction.
   expect(finished.state.runs[1][1]).toBe('completed');
+  expect(finished.state.runs[2][1]).toBe('completed');
 
   await page.goto(`/profiles/${scenario.profileId}/saved-answers/${scenario.savedAnswerId}`);
   await expect(page.getByText('Keep this saved answer during processing.')).toBeVisible();

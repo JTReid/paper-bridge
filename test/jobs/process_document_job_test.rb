@@ -22,7 +22,6 @@ class ProcessDocumentJobTest < ActiveJob::TestCase
         payload = JSON.parse(kwargs.fetch(:payload))
 
         return embedding_response(payload) if kwargs.fetch(:url).include?("/embeddings")
-        return timeline_response(payload) if schema_name(payload) == "timeline_events"
         return summary_response(payload) if schema_name(payload) == "document_summary"
         return chunk_response(payload) if schema_name(payload) == "document_chunks"
 
@@ -78,40 +77,6 @@ class ProcessDocumentJobTest < ActiveJob::TestCase
             prompt_tokens: 35,
             completion_tokens: 25,
             total_tokens: 60
-          }
-        }.to_json
-      end
-
-      def self.timeline_response(payload)
-        chunk_id = text_content(payload)[/document_chunk_id:\s*(\d+)/, 1].to_i
-
-        {
-          choices: [
-            {
-              message: {
-                content: {
-                  events: [
-                    {
-                      document_chunk_id: chunk_id,
-                      event_type: "evaluation",
-                      title: "Uploaded document reviewed",
-                      description: "The uploaded document was processed as evidence.",
-                      occurred_on: "2023-07-21",
-                      started_on: "",
-                      ended_on: "",
-                      date_precision: "exact",
-                      date_source: "explicit",
-                      source_quote: "Chunk created from text content."
-                    }
-                  ]
-                }.to_json
-              }
-            }
-          ],
-          usage: {
-            prompt_tokens: 40,
-            completion_tokens: 30,
-            total_tokens: 70
           }
         }.to_json
       end
@@ -207,11 +172,9 @@ class ProcessDocumentJobTest < ActiveJob::TestCase
     pipeline_run = document.pipeline_runs.last
     chunk_request = chat_request_for("document_chunks")
     summary_request = chat_request_for("document_summary")
-    timeline_request = chat_request_for("timeline_events")
     embedding_request = FakeConnection.requests.find { |request| request.fetch(:url).include?("/embeddings") }
     chunk_payload = JSON.parse(chunk_request.fetch(:payload))
     summary_payload = JSON.parse(summary_request.fetch(:payload))
-    timeline_payload = JSON.parse(timeline_request.fetch(:payload))
     embedding_payload = JSON.parse(embedding_request.fetch(:payload))
 
     assert_equal "processed", document.status
@@ -225,7 +188,8 @@ class ProcessDocumentJobTest < ActiveJob::TestCase
     assert_equal 1, document.document_pages.count
     assert_equal 1, document.document_chunks.count
     assert_equal 1, document.document_embeddings.count
-    assert_equal 1, document.timeline_events.count
+    assert_empty document.timeline_events
+    assert_enqueued_with(job: ExtractTimelineEventsJob, args: [ document ], priority: 10)
     assert_equal "Summary based on text chunks.", document.summary.fetch("summary")
     assert_equal [ "Uses document chunks as summary evidence.", "Includes the processed chunk content." ], document.summary.fetch("key_points")
     assert_equal "document_summarizer", document.summary.dig("metadata", "source")
@@ -234,26 +198,21 @@ class ProcessDocumentJobTest < ActiveJob::TestCase
     assert_equal "legal", document.document_chunks.first.label
     assert_equal "text-embedding-3-large", document.document_embeddings.first.model
     assert_equal 3_072, document.document_embeddings.first.dimensions
-    assert_equal "evaluation", document.timeline_events.first.event_type
-    assert_equal document.document_chunks.first, document.timeline_events.first.document_chunk
     assert_equal "completed", pipeline_run.state
     assert_equal "gpt-5.4-nano", chunk_payload.fetch("model")
     assert_equal "gpt-5.4-mini", summary_payload.fetch("model")
     assert_includes summary_payload.dig("response_format", "json_schema", "schema", "required"), "category"
     assert_includes summary_payload.dig("response_format", "json_schema", "schema", "required"), "description"
-    assert_equal "gpt-5.4-mini", timeline_payload.fetch("model")
     assert_equal "text-embedding-3-large", embedding_payload.fetch("model")
     assert_includes chunk_payload.dig("messages", 1, "content").first.fetch("text"), "This is the uploaded test document."
     assert_includes summary_payload.dig("messages", 1, "content"), "document_chunk_id: #{document.document_chunks.first.id}"
     assert_includes summary_payload.dig("messages", 1, "content"), document.document_chunks.first.content
-    assert_includes timeline_payload.dig("messages", 1, "content"), "document_chunk_id: #{document.document_chunks.first.id}"
     assert_equal [ document.document_chunks.first.content ], embedding_payload.fetch("input")
     assert pipeline_run.pipeline_log.entries.any? { |entry| entry["event_type"] == "llm_call" }
     assert pipeline_run.pipeline_activity.entries.any? { |entry| entry["action"] == "document_chunked" }
     assert pipeline_run.pipeline_activity.entries.any? { |entry| entry["action"] == "document_summarized" }
     assert pipeline_run.pipeline_activity.entries.any? { |entry| entry["action"] == "document_chunks_embedded" }
-    assert pipeline_run.pipeline_activity.entries.any? { |entry| entry["action"] == "timeline_events_extracted" }
-    assert_equal 4, FakeConnection.requests.count
+    assert_equal 3, FakeConnection.requests.count
   end
 
   test "initial metadata completion broadcasts enabled editing fields after the whole summary transaction" do
@@ -269,6 +228,19 @@ class ProcessDocumentJobTest < ActiveJob::TestCase
     assert_nil template.at_css("fieldset[disabled]")
     assert_equal "educational", template.at_css("option[selected]")["value"]
     assert_includes template.text, "A short description of the uploaded document."
+  end
+
+  test "a failed timeline enqueue does not fail the processed document" do
+    document = create_document
+    clear_enqueued_jobs
+
+    with_stubbed_singleton_method(ExtractTimelineEventsJob, :perform_later, ->(*) { raise SolidQueue::Job::EnqueueError, "Queue unavailable" }) do
+      assert_nothing_raised { ProcessDocumentJob.perform_now(document) }
+    end
+
+    assert_predicate document.reload, :processed?
+    assert_nil document.preparation_error
+    assert_no_enqueued_jobs only: ProcessDocumentJob
   end
 
   test "records the actual Solid Queue job id on the document and its pipeline run" do
@@ -327,7 +299,7 @@ class ProcessDocumentJobTest < ActiveJob::TestCase
     assert_equal "Summary based on text chunks.", document.summary.fetch("summary")
     assert_equal 1, document.document_chunks.count
     assert_equal 1, document.document_embeddings.count
-    assert_equal 1, document.timeline_events.count
+    assert_enqueued_with(job: ExtractTimelineEventsJob, args: [ document ])
     assert_empty document.document_chunks.where(id: stale_chunk_ids)
   end
 
@@ -466,6 +438,7 @@ class ProcessDocumentJobTest < ActiveJob::TestCase
         .inner_html
 
       assert_equal "failed", document.status
+      assert_no_enqueued_jobs only: ExtractTimelineEventsJob
       assert_equal "prepared", document.preparation_status
       assert_includes document.preparation_error, "Embedding response count did not match chunk count"
       assert_equal completed_summary, document.attributes.slice("summary", "summarized_at")

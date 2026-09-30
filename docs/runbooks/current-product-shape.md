@@ -190,8 +190,8 @@ operational harness contracts because the app does not implement them yet:
 - Mobile app behavior.
 - Native DOC/DOCX, RTF, and XLS/XLSX processing.
 - Image OCR and verification passes, handwriting-specific model routing,
-  region-level citations, prescription-specific structured fields, multi-image
-  documents, and timeline events extracted from image documents.
+  region-level citations, prescription-specific structured fields, and
+  multi-image documents.
 
 ## Validation
 

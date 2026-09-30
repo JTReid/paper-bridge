@@ -61,6 +61,15 @@ class Document < ApplicationRecord
     Documents::UploadNormalizer.processable_content_type?(content_type)
   end
 
+  def image?
+    content_type.to_s.start_with?("image/")
+  end
+
+  def mark_processed!
+    update!(status: :processed)
+    enqueue_timeline_extraction
+  end
+
   def generated_summary?
     summary.to_h.with_indifferent_access[:summary].present?
   end
@@ -217,8 +226,18 @@ class Document < ApplicationRecord
       processing_job_class.perform_later(self)
     end
 
+    # Timeline extraction is follow-up work, so failing to queue it must not
+    # fail a document that has already finished processing.
+    def enqueue_timeline_extraction
+      return if ExtractTimelineEventsJob.perform_later(self)
+
+      Rails.logger.warn("timeline_extraction_enqueue_failed document_id=#{id}")
+    rescue ActiveJob::EnqueueError, SolidQueue::Job::EnqueueError => error
+      Rails.logger.warn("timeline_extraction_enqueue_failed document_id=#{id} error_class=#{error.class.name}")
+    end
+
     def processing_job_class
-      return ProcessImageDocumentJob if file.blob.content_type.to_s.start_with?("image/")
+      return ProcessImageDocumentJob if image?
 
       ProcessDocumentJob
     end

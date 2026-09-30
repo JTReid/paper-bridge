@@ -8,6 +8,21 @@ module Agents
     include PipelineNotifiable
     include Agentic::Instrumented
 
+    # Photos of prescriptions rarely describe care history, so they skip
+    # timeline extraction entirely.
+    SKIPPED_IMAGE_CATEGORIES = %w[prescriptions].freeze
+
+    IMAGE_GUIDANCE = <<~TEXT
+      This evidence was read from a single uploaded image, such as a photo or scan.
+      Only extract events that mark a meaningful point in the child's care or development, such as an evaluation, diagnosis, milestone, or the start or end of a service.
+      Do not create events from routine paperwork such as prescription labels, refill details, pharmacy receipts, insurance cards, bills, or appointment reminders.
+      Return an empty events list when the image does not describe meaningful care history.
+    TEXT
+
+    def self.skip?(document)
+      document.image? && SKIPPED_IMAGE_CATEGORIES.include?(document.category)
+    end
+
     def execute
       call
       set_response
@@ -89,7 +104,7 @@ module Agents
           Use event_type values from this list: #{TimelineEvent::EVENT_TYPES.join(", ")}.
           Use date_precision values from this list: #{TimelineEvent::DATE_PRECISIONS.join(", ")}.
           Use date_source values from this list: #{TimelineEvent::DATE_SOURCES.join(", ")}.
-
+          #{IMAGE_GUIDANCE if document.image?}
           Evidence chunks:
           #{evidence_text}
         PROMPT
@@ -128,7 +143,10 @@ module Agents
         return if seen_hashes.include?([ chunk.id, attributes[:content_hash] ])
 
         seen_hashes << [ chunk.id, attributes[:content_hash] ]
-        TimelineEvent.create!(attributes)
+        # Skip a malformed event, such as one that ends before it starts,
+        # instead of losing the valid events around it.
+        event = TimelineEvent.new(attributes)
+        event if event.save
       end
 
       def event_attributes(chunk, event_data)

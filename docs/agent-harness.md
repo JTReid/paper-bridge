@@ -108,8 +108,9 @@ ruby scripts/agentic_pipeline_harness.rb documents
 ```
 
 Use that command when changing document upload normalization or callbacks,
-`ProcessDocumentJob`, `ProcessImageDocumentJob`,
+`ProcessDocumentJob`, `ProcessImageDocumentJob`, `ExtractTimelineEventsJob`,
 `Agentic::DocumentIngestionPipeline`, `Agentic::ImageDocumentIngestionPipeline`,
+`Agentic::TimelineExtractionPipeline`,
 `Agents::DocumentChunker`, `Agents::ImageDocumentExtractor`,
 `Agents::DocumentEmbedder`, `Agents::TimelineEventExtractor`, prompt/schema
 seeds, chunk persistence, embedding persistence, or chunk-sourced timeline event

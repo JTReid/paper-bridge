@@ -250,7 +250,8 @@ document upload-to-ingestion lifecycle, timeline extraction, and the vector
 search lifecycle, including callback routing, PDF/text and image job execution,
 PDF preparation, page OCR/image artifacts, page-aware PDF chunk creation,
 GPT-backed image text extraction and classification, pgvector embedding
-persistence, PDF/text timeline-event persistence, account-scoped and
+persistence, separate post-processing timeline-event extraction for PDF/text
+and image documents, account-scoped and
 label-scoped retrieval, durable assistant queries, background answer execution,
 OpenAI SSE parsing, safe progressive answer extraction, batched draft delivery,
 safe failure handling, final Turbo result broadcasts, structured answer
@@ -293,8 +294,9 @@ profile-workspace continuity, duplicate-submit locking, same-query start
 retries, missed-Cable reconciliation from durable state, and targeted axe
 coverage without starting a worker or calling a live model.
 Image ingestion intentionally stops after extraction, classification, chunk
-creation, and embedding; it does not create timeline events or structured
-prescription fields. The `pdf-tools` command checks local Poppler/Tesseract
+creation, and embedding; it does not create structured prescription fields.
+Timeline extraction runs afterward as a separate job and skips images
+categorized as prescriptions. The `pdf-tools` command checks local Poppler/Tesseract
 availability for live PDF preparation. The `image-tools` command checks that
 libvips can load JPEG, PNG, WebP, HEIC/HEIF, and TIFF and save normalized JPEG
 output. Both tooling checks are optional and are not part of default CI. The
