@@ -33,7 +33,7 @@ module Documents
       attr_reader :document
 
       def job_class
-        document.content_type.start_with?("image/") ? ProcessImageDocumentJob : ProcessDocumentJob
+        document.image? ? ProcessImageDocumentJob : ProcessDocumentJob
       end
 
       def pending_job?

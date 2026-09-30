@@ -101,16 +101,20 @@ ported from Scoutspace.
 - `ProcessDocumentJob` prepares uploads, creates a `PipelineRun`, runs
   `Agentic::DocumentIngestionPipeline`, creates page-aware labeled chunks,
   generates a source-grounded document summary, and persists OpenAI
-  `text-embedding-3-large` embeddings in Postgres through pgvector. The same
-  ingestion pipeline extracts chunk-sourced timeline events with
-  `gpt-5.4-mini`.
+  `text-embedding-3-large` embeddings in Postgres through pgvector.
+- `ExtractTimelineEventsJob` runs after either processing job marks a document
+  processed. It runs `Agentic::TimelineExtractionPipeline` in its own
+  `PipelineRun` to extract chunk-sourced timeline events with `gpt-5.4-mini`.
+  A timeline failure never fails the document. Images categorized as
+  prescriptions skip extraction, and other images get stricter instructions
+  against routine-paperwork events.
 - `ProcessImageDocumentJob` handles one JPEG, PNG, WebP, HEIC/HEIF, or TIFF
   upload as one document. It runs the separate
   `Agentic::ImageDocumentIngestionPipeline`: `Agents::ImageDocumentExtractor`
   makes one structured multimodal GPT request for extracted text, category,
   summary, key points, and search chunks, then `Agents::DocumentEmbedder`
   persists pgvector embeddings for those chunks. This first image path does not
-  run the PDF preparation, document summarizer, or timeline-event extractor.
+  run the PDF preparation or document summarizer.
 - `AiAssistantQuery` durably owns one account-, dependent-, and user-scoped
   question, its lifecycle state, and its final answer.
 - `SavedAnswer` snapshots a completed query's question, answer, citations, and

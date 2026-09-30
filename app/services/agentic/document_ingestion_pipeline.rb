@@ -7,8 +7,7 @@ module Agentic
         [
           [ Agents::DocumentChunker, { connection: connection }, { tag: :document_chunker } ],
           [ Agents::DocumentSummarizer, { connection: connection }, { tag: :document_summarizer } ],
-          [ Agents::DocumentEmbedder, { connection: connection }, { tag: :document_embedder } ],
-          [ Agents::TimelineEventExtractor, { connection: connection }, { tag: :timeline_event_extractor } ]
+          [ Agents::DocumentEmbedder, { connection: connection }, { tag: :document_embedder } ]
         ],
         progress_tracker: progress_tracker,
         context: context
@@ -19,8 +18,7 @@ module Agentic
       {
         chunks: results.find { |result| result.tag == :document_chunker }&.result || {},
         summary: results.find { |result| result.tag == :document_summarizer }&.result || {},
-        embeddings: results.find { |result| result.tag == :document_embedder }&.result || {},
-        timeline_events: results.find { |result| result.tag == :timeline_event_extractor }&.result || {}
+        embeddings: results.find { |result| result.tag == :document_embedder }&.result || {}
       }
     end
   end
