@@ -14,12 +14,27 @@ class Account < ApplicationRecord
   has_many :timeline_events, through: :document_chunks
   has_one :billing_subscription, dependent: :destroy
 
+  SIGNUP_LIMIT_REACHED_MESSAGE = "Maximum accounts reached. Contact an admin for instructions.".freeze
+
   validates :name, presence: true
 
   # NEW_ACCOUNTS_NON_BILLABLE=true makes accounts created at signup non-billable.
   # Only an explicit true value enables it, and it never changes existing accounts.
   def self.new_accounts_non_billable?
     ENV["NEW_ACCOUNTS_NON_BILLABLE"].to_s.casecmp?("true")
+  end
+
+  # MAX_ACCOUNTS caps the total number of accounts signup may create. Unset or
+  # not a whole number means no cap; accounts created in the console are not
+  # blocked.
+  def self.signup_limit
+    limit = Integer(ENV["MAX_ACCOUNTS"].to_s, exception: false)
+    limit if limit && limit >= 0
+  end
+
+  def self.signup_limit_reached?
+    limit = signup_limit
+    limit.present? && count >= limit
   end
 
   def product_access?

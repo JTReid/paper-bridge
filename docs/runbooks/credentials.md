@@ -85,6 +85,7 @@ before deploying:
 | Stripe mode | Test | Live |
 | S3 bucket (`aws.bucket`) | `paper-bridge-development` | `paper-bridge-production` |
 | `NEW_ACCOUNTS_NON_BILLABLE` | `true` | `true` |
+| `MAX_ACCOUNTS` | `30` | `30` |
 
 Use a different decryption key for each environment. `RAILS_MASTER_KEY`
 decrypts the file chosen by `CREDENTIALS_ENV`; the key does not select the file.

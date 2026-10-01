@@ -20,6 +20,25 @@ class AccountTest < ActiveSupport::TestCase
     original.nil? ? ENV.delete("NEW_ACCOUNTS_NON_BILLABLE") : ENV["NEW_ACCOUNTS_NON_BILLABLE"] = original
   end
 
+  test "MAX_ACCOUNTS sets the signup limit only when it is a whole number" do
+    original = ENV["MAX_ACCOUNTS"]
+
+    { nil => nil, "" => nil, "abc" => nil, "-1" => nil, "2.5" => nil, "0" => 0, "30" => 30 }.each do |value, expected|
+      value.nil? ? ENV.delete("MAX_ACCOUNTS") : ENV["MAX_ACCOUNTS"] = value
+      message = "MAX_ACCOUNTS=#{value.inspect}"
+      expected.nil? ? assert_nil(Account.signup_limit, message) : assert_equal(expected, Account.signup_limit, message)
+    end
+
+    ENV["MAX_ACCOUNTS"] = Account.count.to_s
+    assert Account.signup_limit_reached?
+    ENV["MAX_ACCOUNTS"] = (Account.count + 1).to_s
+    assert_not Account.signup_limit_reached?
+    ENV.delete("MAX_ACCOUNTS")
+    assert_not Account.signup_limit_reached?
+  ensure
+    original.nil? ? ENV.delete("MAX_ACCOUNTS") : ENV["MAX_ACCOUNTS"] = original
+  end
+
   test "non billable access can be granted and revoked without a subscription" do
     account = Account.create!(name: "Complimentary Family", non_billable: true)
 

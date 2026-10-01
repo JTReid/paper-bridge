@@ -15,6 +15,12 @@ operational harness checks until matching implementation exists.
   or navigation. See [Meet PaperBridge Video](marketing-video.md).
 - Devise email/password registration and sign-in.
 - Registration-created family accounts with an admin `AccountMembership`.
+- `MAX_ACCOUNTS` caps the total number of accounts signup can create. At the
+  cap, the signup page shows "Maximum accounts reached. Contact an admin for
+  instructions." in place of the form, and submissions create nothing. Unset or
+  not a whole number means no cap; `0` closes signup. Accounts created in the
+  console are not blocked. The check is not locked, so simultaneous signups at
+  the last opening can exceed the cap slightly.
 - A six-step first-run setup tour for new account admins. It starts on the first
   empty Dashboard reached with product access, then guides Profile
   creation, Documents, upload, and the first Ask PaperBridge question without
