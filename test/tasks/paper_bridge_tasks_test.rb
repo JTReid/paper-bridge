@@ -71,12 +71,17 @@ class PaperBridgeTasksTest < ActiveSupport::TestCase
 
   test "setup task propagates invalid configuration rather than reporting a successful release" do
     Setup::AiConfiguration.call
-    AgentType.find_by!(name: "search_answer_generator").prompts.active.first.update_column(:system_directive, " ")
+    AgentType.find_by!(name: "search_answer_generator").prompts.active.first.update_column(:system_directive, "Edited in the database.")
+    agents = Setup::AiDefinitions.agents.merge(
+      "query_embedder" => Setup::AiDefinitions.agents.fetch("query_embedder").merge(model: "gpt-6-luna")
+    )
     before = configuration_snapshot
 
     output, = capture_io do
-      error = assert_raises(Agentic::Errors::ConfigurationError) { Rake::Task["paper_bridge:setup_ai"].invoke }
-      assert_includes error.message, "search_answer_generator has a blank active prompt"
+      with_stubbed_singleton_method(Setup::AiDefinitions, :agents, agents) do
+        error = assert_raises(Agentic::Errors::ConfigurationError) { Rake::Task["paper_bridge:setup_ai"].invoke }
+        assert_includes error.message, "query_embedder must use OpenAI text-embedding-3-large"
+      end
     end
 
     assert_empty output
