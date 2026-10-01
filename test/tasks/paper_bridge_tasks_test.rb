@@ -32,7 +32,7 @@ class PaperBridgeTasksTest < ActiveSupport::TestCase
       end
     end
 
-    assert_equal 3, Llm.count
+    assert_equal 2, Llm.count
     assert_equal 9, AgentType.count
     assert_equal 9, Prompt.active.count
     assert_equal 14, JsonSchema.count

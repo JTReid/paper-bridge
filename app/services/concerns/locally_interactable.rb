@@ -3,6 +3,10 @@
 module LocallyInteractable
   extend ActiveSupport::Concern
 
+  # Reasoning models spend hidden tokens from the same output limit as the
+  # answer, so each step limit adds this allowance on top of its answer size.
+  REASONING_HEADROOM = 8_000
+
   included do
     attr_reader :provider, :data, :raw_response, :content, :llm, :prompt, :response, :connection
 

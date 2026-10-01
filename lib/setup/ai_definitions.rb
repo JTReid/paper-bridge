@@ -4,8 +4,7 @@ module Setup
   module AiDefinitions
     def self.models
       {
-        "gpt-5.4-nano" => "Agentic::Providers::Openai",
-        "gpt-5.4-mini" => "Agentic::Providers::Openai",
+        "gpt-6-luna" => "Agentic::Providers::Openai",
         "text-embedding-3-large" => "Agentic::Providers::Openai"
       }
     end
@@ -13,19 +12,19 @@ module Setup
     def self.agents
       {
         "structured_text_summarizer" => {
-          model: "gpt-5.4-nano", operation: :chat,
+          model: "gpt-6-luna", operation: :chat,
           prompt: "Summarize the user's text as structured JSON. Return only fields allowed by the configured schema."
         },
         "structured_text_validator" => {
-          model: "gpt-5.4-nano", operation: :chat,
+          model: "gpt-6-luna", operation: :chat,
           prompt: "Validate the structured JSON. Approve only if it is parseable, source-grounded, and contains no unsupported fields."
         },
         "document_chunker" => {
-          model: "gpt-5.4-nano", operation: :chat,
+          model: "gpt-6-luna", operation: :chat,
           prompt: "Create coherent, page-aware search chunks from prepared PaperBridge document pages. Use adjacent-page context for continuity, keep headings with their bodies, label each chunk with the configured taxonomy, and return only fields allowed by the configured schema."
         },
         "document_summarizer" => {
-          model: "gpt-5.4-mini", operation: :chat,
+          model: "gpt-6-luna", operation: :chat,
           prompt: "Create concise, source-grounded summaries for parents and caregivers. Use plain language, explain necessary terms briefly, include only supported facts, and never mention internal processing mechanics. Return only fields allowed by the configured schema."
         },
         "document_embedder" => {
@@ -33,7 +32,7 @@ module Setup
           prompt: "Embed PaperBridge document chunks for vector search indexing."
         },
         "image_document_extractor" => {
-          model: "gpt-5.4-mini", operation: :chat,
+          model: "gpt-6-luna", operation: :chat,
           prompt: "Read uploaded image documents using vision, including printed and handwritten text. Preserve uncertainty instead of guessing, classify the document, summarize only visible evidence, and create useful search chunks. Return only fields allowed by the configured schema."
         },
         "query_embedder" => {
@@ -41,11 +40,11 @@ module Setup
           prompt: "Embed user search queries for account-scoped PaperBridge vector retrieval."
         },
         "search_answer_generator" => {
-          model: "gpt-5.4-mini", operation: :chat,
+          model: "gpt-6-luna", operation: :chat,
           prompt: "Answer questions for parents and caregivers using only their available records. Use plain language, cite the supporting sources for material claims, state what may be missing, and never mention internal processing mechanics."
         },
         "timeline_event_extractor" => {
-          model: "gpt-5.4-mini", operation: :chat,
+          model: "gpt-6-luna", operation: :chat,
           prompt: "Extract source-grounded care timeline events from PaperBridge document chunks. Preserve dates, derive dates from age plus date of birth only when supported by evidence, and cite the source chunk for every event."
         }
       }

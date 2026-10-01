@@ -107,7 +107,7 @@ module Agents
           model: llm.name,
           system: prompt.system_directive,
           prompt: page_prompt(page),
-          max_tokens: 4_000,
+          max_tokens: 4_000 + REASONING_HEADROOM,
           timeout: 120,
           response_format: "structured_json",
           schema_name: "document_chunks"

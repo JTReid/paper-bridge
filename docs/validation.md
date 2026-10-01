@@ -313,7 +313,7 @@ before embedding its search chunks.
 Live LLM checks are explicit opt-in checks:
 
 ```bash
-AGENTIC_LIVE_PROVIDER=openai AGENTIC_LIVE_MODEL=gpt-5.4-nano ruby scripts/agentic_pipeline_harness.rb live
+AGENTIC_LIVE_PROVIDER=openai AGENTIC_LIVE_MODEL=gpt-6-luna ruby scripts/agentic_pipeline_harness.rb live
 ```
 
 Do not add live checks to default CI without an explicit team decision.

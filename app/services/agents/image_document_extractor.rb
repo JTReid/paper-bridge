@@ -19,7 +19,7 @@ module Agents
         model: llm.name,
         system: prompt.system_directive,
         prompt: extraction_prompt,
-        max_tokens: 6_000,
+        max_tokens: 6_000 + REASONING_HEADROOM,
         timeout: 180,
         response_format: "structured_json",
         schema_name: "image_document_extraction"
