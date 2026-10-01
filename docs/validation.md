@@ -74,8 +74,8 @@ fixtures and synthetic QA seed data, builds Tailwind, starts a local Rails test
 server, and runs Playwright browser checks against `http://127.0.0.1:3100` by
 default.
 
-The GitHub Actions browser job runs `browser` and then `mailpit` with a local
-capture service. Both runs keep separate reports under `tmp/qa-artifacts`.
+The GitHub Actions browser job, which runs only when started manually, runs
+`browser` and then `mailpit` with a local capture service. Both runs keep separate reports under `tmp/qa-artifacts`.
 See [Browser QA](runbooks/browser-qa.md) for test-data isolation and repetition
 checks.
 
@@ -360,8 +360,9 @@ dependencies, and installs Chromium. The machine must already have PostgreSQL
 with pgvector, libvips, Poppler, Tesseract with English data, and Chromium's OS
 dependencies. Local SMTP checks remain an explicit `mailpit` run.
 
-GitHub Actions provisions these dependencies, runs the same browser harness,
-and runs captured-email checks against an isolated Mailpit service.
+When started manually, the GitHub Actions browser job provisions these
+dependencies, runs the same browser harness, and runs captured-email checks
+against an isolated Mailpit service.
 Browser reports, screenshots, traces, videos, and server logs are retained as
 the `browser-results` artifact. The Rails test job also builds Tailwind before
 running tests. Neither job requires live AI, Stripe, or outbound email.

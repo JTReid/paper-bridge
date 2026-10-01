@@ -97,8 +97,10 @@ QA_ARTIFACT_MODE=always QA_ARTIFACT_DIR=tmp/qa-artifacts/bugs/share-modal QA_BAS
 ## Continuous Integration
 
 The `system-test` job in `.github/workflows/ci.yml` runs the full Chromium suite
-through the QA harness on pull requests and pushes to `main`, followed by the
-Mailpit email checks.
+through the QA harness, followed by the Mailpit email checks. It runs only when
+started manually from the Actions tab (CI, then Run workflow). Run serially it
+took about 12 minutes, so pull requests and pushes to `main` skip it until the
+suite is split across parallel jobs; run the QA harness locally for UI changes.
 It installs locked npm dependencies and Chromium using the
 [Playwright CI setup](https://playwright.dev/docs/ci-intro), supplies PostgreSQL
 with pgvector plus the native PDF/image tools, and captures email locally.
