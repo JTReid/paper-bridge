@@ -55,7 +55,7 @@ class User < ApplicationRecord
     def create_registration_account_membership
       return if account_memberships.exists?
 
-      account = Account.create!(name: account_name)
+      account = Account.create!(name: account_name, non_billable: Account.new_accounts_non_billable?)
       account_memberships.create!(account: account, role: :admin)
     end
 end

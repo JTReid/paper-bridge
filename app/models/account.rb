@@ -16,6 +16,12 @@ class Account < ApplicationRecord
 
   validates :name, presence: true
 
+  # NEW_ACCOUNTS_NON_BILLABLE=true makes accounts created at signup non-billable.
+  # Only an explicit true value enables it, and it never changes existing accounts.
+  def self.new_accounts_non_billable?
+    ENV["NEW_ACCOUNTS_NON_BILLABLE"].to_s.casecmp?("true")
+  end
+
   def product_access?
     non_billable? || subscription_active?
   end
