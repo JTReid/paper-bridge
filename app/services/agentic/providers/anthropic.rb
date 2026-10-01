@@ -10,6 +10,12 @@ module Agentic
         chat: "https://api.anthropic.com/v1/messages"
       }.freeze
 
+      # Anthropic requires an output limit on every request, so steps that set
+      # none get the largest value every current Claude model accepts (Haiku 4.5
+      # caps output at 64K; the others allow 128K). Request timeouts still bound
+      # runaway output.
+      DEFAULT_MAX_TOKENS = 64_000
+
       PARSEABLE_TYPES = %w[tool_use text].freeze
 
       attr_reader :operation_type, :requirements, :base_attributes, :connection
@@ -102,7 +108,7 @@ module Agentic
       def payload
         attributes = base_attributes.deep_dup
         attributes.merge!(policy_schema) if requirements[:response_format] == "structured_json"
-        attributes.merge!(max_tokens) if requirements[:max_tokens]
+        attributes.merge!(max_tokens)
         attributes.merge!(thinking) if requirements[:thinking]
         apply_effort!(attributes) if requirements[:effort]
 
@@ -125,7 +131,7 @@ module Agentic
       end
 
       def max_tokens
-        { max_tokens: requirements[:max_tokens] }
+        { max_tokens: requirements[:max_tokens] || DEFAULT_MAX_TOKENS }
       end
 
       def thinking

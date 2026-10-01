@@ -48,9 +48,13 @@ unsuccessfully. It does not call AI or process existing documents.
 The default chat model for all seven text steps is OpenAI `gpt-6-luna`; the two
 embedding steps stay on `text-embedding-3-large`, which stored document vectors
 require and the configuration check enforces. `gpt-6-luna` is a reasoning
-model: its hidden reasoning tokens count against each step output limit, so
-every step limit adds `LocallyInteractable::REASONING_HEADROOM` (8,000 tokens)
-on top of its answer size. Limits are ceilings; only generated tokens are billed.
+model whose hidden reasoning tokens count as output. Steps set no output token
+limit, so OpenAI allows each call up to the model maximum. Per-call request
+timeouts (90 to 180 seconds) bound runaway output, and every call records its
+token usage, including reasoning tokens, and elapsed time in its pipeline log.
+The Anthropic provider sends a 64,000-token default because Anthropic requires
+a limit on every request; that is the largest value every current Claude model
+accepts (Haiku 4.5 caps output at 64K, the others at 128K).
 
 Because setup preserves existing assignments, changing a deployed app model
 means updating its records directly, for example in a console:

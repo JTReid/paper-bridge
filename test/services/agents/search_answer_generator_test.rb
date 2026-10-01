@@ -89,8 +89,7 @@ class Agents::SearchAnswerGeneratorTest < ActiveSupport::TestCase
     assert_includes request_prompt, "Source 1"
     assert_not_includes request_prompt, "chunk_id: #{chunk.id}"
     assert_not_includes request_prompt, "document_id: #{chunk.document.id}"
-    assert_equal Agents::SearchAnswerGenerator::MAX_COMPLETION_TOKENS,
-      request_payload.fetch("max_completion_tokens")
+    assert_not request_payload.key?("max_completion_tokens")
     assert_equal "The document supports this answer [1].", response[:answer]
     assert_equal chunk.document.title, response.dig(:citations, 0, :document_title)
     assert_equal chunk.document_page.page_number, response.dig(:citations, 0, :page_number)
