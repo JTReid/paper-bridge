@@ -3,9 +3,3 @@
 
 ignore:
   - CVE-THAT-DOES-NOT-APPLY
-  # Temporary: Active Storage variant processing (GHSA-xr9x-r78c-5hrm). The fix in
-  # Rails 8.1.4 requires libvips 8.13+, which local development does not have yet.
-  # Until that upgrade, config/initializers/vips_untrusted_loaders.rb applies the
-  # same libvips protection wherever libvips supports it (staging, production, CI).
-  # Remove this entry with the Rails upgrade.
-  - CVE-2026-66066
