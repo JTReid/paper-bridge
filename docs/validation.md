@@ -360,6 +360,11 @@ dependencies, and installs Chromium. The machine must already have PostgreSQL
 with pgvector, libvips, Poppler, Tesseract with English data, and Chromium's OS
 dependencies. Local SMTP checks remain an explicit `mailpit` run.
 
+libvips must be 8.13 or later: Active Storage in Rails 8.1.4 refuses to boot on
+older versions because it cannot block libvips loaders that are unsafe for
+untrusted uploads. Ubuntu 22.04 ships 8.12, so build libvips 8.15 from source
+into `/usr/local` there; Ubuntu 24.04 (CI) and Heroku's heroku-24 stack ship 8.15.
+
 When started manually, the GitHub Actions browser job provisions these
 dependencies, runs the same browser harness, and runs captured-email checks
 against an isolated Mailpit service.
