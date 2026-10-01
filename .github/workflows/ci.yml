@@ -4,6 +4,7 @@ on:
   pull_request:
   push:
     branches: [ main ]
+  workflow_dispatch:
 
 jobs:
   scan_ruby:
@@ -105,6 +106,10 @@ jobs:
         run: bin/rails db:test:prepare tailwindcss:build test
 
   system-test:
+    # Manual only until the browser suite is split across parallel jobs; run serially
+    # it adds about 12 minutes to every pull request and push. Start it from the
+    # Actions tab (CI, then Run workflow), or run the QA harness locally.
+    if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
