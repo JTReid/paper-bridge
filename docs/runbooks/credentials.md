@@ -84,6 +84,7 @@ before deploying:
 | `APP_HOST` | `paper-bridge-staging-13477c3cf41f.herokuapp.com` | `paperbridgeadvocacy.com` |
 | Stripe mode | Test | Live |
 | S3 bucket (`aws.bucket`) | `paper-bridge-development` | `paper-bridge-production` |
+| `NEW_ACCOUNTS_NON_BILLABLE` | `true` | `true` |
 
 Use a different decryption key for each environment. `RAILS_MASTER_KEY`
 decrypts the file chosen by `CREDENTIALS_ENV`; the key does not select the file.

@@ -1,6 +1,19 @@
 require "test_helper"
 
 class DeviseRegistrationsControllerTest < ActionDispatch::IntegrationTest
+  setup do
+    @new_accounts_non_billable = ENV["NEW_ACCOUNTS_NON_BILLABLE"]
+    ENV.delete("NEW_ACCOUNTS_NON_BILLABLE")
+  end
+
+  teardown do
+    if @new_accounts_non_billable.nil?
+      ENV.delete("NEW_ACCOUNTS_NON_BILLABLE")
+    else
+      ENV["NEW_ACCOUNTS_NON_BILLABLE"] = @new_accounts_non_billable
+    end
+  end
+
   test "shows styled create account form" do
     get new_user_registration_path
 
@@ -46,6 +59,27 @@ class DeviseRegistrationsControllerTest < ActionDispatch::IntegrationTest
     assert_not user.account.non_billable?
     assert_not user.account.product_access?
     assert_not user.account.subscription_active?
+  end
+
+  test "signups create non-billable accounts while NEW_ACCOUNTS_NON_BILLABLE is true" do
+    ENV["NEW_ACCOUNTS_NON_BILLABLE"] = "true"
+
+    post user_registration_path, params: {
+      user: {
+        account_name: "Meadow Family",
+        name: "Riley Meadow",
+        email: "riley-meadow@example.test",
+        password: "password",
+        password_confirmation: "password"
+      }
+    }
+
+    account = User.find_by!(email: "riley-meadow@example.test").account
+    assert_redirected_to dashboard_path
+    assert_equal "Meadow Family", account.name
+    assert account.non_billable?
+    assert account.product_access?
+    assert_nil account.billing_subscription
   end
 
   test "account settings cannot change the non billable flag" do
