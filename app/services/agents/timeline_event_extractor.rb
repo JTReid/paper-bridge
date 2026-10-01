@@ -34,7 +34,6 @@ module Agents
         model: llm.name,
         system: prompt.system_directive,
         prompt: extraction_prompt,
-        max_tokens: 4_000,
         response_format: "structured_json",
         schema_name: "timeline_events"
       }

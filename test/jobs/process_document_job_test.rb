@@ -199,8 +199,8 @@ class ProcessDocumentJobTest < ActiveJob::TestCase
     assert_equal "text-embedding-3-large", document.document_embeddings.first.model
     assert_equal 3_072, document.document_embeddings.first.dimensions
     assert_equal "completed", pipeline_run.state
-    assert_equal "gpt-5.4-nano", chunk_payload.fetch("model")
-    assert_equal "gpt-5.4-mini", summary_payload.fetch("model")
+    assert_equal "gpt-6-luna", chunk_payload.fetch("model")
+    assert_equal "gpt-6-luna", summary_payload.fetch("model")
     assert_includes summary_payload.dig("response_format", "json_schema", "schema", "required"), "category"
     assert_includes summary_payload.dig("response_format", "json_schema", "schema", "required"), "description"
     assert_equal "text-embedding-3-large", embedding_payload.fetch("model")

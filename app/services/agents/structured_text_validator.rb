@@ -17,7 +17,6 @@ module Agents
         model: llm.name,
         system: prompt.system_directive,
         prompt: content.to_json,
-        max_tokens: 1_000,
         response_format: "structured_json",
         schema_name: "structured_validation"
       }

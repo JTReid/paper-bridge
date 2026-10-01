@@ -161,7 +161,7 @@ class ProcessImageDocumentJobTest < ActiveJob::TestCase
     assert_enqueued_with(job: ExtractTimelineEventsJob, args: [ document ])
     assert_equal "completed", pipeline_run.state
 
-    assert_equal "gpt-5.4-mini", extraction_payload.fetch("model")
+    assert_equal "gpt-6-luna", extraction_payload.fetch("model")
     assert_includes extraction_payload.dig("response_format", "json_schema", "schema", "required"), "description"
     user_content = extraction_payload.dig("messages", 1, "content")
     assert_kind_of Array, user_content

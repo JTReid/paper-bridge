@@ -17,7 +17,6 @@ module Agents
         model: llm.name,
         system: prompt.system_directive,
         prompt: summary_prompt,
-        max_tokens: 2_000,
         response_format: "structured_json",
         schema_name: "document_summary"
       }

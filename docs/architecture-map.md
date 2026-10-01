@@ -104,7 +104,7 @@ ported from Scoutspace.
   `text-embedding-3-large` embeddings in Postgres through pgvector.
 - `ExtractTimelineEventsJob` runs after either processing job marks a document
   processed. It runs `Agentic::TimelineExtractionPipeline` in its own
-  `PipelineRun` to extract chunk-sourced timeline events with `gpt-5.4-mini`.
+  `PipelineRun` to extract chunk-sourced timeline events with `gpt-6-luna`.
   A timeline failure never fails the document. Images categorized as
   prescriptions skip extraction, and other images get stricter instructions
   against routine-paperwork events.

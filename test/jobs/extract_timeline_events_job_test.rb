@@ -92,7 +92,7 @@ class ExtractTimelineEventsJobTest < ActiveJob::TestCase
     assert_equal document.document_chunks.sole, event.document_chunk
     assert_equal "completed", pipeline_run.state
     assert pipeline_run.pipeline_activity.entries.any? { |entry| entry["action"] == "timeline_events_extracted" }
-    assert_equal "gpt-5.4-mini", payload.fetch("model")
+    assert_equal "gpt-6-luna", payload.fetch("model")
     assert_not_includes payload.dig("messages", 1, "content"), Agents::TimelineEventExtractor::IMAGE_GUIDANCE
   end
 

@@ -119,8 +119,8 @@ lifecycle.
   page numbers, excerpts, and limitations without internal record IDs.
 - Pipeline logs, activity entries, and LLM telemetry are recorded on the
   `PipelineRun`.
-- The local `gpt-5.6-luna` rate card prices input, including cached input, at
-  $0.20 per million tokens and output at $1.20 per million tokens.
+- The local `gpt-6-luna` rate card prices input, including cached input, at
+  $0.10 per million tokens and output at $0.50 per million tokens.
 
 ## Emailing One Answer
 

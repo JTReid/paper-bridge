@@ -38,12 +38,33 @@ Use the same setup task locally and during deployment:
 bundle exec rake db:migrate paper_bridge:setup_ai
 ```
 
-`paper_bridge:setup_ai` creates missing defaults for three `Llm` records, nine
+`paper_bridge:setup_ai` creates missing defaults for two `Llm` records, nine
 `AgentType` records and their active `Prompt` records, and updates fourteen
 canonical `JsonSchema` records. Existing model/provider choices, agent model
 assignments, and prompt content are preserved. Setup checks the resulting
 configuration before committing; a failure rolls back its changes and exits
 unsuccessfully. It does not call AI or process existing documents.
+
+The default chat model for all seven text steps is OpenAI `gpt-6-luna`; the two
+embedding steps stay on `text-embedding-3-large`, which stored document vectors
+require and the configuration check enforces. `gpt-6-luna` is a reasoning
+model whose hidden reasoning tokens count as output. Steps set no output token
+limit, so OpenAI allows each call up to the model maximum. Per-call request
+timeouts (90 to 180 seconds) bound runaway output, and every call records its
+token usage, including reasoning tokens, and elapsed time in its pipeline log.
+The Anthropic provider sends a 64,000-token default because Anthropic requires
+a limit on every request; that is the largest value every current Claude model
+accepts (Haiku 4.5 caps output at 64K, the others at 128K).
+
+Because setup preserves existing assignments, changing a deployed app model
+means updating its records directly, for example in a console:
+
+```ruby
+luna = Llm.find_by!(name: "gpt-6-luna")
+AgentType.where.not(name: %w[document_embedder query_embedder]).update_all(llm_id: luna.id)
+```
+
+Then run `bin/rails paper_bridge:check_ai` to confirm the configuration.
 
 `db:seed` delegates to the same `Setup::AiConfiguration.call`, then retains the
 existing optional QA-data seed guard. The Heroku release command runs
@@ -91,5 +112,5 @@ deployed environment.
 Live provider smoke checks are opt-in:
 
 ```bash
-AGENTIC_LIVE_PROVIDER=openai AGENTIC_LIVE_MODEL=gpt-5.4-nano ruby scripts/agentic_pipeline_harness.rb live
+AGENTIC_LIVE_PROVIDER=openai AGENTIC_LIVE_MODEL=gpt-6-luna ruby scripts/agentic_pipeline_harness.rb live
 ```
