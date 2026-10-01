@@ -19,6 +19,7 @@ class User < ApplicationRecord
 
   enum :site_role, SITE_ROLES
 
+  validate :signup_limit_not_reached, on: :create, if: :registration_account_requested?
   after_create :create_registration_account_membership, if: :registration_account_requested?
 
   def account_name=(value)
@@ -50,6 +51,10 @@ class User < ApplicationRecord
 
     def registration_account_requested?
       @registration_account_requested
+    end
+
+    def signup_limit_not_reached
+      errors.add(:base, Account::SIGNUP_LIMIT_REACHED_MESSAGE) if Account.signup_limit_reached?
     end
 
     def create_registration_account_membership
