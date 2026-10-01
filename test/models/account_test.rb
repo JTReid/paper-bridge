@@ -9,6 +9,17 @@ class AccountTest < ActiveSupport::TestCase
     assert_nil account.billing_subscription
   end
 
+  test "new account signups are non-billable only when explicitly enabled" do
+    original = ENV["NEW_ACCOUNTS_NON_BILLABLE"]
+
+    { nil => false, "" => false, "false" => false, "1" => false, "true" => true, "TRUE" => true }.each do |value, expected|
+      value.nil? ? ENV.delete("NEW_ACCOUNTS_NON_BILLABLE") : ENV["NEW_ACCOUNTS_NON_BILLABLE"] = value
+      assert_equal expected, Account.new_accounts_non_billable?, "NEW_ACCOUNTS_NON_BILLABLE=#{value.inspect}"
+    end
+  ensure
+    original.nil? ? ENV.delete("NEW_ACCOUNTS_NON_BILLABLE") : ENV["NEW_ACCOUNTS_NON_BILLABLE"] = original
+  end
+
   test "non billable access can be granted and revoked without a subscription" do
     account = Account.create!(name: "Complimentary Family", non_billable: true)
 

@@ -216,6 +216,25 @@ or trialing subscription still grants access; otherwise the account returns to
 Billing. Existing profiles are retained even if their count exceeds the restored
 allowance.
 
+### Non-Billable Signups
+
+Set `NEW_ACCOUNTS_NON_BILLABLE=true` on an app to make every account created
+through signup non-billable. Only an explicit true value enables it; when it is
+unset or any other value, signups are billable as before. The value is read when
+signup creates the account and stored on that account, so changing it never
+alters existing accounts: accounts created while it was on stay non-billable
+after it is turned off, until revoked individually as above, and accounts
+created before it was turned on stay billable. Accounts created in the console
+are not affected.
+
+```bash
+heroku config:set NEW_ACCOUNTS_NON_BILLABLE=true -a paper-bridge-staging
+heroku config:unset NEW_ACCOUNTS_NON_BILLABLE -a paper-bridge-staging
+```
+
+Changing a config var restarts the app. See
+[Encrypted Credentials](credentials.md) for each app's current setting.
+
 ## Configuration
 
 Stripe settings live in encrypted Rails credentials, with environment variables
