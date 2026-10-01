@@ -1,17 +1,16 @@
 require "test_helper"
 
 class DeviseRegistrationsControllerTest < ActionDispatch::IntegrationTest
+  SIGNUP_ENV_KEYS = %w[NEW_ACCOUNTS_NON_BILLABLE MAX_ACCOUNTS].freeze
+
   setup do
-    @new_accounts_non_billable = ENV["NEW_ACCOUNTS_NON_BILLABLE"]
-    ENV.delete("NEW_ACCOUNTS_NON_BILLABLE")
+    @signup_environment = ENV.to_h.slice(*SIGNUP_ENV_KEYS)
+    SIGNUP_ENV_KEYS.each { |key| ENV.delete(key) }
   end
 
   teardown do
-    if @new_accounts_non_billable.nil?
-      ENV.delete("NEW_ACCOUNTS_NON_BILLABLE")
-    else
-      ENV["NEW_ACCOUNTS_NON_BILLABLE"] = @new_accounts_non_billable
-    end
+    SIGNUP_ENV_KEYS.each { |key| ENV.delete(key) }
+    ENV.update(@signup_environment)
   end
 
   test "shows styled create account form" do
@@ -82,6 +81,38 @@ class DeviseRegistrationsControllerTest < ActionDispatch::IntegrationTest
     assert_nil account.billing_subscription
   end
 
+  test "signup is closed with a contact message once MAX_ACCOUNTS is reached" do
+    ENV["MAX_ACCOUNTS"] = Account.count.to_s
+
+    get new_user_registration_path
+
+    assert_response :success
+    assert_select "[data-testid='registration-limit-reached']", text: /#{Regexp.escape(Account::SIGNUP_LIMIT_REACHED_MESSAGE)}/
+    assert_select "[data-testid='registration-form']", count: 0
+
+    assert_no_difference [ "User.count", "Account.count" ] do
+      post user_registration_path, params: { user: signup_params(email: "capped@example.test") }
+    end
+    assert_response :unprocessable_content
+    assert_includes response.body, Account::SIGNUP_LIMIT_REACHED_MESSAGE
+  end
+
+  test "signup stays open below MAX_ACCOUNTS and closes once the last account is created" do
+    ENV["MAX_ACCOUNTS"] = (Account.count + 1).to_s
+
+    get new_user_registration_path
+    assert_select "[data-testid='registration-form']"
+
+    assert_difference "Account.count", 1 do
+      post user_registration_path, params: { user: signup_params(email: "last-spot@example.test") }
+    end
+    assert_redirected_to billing_path
+
+    delete destroy_user_session_path
+    get new_user_registration_path
+    assert_select "[data-testid='registration-limit-reached']"
+  end
+
   test "account settings cannot change the non billable flag" do
     user = users(:family_admin)
     account = user.account
@@ -105,4 +136,16 @@ class DeviseRegistrationsControllerTest < ActionDispatch::IntegrationTest
       assert_equal non_billable, account.reload.non_billable?
     end
   end
+
+  private
+
+    def signup_params(email:)
+      {
+        account_name: "Capped Family",
+        name: "Casey Capped",
+        email: email,
+        password: "password",
+        password_confirmation: "password"
+      }
+    end
 end
