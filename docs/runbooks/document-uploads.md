@@ -147,11 +147,11 @@ The Heroku release command runs migrations and the shared AI setup task:
 bundle exec rake db:migrate paper_bridge:setup_ai
 ```
 
-The task supplies missing model/agent/prompt defaults, updates canonical JSON
-schemas, and checks the result in one transaction. Existing model assignments
-and prompt content are preserved. A failed check rolls back the setup changes
-and fails the release. It does not call AI or retry documents; use **Retry
-processing** on previously failed uploads after configuration is repaired.
+The task syncs models, agents, prompts, and JSON schemas to
+`lib/setup/ai_definitions.rb` and checks the result in one transaction. A
+failed check rolls back the setup changes and fails the release. It does not
+call AI or retry documents; use **Retry processing** on previously failed
+uploads after configuration is repaired.
 
 Inspect stored configuration without changing it:
 

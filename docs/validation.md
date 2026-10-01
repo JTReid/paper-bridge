@@ -279,10 +279,10 @@ bundle exec rake db:migrate paper_bridge:setup_ai
 bundle exec rake paper_bridge:check_ai
 ```
 
-The Heroku release command uses the first command. Setup supplies missing
-model/agent/prompt defaults, preserves existing choices, updates canonical
-schemas, and validates before committing. A failed check rolls back the setup
-transaction and fails the release. `db:seed` delegates to the same setup code.
+The Heroku release command uses the first command. Setup syncs models, agents,
+prompts, and schemas to `lib/setup/ai_definitions.rb` and validates before
+committing. A failed check rolls back the setup transaction and fails the
+release. `db:seed` delegates to the same setup code.
 
 Upload coverage also checks batches above the removed file-count limits, profile-scoped duplicate
 rejection without overwrites, storage-only originals/downloads/editing, no

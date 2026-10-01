@@ -1,5 +1,5 @@
 namespace :paper_bridge do
-  desc "Set up and validate all required AI configuration without resetting model or prompt choices"
+  desc "Sync AI models, agents, prompts, and schemas to lib/setup/ai_definitions.rb, then validate them"
   task setup_ai: :environment do
     require Rails.root.join("lib/setup/ai_configuration").to_s
 
