@@ -21,14 +21,16 @@ class Setup::AiConfigurationTest < ActiveSupport::TestCase
       end
     end
 
-    assert_equal %w[gpt-5.4-mini gpt-5.4-nano text-embedding-3-large], Llm.order(:name).pluck(:name)
+    assert_equal %w[gpt-6-luna text-embedding-3-large], Llm.order(:name).pluck(:name)
     assert_equal [ "Agentic::Providers::Openai" ], Llm.distinct.pluck(:provider_class)
     assert_equal 9, AgentType.count
     assert_equal 9, Prompt.count
     assert_equal 14, JsonSchema.count
     {
-      "gpt-5.4-nano" => %w[structured_text_summarizer structured_text_validator document_chunker],
-      "gpt-5.4-mini" => %w[document_summarizer image_document_extractor search_answer_generator timeline_event_extractor],
+      "gpt-6-luna" => %w[
+        structured_text_summarizer structured_text_validator document_chunker document_summarizer
+        image_document_extractor search_answer_generator timeline_event_extractor
+      ],
       "text-embedding-3-large" => %w[document_embedder query_embedder]
     }.each do |model_name, names|
       names.each do |name|
@@ -77,7 +79,7 @@ class Setup::AiConfigurationTest < ActiveSupport::TestCase
   end
 
   test "preserves existing model providers bindings and active and inactive prompts" do
-    Llm.find_by!(name: "gpt-5.4-nano").update!(provider_class: "Agentic::Providers::Anthropic")
+    Llm.find_by!(name: "gpt-6-luna").update!(provider_class: "Agentic::Providers::Anthropic")
     custom_model = Llm.create!(name: "custom-image-model", provider_class: "Agentic::Providers::Anthropic")
     image_agent = AgentType.find_by!(name: "image_document_extractor")
     image_agent.update!(llm: custom_model)
@@ -112,13 +114,13 @@ class Setup::AiConfigurationTest < ActiveSupport::TestCase
     after = configuration_snapshot
     before.each { |key, attributes| assert_equal attributes, after.fetch(key) }
     assert_equal({ "JsonSchema" => 2, "AgentType" => 1, "Prompt" => 2 }, (after.keys - before.keys).map(&:first).tally)
-    assert_equal "gpt-5.4-mini", AgentType.find_by!(name: "search_answer_generator").llm.name
+    assert_equal "gpt-6-luna", AgentType.find_by!(name: "search_answer_generator").llm.name
     assert_equal 1, validator.prompts.active.count
     assert_empty Setup::AiConfigurationCheck.call
   end
 
   test "creates a missing default model without rebinding agents that use a renamed model" do
-    renamed_model = Llm.find_by!(name: "gpt-5.4-mini")
+    renamed_model = Llm.find_by!(name: "gpt-6-luna")
     renamed_model.update!(name: "custom-chat-model")
     remove_agent("search_answer_generator")
     before = configuration_snapshot
@@ -128,7 +130,7 @@ class Setup::AiConfigurationTest < ActiveSupport::TestCase
     after = configuration_snapshot
     before.each { |key, attributes| assert_equal attributes, after.fetch(key) }
     assert_equal({ "Llm" => 1, "AgentType" => 1, "Prompt" => 1 }, (after.keys - before.keys).map(&:first).tally)
-    assert_equal "gpt-5.4-mini", AgentType.find_by!(name: "search_answer_generator").llm.name
+    assert_equal "gpt-6-luna", AgentType.find_by!(name: "search_answer_generator").llm.name
     assert_equal renamed_model, AgentType.find_by!(name: "document_summarizer").llm
     assert_empty Setup::AiConfigurationCheck.call
   end
@@ -137,8 +139,8 @@ class Setup::AiConfigurationTest < ActiveSupport::TestCase
     make_summary_schemas_legacy
     remove_agent("image_document_extractor")
     JsonSchema.where(name: IMAGE_SCHEMA_NAMES).destroy_all
-    Llm.find_by!(name: "gpt-5.4-mini").update!(name: "custom-chat-model")
-    AgentType.find_by!(name: "document_embedder").update!(llm: Llm.find_by!(name: "gpt-5.4-nano"))
+    Llm.find_by!(name: "gpt-6-luna").update!(name: "custom-chat-model")
+    AgentType.find_by!(name: "document_embedder").update!(llm: Llm.find_by!(name: "custom-chat-model"))
     before = configuration_snapshot
 
     error = assert_raises Agentic::Errors::ConfigurationError do

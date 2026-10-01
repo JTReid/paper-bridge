@@ -162,7 +162,7 @@ PROVIDER_INSTANCE_METHODS = %w[call parse_response].freeze
 
 LIVE_RUNNER = <<~"RUBY"
   provider_name = ENV.fetch("AGENTIC_LIVE_PROVIDER", "").downcase
-  model = ENV.fetch("AGENTIC_LIVE_MODEL", "gpt-5.4-nano")
+  model = ENV.fetch("AGENTIC_LIVE_MODEL", "gpt-6-luna")
   abort("Set AGENTIC_LIVE_PROVIDER to openai or anthropic.") if provider_name.blank?
   provider_class, key_name, schema = case provider_name
   when "openai"

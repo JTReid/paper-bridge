@@ -7,6 +7,11 @@ module Agentic
     TOKENS_PER_MILLION = BigDecimal("1000000")
 
     RATE_CARD = {
+      "openai:gpt-6-luna" => {
+        input_per_million: BigDecimal("0.10"),
+        cached_input_per_million: BigDecimal("0.10"),
+        output_per_million: BigDecimal("0.50")
+      },
       "openai:gpt-5.6" => {
         input_per_million: BigDecimal("0.20"),
         cached_input_per_million: BigDecimal("0.20"),

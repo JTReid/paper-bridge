@@ -17,7 +17,7 @@ module Agents
         model: llm.name,
         system: prompt.system_directive,
         prompt: content,
-        max_tokens: 2_000,
+        max_tokens: 2_000 + REASONING_HEADROOM,
         response_format: "structured_json",
         schema_name: "structured_summary"
       }

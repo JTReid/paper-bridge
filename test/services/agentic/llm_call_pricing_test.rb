@@ -3,6 +3,18 @@
 require "test_helper"
 
 class Agentic::LlmCallPricingTest < ActiveSupport::TestCase
+  test "prices Luna GPT-6 input and output usage" do
+    cost = Agentic::LlmCallPricing.estimate(
+      provider: "openai",
+      model: "gpt-6-luna",
+      input_tokens: 1_000_000,
+      cached_input_tokens: 250_000,
+      output_tokens: 1_000_000
+    )
+
+    assert_equal BigDecimal("0.60"), cost
+  end
+
   test "prices Luna GPT-5.6 input and output usage" do
     cost = Agentic::LlmCallPricing.estimate(
       provider: "openai",
