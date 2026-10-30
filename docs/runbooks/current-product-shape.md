@@ -115,6 +115,13 @@ operational harness checks until matching implementation exists.
   Webhook-synchronized allowances block only new profile creation at capacity;
   legacy subscriptions and existing over-limit data are preserved. See
   [Billing](billing.md) for test setup and the separate production rollout.
+- Founders-only Admin Dashboard at `/admin/dashboard`, limited to super admins.
+  It shows live platform-wide totals: families against the 4,000 goal, new
+  families, signup spots left when `MAX_ACCOUNTS` is set, profiles, active
+  families, documents, questions, documents shared by email, and failed
+  documents. A family is any account with product access, and accounts with a
+  super admin member are left out. Active means a document upload or question
+  in the last 30 days. It shows no names, filenames, or per-family detail.
 
 ## Family-Facing Language
 

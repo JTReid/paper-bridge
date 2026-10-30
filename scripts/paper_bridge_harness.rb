@@ -51,6 +51,7 @@ CURRENT_PRODUCT_FILES = %w[
   app/controllers/billing/portal_sessions_controller.rb
   app/controllers/admin/base_controller.rb
   app/controllers/admin/accounts_controller.rb
+  app/controllers/admin/dashboard_controller.rb
   app/helpers/application_helper.rb
   app/helpers/documents_helper.rb
   app/helpers/ai_assistant_helper.rb
@@ -82,6 +83,7 @@ CURRENT_PRODUCT_FILES = %w[
   app/models/billing_subscription.rb
   app/services/documents/retry_processing.rb
   app/services/documents/reset_processing.rb
+  app/services/admin_dashboard/stats.rb
   app/services/billing/stripe_config.rb
   app/services/billing/checkout_return_broadcaster.rb
   app/services/billing/stripe_webhook_handler.rb
@@ -149,6 +151,7 @@ CURRENT_PRODUCT_FILES = %w[
   test/controllers/billing_checkout_sessions_controller_test.rb
   test/controllers/billing_portal_sessions_controller_test.rb
   test/controllers/admin_accounts_controller_test.rb
+  test/controllers/admin_dashboard_controller_test.rb
   test/controllers/stripe_webhooks_controller_test.rb
   test/fixtures/billing_subscriptions.yml
   test/fixtures/appointments.yml
@@ -266,6 +269,7 @@ BILLING_TESTS = %w[
   test/controllers/billing_checkout_concurrency_test.rb
   test/controllers/billing_portal_sessions_controller_test.rb
   test/controllers/admin_accounts_controller_test.rb
+  test/controllers/admin_dashboard_controller_test.rb
   test/controllers/stripe_webhooks_controller_test.rb
   test/services/billing/stripe_config_test.rb
   test/services/billing/profile_plan_setup_test.rb
@@ -328,6 +332,7 @@ RUBOCOP_PATHS = %w[
   app/controllers/billing/portal_sessions_controller.rb
   app/controllers/admin/base_controller.rb
   app/controllers/admin/accounts_controller.rb
+  app/controllers/admin/dashboard_controller.rb
   app/helpers/application_helper.rb
   app/helpers/documents_helper.rb
   app/helpers/ai_assistant_helper.rb
@@ -345,6 +350,7 @@ RUBOCOP_PATHS = %w[
   app/models/billing_subscription.rb
   app/services/documents/retry_processing.rb
   app/services/documents/reset_processing.rb
+  app/services/admin_dashboard/stats.rb
   app/services/billing/stripe_config.rb
   app/services/billing/checkout_return_broadcaster.rb
   app/services/billing/stripe_webhook_handler.rb
@@ -371,6 +377,7 @@ RUBOCOP_PATHS = %w[
   test/controllers/billing_checkout_sessions_controller_test.rb
   test/controllers/billing_portal_sessions_controller_test.rb
   test/controllers/admin_accounts_controller_test.rb
+  test/controllers/admin_dashboard_controller_test.rb
   test/controllers/stripe_webhooks_controller_test.rb
   test/models/account_test.rb
   test/models/user_test.rb
