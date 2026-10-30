@@ -16,6 +16,12 @@ class Account < ApplicationRecord
 
   SIGNUP_LIMIT_REACHED_MESSAGE = "Maximum accounts reached. Contact an admin for instructions.".freeze
 
+  scope :with_product_access, -> {
+    where(non_billable: true)
+      .or(where(id: BillingSubscription.where(status: BillingSubscription::ACCESS_STATUSES).select(:account_id)))
+  }
+  scope :without_super_admins, -> { where.not(id: AccountMembership.where(user: User.super_admin).select(:account_id)) }
+
   validates :name, presence: true
 
   # NEW_ACCOUNTS_NON_BILLABLE=true makes accounts created at signup non-billable.
