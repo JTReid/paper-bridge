@@ -1,0 +1,7 @@
+<% warning = local_assigns.fetch(:warning, false) %>
+
+<div class="rounded-2xl border p-6 shadow-sm <%= warning ? "border-amber-200 bg-amber-50" : "border-border/60 bg-white" %>" data-testid="admin-stat-<%= key %>">
+  <p class="text-sm font-medium text-muted-foreground"><%= label %></p>
+  <p class="mt-2 text-3xl font-bold tracking-tight <%= warning ? "text-amber-700" : "text-primary" %>" data-testid="admin-stat-<%= key %>-value"><%= number_with_delimiter(value) %></p>
+  <p class="mt-1 text-xs text-muted-foreground"><%= note %></p>
+</div>

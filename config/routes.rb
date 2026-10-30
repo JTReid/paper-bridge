@@ -52,6 +52,7 @@ Rails.application.routes.draw do
     resource :portal_session, only: :create
   end
   namespace :admin do
+    resource :dashboard, only: :show, controller: :dashboard
     resources :accounts, only: :index
   end
   mount StripeEvent::Engine, at: "/stripe/webhooks"

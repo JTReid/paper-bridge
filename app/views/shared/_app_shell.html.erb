@@ -42,6 +42,7 @@
     end
 
     if current_user&.super_admin?
+      nav_items << { key: :admin_dashboard, label: "Admin Dashboard", path: admin_dashboard_path, icon: "trending-up" }
       nav_items << { key: :admin_accounts, label: "Admin", path: admin_accounts_path, icon: "lock" }
     end
   end

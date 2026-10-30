@@ -1,0 +1,49 @@
+<% content_for :title, "Admin Dashboard | PaperBridge" %>
+
+<%= app_shell(active: :admin_dashboard) do %>
+  <div class="space-y-8 pb-10" data-testid="admin-dashboard-page">
+    <header class="pt-2">
+      <p class="mb-1 text-xs font-medium uppercase tracking-widest text-accent">Super Admin</p>
+      <h1 class="text-3xl font-bold tracking-tight text-primary">Admin Dashboard</h1>
+      <p class="mt-1.5 text-sm text-muted-foreground">Live totals across all PaperBridge families.</p>
+    </header>
+
+    <section>
+      <h2 class="mb-4 text-lg font-bold text-primary">Families</h2>
+      <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <%= render "stat", key: "families", label: "Families", value: @stats.family_count,
+            note: "of #{number_with_delimiter(AdminDashboard::Stats::FAMILY_GOAL)} goal" %>
+        <%= render "stat", key: "new-families", label: "New families", value: @stats.new_family_count,
+            note: "in the last 30 days" %>
+        <% unless @stats.signup_spots_left.nil? %>
+          <%= render "stat", key: "signup-spots", label: "Signup spots left", value: @stats.signup_spots_left,
+              note: "before signups close" %>
+        <% end %>
+        <%= render "stat", key: "profiles", label: "Profiles", value: @stats.profile_count,
+            note: "across all families" %>
+      </div>
+    </section>
+
+    <section>
+      <h2 class="mb-4 text-lg font-bold text-primary">Usage</h2>
+      <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <%= render "stat", key: "active-families", label: "Active families", value: @stats.active_family_count,
+            note: "uploaded a document or asked a question in the last 30 days" %>
+        <%= render "stat", key: "documents", label: "Documents stored", value: @stats.document_count,
+            note: "#{number_with_delimiter(@stats.recent_upload_count)} uploaded in the last 30 days" %>
+        <%= render "stat", key: "questions", label: "Questions asked", value: @stats.recent_question_count,
+            note: "in the last 30 days" %>
+        <%= render "stat", key: "shared-documents", label: "Documents shared", value: @stats.recent_shared_document_count,
+            note: "by email in the last 30 days" %>
+      </div>
+    </section>
+
+    <section>
+      <h2 class="mb-4 text-lg font-bold text-primary">Problems</h2>
+      <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <%= render "stat", key: "failed-documents", label: "Failed documents", value: @stats.failed_document_count,
+            note: "failed processing and haven't recovered", warning: @stats.failed_document_count.positive? %>
+      </div>
+    </section>
+  </div>
+<% end %>

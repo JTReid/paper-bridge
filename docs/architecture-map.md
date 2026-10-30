@@ -48,6 +48,10 @@ ported from Scoutspace.
 - `SubscriptionGate` exposes `require_subscription!` for controller-level paid
   access gates. It bypasses users with the platform-level `super_admin`
   `site_role`.
+- `Admin::DashboardController` renders counts from `AdminDashboard::Stats`,
+  which queries live on each page load and has no tables of its own. Its family
+  definition comes from the `Account.with_product_access` and
+  `Account.without_super_admins` scopes.
 - `DocumentPage` is the first-class PDF page record. It stores embedded text,
   OCR text, preparation metadata, page status, and one rendered page image
   attachment.
