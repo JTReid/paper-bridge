@@ -140,6 +140,7 @@ DOCUMENT_PIPELINE_FILES = %w[
   test/services/documents/prepare_pdf_test.rb
   test/services/documents/prepare_pdf_integration_test.rb
   test/fixtures/files/multipage_school_record.pdf
+  test/fixtures/files/oversized_page.pdf
   test/services/documents/prepare_text_test.rb
   test/services/documents/reconcile_failed_processing_test.rb
   test/services/documents/retry_processing_test.rb
