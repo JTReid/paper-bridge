@@ -79,3 +79,33 @@ test('admin receives instructions when a profile still has documents', async ({ 
   await expect(page.getByRole('heading', { name: "Emma Greenfield's Documents" })).toBeVisible();
   await expect(page.getByTestId(/^document-row-/).first()).toBeVisible();
 });
+
+test('admin sees a newly picked profile photo before saving', async ({ page, family }) => {
+  await family.openDependentWorkspace(page);
+  await page.getByRole('link', { name: 'Edit', exact: true }).click();
+
+  const currentAvatar = page.getByTestId('dependent-avatar-form');
+  const preview = page.getByTestId('dependent-avatar-preview');
+  const photoField = page.locator('#dependent_avatar');
+  await expect(currentAvatar).toHaveText('EG');
+  await expect(preview).toBeHidden();
+
+  await photoField.setInputFiles('public/icon.png');
+  await expect(preview).toBeVisible();
+  await expect(preview).toHaveAttribute('src', /^blob:/);
+  await expect.poll(() => preview.evaluate((image) => image.naturalWidth)).toBeGreaterThan(0);
+  await expect(currentAvatar).toBeHidden();
+
+  await photoField.setInputFiles({ name: 'notes.txt', mimeType: 'text/plain', buffer: Buffer.from('not a photo') });
+  await expect(preview).toBeHidden();
+  await expect(currentAvatar).toBeVisible();
+
+  await photoField.setInputFiles('public/icon.png');
+  await expect(preview).toBeVisible();
+  await page.getByTestId('profile-save-submit').click();
+
+  await expect(page.getByTestId('flash-notice')).toContainText('Profile updated.');
+  const savedAvatar = page.getByTestId('dependent-avatar-profile');
+  await expect(savedAvatar).toHaveAttribute('src', /\/avatar$/);
+  await expect.poll(() => savedAvatar.evaluate((image) => image.naturalWidth)).toBeGreaterThan(0);
+});
