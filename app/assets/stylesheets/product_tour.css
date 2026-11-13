@@ -77,6 +77,25 @@
   outline-offset: 2px;
 }
 
+.paperbridge-tour .driver-popover-navigation-btns {
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.paperbridge-tour .driver-popover-navigation-btns button + button {
+  margin-left: 0;
+}
+
+.paperbridge-tour .paperbridge-tour__skip {
+  background: transparent;
+  box-shadow: inset 0 0 0 1px hsl(222 65% 33% / 35%);
+  color: hsl(222 65% 33%);
+}
+
+.paperbridge-tour .paperbridge-tour__skip:hover {
+  background: hsl(222 65% 33% / 8%);
+}
+
 .paperbridge-tour__step {
   display: block;
   margin-bottom: 0.35rem;
