@@ -159,8 +159,6 @@ CURRENT_PRODUCT_FILES = %w[
   test/models/account_test.rb
   test/models/user_test.rb
   test/models/dependent_test.rb
-  scripts/backfill_profile_names.rb
-  test/scripts/backfill_profile_names_test.rb
   test/models/appointment_test.rb
   test/models/care_team_membership_test.rb
   test/models/share_event_test.rb
@@ -210,7 +208,6 @@ FOUNDATION_TESTS = %w[
   test/models/account_test.rb
   test/models/user_test.rb
   test/models/dependent_test.rb
-  test/scripts/backfill_profile_names_test.rb
   test/helpers/application_helper_test.rb
   test/controllers/home_controller_test.rb
   test/controllers/devise_registrations_controller_test.rb
@@ -382,8 +379,6 @@ RUBOCOP_PATHS = %w[
   test/models/account_test.rb
   test/models/user_test.rb
   test/models/dependent_test.rb
-  scripts/backfill_profile_names.rb
-  test/scripts/backfill_profile_names_test.rb
   test/models/appointment_test.rb
   test/models/care_team_membership_test.rb
   test/models/share_event_test.rb

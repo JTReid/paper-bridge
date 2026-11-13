@@ -23,8 +23,6 @@ class Dependent < ApplicationRecord
   before_create :enforce_profile_allowance
 
   def name
-    return legacy_name.to_s if first_name.nil?
-
     [ first_name, last_name ].compact_blank.join(" ")
   end
 

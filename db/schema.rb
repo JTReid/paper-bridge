@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_09_20_000000) do
+ActiveRecord::Schema[8.1].define(version: 2026_11_13_000100) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "vector"
@@ -159,10 +159,9 @@ ActiveRecord::Schema[8.1].define(version: 2026_09_20_000000) do
     t.string "avatar_url"
     t.datetime "created_at", null: false
     t.date "date_of_birth"
-    t.string "first_name"
+    t.string "first_name", null: false
     t.string "grade"
     t.string "last_name"
-    t.string "legacy_name"
     t.text "notes"
     t.string "school"
     t.datetime "updated_at", null: false
