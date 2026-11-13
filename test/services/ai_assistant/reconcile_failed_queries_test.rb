@@ -100,7 +100,8 @@ class AiAssistant::ReconcileFailedQueriesTest < ActionDispatch::IntegrationTest
     assert_equal 0, AiAssistant::ReconcileFailedQueries.call
     assert_predicate @query.reload, :queued?
 
-    @job.reload.blocked_execution.destroy!
+    # The lost worker's failure gave back its concurrency slot, so the retry is ready rather than blocked.
+    @job.reload.ready_execution.destroy!
     @job.failed_with(SolidQueue::Processes::ProcessMissingError.new)
     @query.update!(state: :completed, answer: { answer: "Keep this completed answer." }, completed_at: Time.current)
     before = @query.attributes
