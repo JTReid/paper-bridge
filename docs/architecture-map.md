@@ -102,7 +102,8 @@ ported from Scoutspace.
   authenticated, account-scoped endpoint that redirects to a five-minute
   service URL; profiles without an avatar render initials.
 - PDF preparation currently uses Poppler and Tesseract locally: embedded text
-  extraction, 300 DPI page rendering, and OCR for every page.
+  extraction, 300 DPI page rendering capped at a letter page's pixel count,
+  and OCR for every page.
 - `ProcessDocumentJob` prepares uploads, creates a `PipelineRun`, runs
   `Agentic::DocumentIngestionPipeline`, creates page-aware labeled chunks,
   generates a source-grounded document summary, and persists OpenAI
