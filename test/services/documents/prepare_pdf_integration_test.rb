@@ -34,4 +34,26 @@ class Documents::PreparePdfIntegrationTest < ActiveSupport::TestCase
       assert_equal [ 1500, 750 ], [ image.width, image.height ]
     end
   end
+
+  test "renders a poster-sized PDF page within the page pixel budget" do
+    original = Rails.root.join("test/fixtures/files/oversized_page.pdf").binread
+    document = Document.create!(
+      account: accounts(:greenfield), dependent: dependents(:emma), user: users(:family_admin),
+      title: "Synthetic oversized page", category: :general,
+      file: { io: StringIO.new(original), filename: "oversized-page.pdf", content_type: "application/pdf" }
+    )
+    clear_enqueued_jobs
+
+    # The fixture declares a 27 x 35 inch page. At 300 DPI that is an
+    # 8063 x 10584 image; the pixel budget renders it near letter size instead.
+    Documents::Prepare.call(document)
+
+    page = document.reload.document_pages.sole
+    image = Vips::Image.new_from_buffer(page.image.download, "")
+    assert_in_delta 2532, image.width, 1
+    assert_in_delta 3324, image.height, 1
+    assert_equal 94.2, page.metadata.fetch("dpi")
+    assert_match(/Oversized page fixture/i, page.ocr_text)
+    assert_equal original, document.file.download
+  end
 end

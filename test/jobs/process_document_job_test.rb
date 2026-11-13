@@ -119,6 +119,10 @@ class ProcessDocumentJobTest < ActiveJob::TestCase
       1
     end
 
+    def page_size(_pdf_path, page_number:)
+      [ 612.0, 792.0 ]
+    end
+
     def extract_text(_pdf_path, page_number:)
       "Embedded PDF page #{page_number}"
     end
