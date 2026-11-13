@@ -178,7 +178,14 @@ automatic start. Product access includes non-billable accounts.
 Progress is stored as a version, status, and phase in account-scoped browser
 `localStorage`; it never stores Profile names, file names, or question text.
 Closing or pressing Escape stores `dismissed` in that browser. Completion stores
-`completed`. **Replay setup tour** in the account menu resets progress and starts
+`completed`.
+
+Every milestone except creating the first Profile shows **Skip step**, because
+nothing after it works without a Profile. On a link milestone, Skip follows the
+highlighted link exactly as clicking it would. On the upload milestone, Skip
+returns to Documents without uploading and shows the Ask PaperBridge milestone.
+On a document page, Skip on that milestone goes straight to Ask PaperBridge.
+On the last milestone, Skip completes the tour. **Replay setup tour** in the account menu resets progress and starts
 from Dashboard; when a Profile already exists, replay starts by opening it
 instead of prompting for a duplicate.
 
