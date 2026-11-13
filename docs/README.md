@@ -53,6 +53,12 @@ tracks the staging and production app configuration, verified Stripe setup,
 remaining deployment and delivery checks, and the launch-trial decision. This
 is a local rollout checklist stored beside the checkout.
 
+[PaperBridge Investigations](../../paper-bridge-investigations/README.md)
+indexes local write-ups of bug and data investigations: evidence, fixes
+considered, and open items. Check it before re-investigating a known problem,
+such as PDFs that fail with **Needs attention** because of oversized pages or
+no readable text.
+
 ## Maintenance
 
 Run this before opening documentation or harness changes:
