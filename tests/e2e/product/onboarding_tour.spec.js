@@ -189,13 +189,69 @@ test('multiple files return directly to Documents and a suggested question compl
 
   await expect(page).toHaveURL(/\/profiles\/\d+\/documents$/);
   await expectTourStep(page, 5, 'Open Ask PaperBridge');
-  await page.getByTestId('documents-ask-ai-link').click();
+
+  // On a document page, step 5 points back to Documents; skipping it goes straight to Ask PaperBridge.
+  const documentPath = await page.getByTestId(/^document-row-/).first().locator('a').first().getAttribute('href');
+  await page.goto(documentPath || '');
+  await expectTourStep(page, 5, 'Your document is uploaded');
+  await page.getByTestId('product-tour-skip').click();
+  await expect(page).toHaveURL(/\/profiles\/\d+\/ai-assistant$/);
   await expectTourStep(page, 6, 'Ask your first question');
 
   await page.getByRole('button', { name: 'What are the most important updates across these documents?' }).click();
   await expect(page.getByText('What are the most important updates across these documents?')).toBeVisible();
   await expect(page.getByTestId('product-tour-popover')).toHaveCount(0);
   await expect.poll(async () => (await tourState(page))?.status).toBe('completed');
+});
+
+test('every step after the first Profile can be skipped', async ({ page }) => {
+  await registerAndOpenDashboard(page, createOnboardingAccount('Skip'));
+  await expectTourStep(page, 1, 'Create your first Profile');
+  await expect(page.getByTestId('product-tour-skip')).toHaveCount(0);
+
+  await page.getByTestId('dashboard-add-profile').click();
+  await expectTourStep(page, 1, 'Add their details');
+  await expect(page.getByTestId('product-tour-skip')).toHaveCount(0);
+  await page.locator('#dependent_first_name').fill('Riley');
+  await page.locator('#dependent_last_name').fill('Skip');
+  await page.getByTestId('profile-create-submit').click();
+
+  await expect(page).toHaveURL(/\/profiles\/\d+$/);
+  await expectTourStep(page, 2, 'Open Documents');
+  await expect(footerButtons(page)).toHaveText(['Skip step']);
+  await expectAccessible(page);
+  await page.getByTestId('product-tour-skip').click();
+  await expect(page).toHaveURL(/\/profiles\/\d+\/documents$/);
+  await expectTourStep(page, 3, 'Add documents');
+
+  await page.getByTestId('product-tour-skip').click();
+  await expect(page).toHaveURL(/\/profiles\/\d+\/documents\/new$/);
+  await expectTourStep(page, 4, 'Choose your files');
+  await expect(footerButtons(page)).toHaveText(['Skip step', 'Choose files']);
+
+  // Skipping after choosing a file leaves the upload undone.
+  await page.getByTestId('document-file-field').setInputFiles({ name: 'skipped-upload.txt', mimeType: 'text/plain', buffer: sampleFile });
+  await expectTourStep(page, 4, 'Ready to upload');
+  await page.getByTestId('product-tour-skip').click();
+  await expect(page).toHaveURL(/\/profiles\/\d+\/documents$/);
+  await expectTourStep(page, 5, 'Open Ask PaperBridge');
+  await expect(page.getByTestId(/^document-row-/)).toHaveCount(0);
+
+  await page.getByTestId('product-tour-skip').click();
+  await expect(page).toHaveURL(/\/profiles\/\d+\/ai-assistant$/);
+  await expectTourStep(page, 6, 'Ask your first question');
+
+  await page.getByTestId('product-tour-skip').click();
+  await expect(page.getByTestId('product-tour-popover')).toHaveCount(0);
+  await expect.poll(async () => tourState(page)).toMatchObject({ status: 'completed', phase: 'completed' });
+
+  // With a Profile in place, the replayed tour's first step can be skipped too.
+  await page.getByTestId('product-tour-replay').click();
+  await expect(page).toHaveURL(/\/dashboard$/);
+  await expectTourStep(page, 1, 'Open a Profile');
+  await page.getByTestId('product-tour-skip').click();
+  await expect(page).toHaveURL(/\/profiles\/\d+$/);
+  await expectTourStep(page, 2, 'Open Documents');
 });
 
 test('skipping stays dismissed until the customer replays the tour', async ({ page }) => {
@@ -259,6 +315,10 @@ async function expectTourStep(page, number, title) {
   await expect(popover).toBeVisible();
   await expect(popover).toContainText(`Step ${number} of 6`);
   await expect(popover).toContainText(title);
+}
+
+function footerButtons(page) {
+  return page.getByTestId('product-tour-popover').locator('.driver-popover-footer button:visible');
 }
 
 async function tourState(page) {

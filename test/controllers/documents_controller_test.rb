@@ -233,7 +233,7 @@ class DocumentsControllerTest < ActionDispatch::IntegrationTest
     assert_select "input[type='file'][accept]", count: 0
     assert_select "textarea[name='document[description]']", count: 0
     assert_select "select[name='document[category]']", count: 0
-    assert_select "form[data-testid='document-upload-form'][data-tour='upload-form'][data-action='input->product-tour#pause turbo:submit-end->product-tour#advanceAfterSubmit'][data-product-tour-from-phase-param='upload_submit'][data-product-tour-next-phase-param='open_ask']"
+    assert_select "form[data-testid='document-upload-form'][data-tour='upload-form'][data-action='input->product-tour#pause turbo:submit-end->product-tour#advanceAfterSubmit'][data-product-tour-from-phase-param='upload_submit'][data-product-tour-next-phase-param='open_ask'][data-tour-skip-url='#{dependent_documents_path(dependent)}']"
     assert_select "[data-tour='choose-files'] input[data-testid='document-file-field'][data-action='change->file-dropzone#changed change->product-tour#filesSelected']"
     assert_select "button[type='submit'][data-testid='document-upload-submit'][data-tour='upload-submit']", text: "Upload"
   end
@@ -632,7 +632,7 @@ class DocumentsControllerTest < ActionDispatch::IntegrationTest
     assert_not_includes response.body, "View document text"
     assert_not_includes response.body, "Embedded page text"
     assert_select "a[data-testid='document-open-original'][target='_blank'][rel='noopener'][href='#{original_document_path(document)}']", text: "Open original"
-    assert_select "a[data-testid='document-back-to-documents'][data-tour='back-to-documents'][data-action='product-tour#advance'][data-product-tour-from-phase-param='open_ask'][data-product-tour-next-phase-param='open_ask']"
+    assert_select "a[data-testid='document-back-to-documents'][data-tour='back-to-documents'][data-action='product-tour#advance'][data-product-tour-from-phase-param='open_ask'][data-product-tour-next-phase-param='open_ask'][data-tour-skip-url='#{dependent_ai_assistant_path(document.dependent)}']"
 
     visible_text = Nokogiri::HTML(response.body).text.squish
     assert_no_match(/\bchunks?\b|\bembeddings?\b|ingestion job|\bchars\b/i, visible_text)
