@@ -79,7 +79,8 @@ operational harness checks until matching implementation exists.
   it creates no login, invitation email, or record access.
 - Dependent-scoped AI assistant with durable question submission,
   queued/processing/completed/failed states, background execution, final Turbo
-  replacement, progressive plain-text answer drafts, immediate progress,
+  replacement, progressive plain-text answer drafts that scroll into view
+  when they first appear on shorter screens, immediate progress,
   honest wait-time guidance, duplicate-submit locking, and reload-safe answers.
 - Account-scoped and category-scoped vector search authorization.
 - Private saved-answer research libraries within each profile, with editable

@@ -3,6 +3,7 @@ import { test, expect } from '../fixtures';
 import { expectAccessible } from '../helpers/accessibility';
 import {
   completeLatestAiAssistantQueryWithoutBroadcast,
+  draftLatestAiAssistantQueryWithoutBroadcast,
   resetLatestAiAssistantQueryStart,
 } from '../helpers/backend';
 
@@ -86,6 +87,46 @@ test('ai assistant reconciles a finished answer when its Cable update is missed'
   await expect(page.getByText('This answer was restored from the durable query.')).toBeVisible();
   await expect(page.getByTestId('ai-assistant-query-result')).toHaveAttribute('data-phase', 'completed');
   await expect(page.getByTestId('ai-assistant-submit')).toBeEnabled();
+});
+
+test('ai assistant scrolls a streaming answer into view on a short laptop screen', async ({ page, family }) => {
+  await page.setViewportSize({ width: 1280, height: 600 });
+  await family.openDependentWorkspace(page);
+  await page.getByTestId('dependent-ai-assistant-link').click();
+  await expect(page).toHaveURL(/\/profiles\/\d+\/ai-assistant$/);
+  const assistantPath = new URL(page.url()).pathname;
+  const speedUpReconciliation = () => page.locator('[data-controller~="ai-assistant-query"]').evaluate((element) => {
+    element.setAttribute('data-ai-assistant-query-reconcile-every-value', '300');
+  });
+  await speedUpReconciliation();
+
+  await page.getByTestId('ai-assistant-query').fill('What changed this school year?');
+  const startRequest = page.waitForResponse((response) =>
+    response.request().method() === 'POST' && /\/ai-assistant\/\d+\/start$/.test(response.url()),
+  );
+  await page.getByTestId('ai-assistant-submit').click();
+  expect((await startRequest).status()).toBe(202);
+
+  const result = page.getByTestId('ai-assistant-query-result');
+  await expect(result).toHaveAttribute('data-phase', 'queued');
+  expect(await page.evaluate(() => window.scrollY)).toBe(0);
+  expect((await result.boundingBox())?.y).toBeGreaterThan(600 * 0.4);
+
+  draftLatestAiAssistantQueryWithoutBroadcast(family.accountName, 'The first part of a longer answer.');
+
+  await expect(result).toHaveAttribute('data-phase', 'drafting');
+  await expect(page.getByTestId('ai-assistant-draft')).toBeInViewport({ ratio: 1 });
+  expect(await page.evaluate(() => window.scrollY)).toBeGreaterThan(0);
+
+  // Opening a page that already shows a draft stays put, and the final answer
+  // replacing a draft the reader can already see does not scroll again.
+  await page.goto(assistantPath);
+  await speedUpReconciliation();
+  await expect(result).toHaveAttribute('data-phase', 'drafting');
+  completeLatestAiAssistantQueryWithoutBroadcast(family.accountName, 'The finished answer.');
+  await expect(result).toHaveAttribute('data-phase', 'completed');
+  await page.waitForTimeout(300);
+  expect(await page.evaluate(() => window.scrollY)).toBe(0);
 });
 
 test('ai assistant retries the same query when its start response is ambiguous', async ({ page, family }) => {

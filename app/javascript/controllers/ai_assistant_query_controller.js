@@ -1,5 +1,7 @@
 import { Controller } from "@hotwired/stimulus"
 
+const ANSWER_PHASES = ["drafting", "completed"]
+
 export default class extends Controller {
   static targets = [
     "announcer",
@@ -107,12 +109,14 @@ export default class extends Controller {
     this.regionTarget.setAttribute("aria-busy", "false")
   }
 
-  syncFromQuery(query, announce) {
+  syncFromQuery(query, live) {
     const queryId = query.dataset.queryId
     const phase = query.dataset.phase
     const active = query.dataset.active === "true"
     const changedQuery = queryId !== this.currentQueryId
     const changedPhase = phase !== this.currentPhase
+    const answerAppeared = ANSWER_PHASES.includes(phase) &&
+      (changedQuery || !ANSWER_PHASES.includes(this.currentPhase))
 
     if (changedQuery) {
       this.resetReassurance()
@@ -134,9 +138,23 @@ export default class extends Controller {
 
     if (!this.startUrl) this.resetStartRetry()
 
-    if (announce && (changedQuery || changedPhase)) {
+    if (live && (changedQuery || changedPhase)) {
       this.announce(query.dataset.announcement)
     }
+
+    if (live && answerAppeared) this.revealAnswer(query)
+  }
+
+  // On shorter screens a streamed answer can start below the fold. When answer
+  // text first appears, bring it into view unless it's already easy to see.
+  // Page loads never scroll; only live updates do.
+  revealAnswer(query) {
+    const top = query.getBoundingClientRect().top
+    const margin = parseFloat(window.getComputedStyle(query).scrollMarginTop) || 0
+    if (top >= margin && top <= window.innerHeight * 0.4) return
+
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches
+    query.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "start" })
   }
 
   async startQuery(query) {
