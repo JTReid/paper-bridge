@@ -3,6 +3,8 @@ import { driver } from "driver.js"
 
 const TOUR_VERSION = 1
 const ACTIVE_STATUS = "active"
+// Skipping a link step follows the highlighted link, exactly as clicking it would.
+const FOLLOW_LINK = "follow_link"
 
 const STEP_CONTENT = {
   create_profile: {
@@ -19,7 +21,8 @@ const STEP_CONTENT = {
     description: "Open the highlighted Profile to continue the setup tour.",
     number: 1,
     side: "bottom",
-    align: "start"
+    align: "start",
+    skip: FOLLOW_LINK
   },
   profile_form: {
     selector: '[data-tour="profile-form"]',
@@ -37,7 +40,8 @@ const STEP_CONTENT = {
     description: "This is where this Profile’s records live. Select View all.",
     number: 2,
     side: "bottom",
-    align: "end"
+    align: "end",
+    skip: FOLLOW_LINK
   },
   add_documents: {
     selector: '[data-tour="add-documents"]',
@@ -45,7 +49,8 @@ const STEP_CONTENT = {
     description: "Keep records together. Supported file types can also be prepared for Ask PaperBridge.",
     number: 3,
     side: "bottom",
-    align: "end"
+    align: "end",
+    skip: FOLLOW_LINK
   },
   choose_files: {
     selector: '[data-tour="choose-files"]',
@@ -55,7 +60,8 @@ const STEP_CONTENT = {
     side: "top",
     align: "center",
     actionLabel: "Choose files",
-    fileSelector: 'input[type="file"]'
+    fileSelector: 'input[type="file"]',
+    skip: "open_ask"
   },
   upload_submit: {
     selector: '[data-tour="upload-submit"]',
@@ -65,7 +71,8 @@ const STEP_CONTENT = {
     side: "left",
     align: "end",
     actionLabel: "Review files",
-    focusSelector: '[data-testid="document-file-list"]'
+    focusSelector: '[data-testid="document-file-list"]',
+    skip: "open_ask"
   },
   open_ask: {
     selector: '[data-tour="open-ask"]',
@@ -76,7 +83,9 @@ const STEP_CONTENT = {
     fallbackDescription: "Go back to Documents to review file status or continue to Ask PaperBridge.",
     number: 5,
     side: "bottom",
-    align: "end"
+    align: "end",
+    skip: FOLLOW_LINK,
+    fallbackSkip: "ask_question"
   },
   ask_question: {
     selector: '[data-tour="ask-question"]',
@@ -86,7 +95,8 @@ const STEP_CONTENT = {
     side: "top",
     align: "center",
     actionLabel: "Type a question",
-    focusSelector: '[data-testid="ai-assistant-query"]'
+    focusSelector: '[data-testid="ai-assistant-query"]',
+    skip: "completed"
   }
 }
 
@@ -228,6 +238,7 @@ export default class extends Controller {
     document.body.classList.add("paperbridge-tour-active")
 
     const showButtons = content.actionLabel ? ["next", "close"] : ["close"]
+    const skip = usingFallback ? content.fallbackSkip : content.skip
 
     this.driverInstance = driver({
       allowClose: true,
@@ -248,6 +259,7 @@ export default class extends Controller {
         popover.closeButton.setAttribute("aria-label", "Skip setup tour")
         popover.closeButton.setAttribute("title", "Skip setup tour")
         popover.nextButton.dataset.testid = "product-tour-action"
+        if (skip) this.addSkipButton(popover, () => this.skipStep(target, skip))
       }
     })
 
@@ -284,6 +296,36 @@ export default class extends Controller {
 
     this.destroyTour()
     window.requestAnimationFrame(() => focusTarget?.focus({ preventScroll: true }))
+  }
+
+  addSkipButton(popover, onSkip) {
+    if (popover.footerButtons.querySelector('[data-testid="product-tour-skip"]')) return
+
+    const button = document.createElement("button")
+    button.type = "button"
+    button.className = "driver-popover-footer-btn paperbridge-tour__skip"
+    button.dataset.testid = "product-tour-skip"
+    button.textContent = "Skip step"
+    button.addEventListener("click", onSkip)
+    popover.footerButtons.prepend(button)
+
+    // On steps without Next or Previous, Driver.js hides the footer but leaves those buttons showing inside it.
+    if (popover.footer.style.display === "none") {
+      popover.previousButton.style.display = "none"
+      popover.nextButton.style.display = "none"
+      popover.footer.style.display = "flex"
+    }
+  }
+
+  skipStep(target, skip) {
+    if (skip === FOLLOW_LINK) {
+      target.click()
+      return
+    }
+
+    const url = target.closest("[data-tour-skip-url]")?.dataset.tourSkipUrl
+    this.moveTo(skip)
+    if (url) window.Turbo.visit(url)
   }
 
   moveTo(nextPhase) {

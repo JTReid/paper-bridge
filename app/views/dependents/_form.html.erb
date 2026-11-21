@@ -36,16 +36,24 @@
 
   <div>
     <%= form.label :avatar, "Profile photo", class: "block text-sm font-medium text-slate-700" %>
-    <div class="mt-2 flex items-center gap-4">
-      <%= dependent_avatar(
-        dependent,
-        class_name: "h-14 w-14 rounded-2xl",
-        fallback_class_name: "bg-primary/10 text-lg font-bold text-primary",
-        testid: "dependent-avatar-form"
-      ) %>
+    <div class="mt-2 flex items-center gap-4" data-controller="avatar-preview">
+      <div data-avatar-preview-target="current">
+        <%= dependent_avatar(
+          dependent,
+          class_name: "h-14 w-14 rounded-2xl",
+          fallback_class_name: "bg-primary/10 text-lg font-bold text-primary",
+          testid: "dependent-avatar-form"
+        ) %>
+      </div>
+      <img hidden alt="New profile photo preview" width="128" height="128"
+           class="h-14 w-14 shrink-0 rounded-2xl object-cover"
+           data-avatar-preview-target="image"
+           data-action="error->avatar-preview#showCurrent"
+           data-testid="dependent-avatar-preview">
       <div class="min-w-0 flex-1">
         <%= form.file_field :avatar,
             accept: Dependent::AVATAR_CONTENT_TYPES.join(","),
+            data: { avatar_preview_target: "input", action: "avatar-preview#show" },
             class: "block w-full text-sm text-slate-700 file:mr-4 file:rounded-full file:border-0 file:bg-primary/10 file:px-4 file:py-2 file:text-xs file:font-medium file:text-primary hover:file:bg-primary/20" %>
         <p class="mt-1.5 text-xs text-muted-foreground">JPEG, PNG, or WebP. Up to 5 MB.</p>
       </div>

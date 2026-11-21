@@ -6,17 +6,25 @@ class Documents::PreparePdfTest < ActiveSupport::TestCase
     "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=="
   )
 
+  LETTER_PAGE_SIZE = [ 612.0, 792.0 ].freeze
+
   class FakePdfCommandRunner
     attr_reader :calls
 
-    def initialize(page_count: 2)
+    def initialize(page_count: 2, page_size: LETTER_PAGE_SIZE)
       @page_count = page_count
+      @page_size = page_size
       @calls = []
     end
 
     def page_count(_pdf_path)
       calls << [ :page_count ]
       @page_count
+    end
+
+    def page_size(_pdf_path, page_number:)
+      calls << [ :page_size, page_number ]
+      @page_size
     end
 
     def extract_text(_pdf_path, page_number:)
@@ -61,6 +69,21 @@ class Documents::PreparePdfTest < ActiveSupport::TestCase
     assert_includes payload.fetch(:full_text), "OCR text for page 2"
     assert_includes command_runner.calls, [ :render_page, 1, 300 ]
     assert_includes command_runner.calls, [ :render_page, 2, 300 ]
+    assert pages.all? { |page| page.metadata.fetch("dpi") == 300 }
+  end
+
+  test "renders a page larger than letter size at a lower DPI that fits the pixel budget" do
+    document = create_pdf_document
+    # 27 x 35 inches: a normal scan printed onto a poster-sized PDF page.
+    command_runner = FakePdfCommandRunner.new(page_count: 1, page_size: [ 1935.0, 2540.0 ])
+    clear_enqueued_jobs
+
+    Documents::PreparePdf.call(document, command_runner: command_runner)
+
+    assert_includes command_runner.calls, [ :render_page, 1, 94.2 ]
+    assert_equal 94.2, document.reload.document_pages.sole.metadata.fetch("dpi")
+    rendered_pixels = (1935.0 / 72 * 94.2) * (2540.0 / 72 * 94.2)
+    assert_operator rendered_pixels, :<=, Documents::PreparePdf::MAX_PAGE_PIXELS
   end
 
   test "preparation is idempotent for existing page records" do

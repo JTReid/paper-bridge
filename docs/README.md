@@ -28,11 +28,11 @@ check enforces that every tracked, non-ignored Markdown file is linked here.
 | [Billing](runbooks/billing.md) | Hosted profile pricing and promotion codes, console-managed non-billable accounts, an optional non-billable default for new signups, opt-in card-required 90-day trial, trial-preserving Portal, Checkout recovery, allowance enforcement, reminder setup, safe company-test webhooks, and rollout boundaries. |
 | [Document Ingestion](runbooks/document-ingestion.md) | Upload, preparation, independent summary/search readiness, separate post-processing timeline extraction, full processing retries, same-job redelivery, and interrupted-worker lifecycle. |
 | [Document Uploads](runbooks/document-uploads.md) | Account-scoped file access, live list updates, interrupted-job recovery, retry from the saved original, duplicate protection, metadata generation, and release-time AI setup. |
-| [AI Assistant Search](runbooks/ai-assistant-search.md) | Durable asynchronous questions, interrupted-worker recovery, streamed drafts, dependent-scoped retrieval, citations, and direct email of one completed answer without source documents. |
+| [AI Assistant Search](runbooks/ai-assistant-search.md) | Durable asynchronous questions, interrupted-worker recovery, streamed drafts, dependent-scoped retrieval, and citations. |
 | [Saved Answers And Meeting Preparation](runbooks/saved-answers.md) | Private answer snapshots, library search, reusable meeting collections, responsive batch selection with separate live search, and in-place meeting changes that preserve browsing state. |
 | [Care Team Contacts](runbooks/care-team-access.md) | Profile-scoped contact details, email-sharing recipients, and account access boundaries. |
 | [Document Sharing](runbooks/document-sharing.md) | Current email-attachment sharing behavior and validation surface. |
-| [QA Troubleshooting](runbooks/qa-troubleshooting.md) | Local QA harness for browser bug reproduction, artifacts, password reset, document sharing and answer email SMTP checks, and verification. |
+| [QA Troubleshooting](runbooks/qa-troubleshooting.md) | Local QA harness for browser bug reproduction, artifacts, password reset and document sharing SMTP checks, and verification. |
 | [Browser QA](runbooks/browser-qa.md) | Playwright folder structure, isolated test data, CI coverage, and direct iteration commands. |
 | [QA Seed Data](runbooks/qa-seed-data.md) | Synthetic processed-document corpus for development QA and bug hunting. |
 | [Negative Error-State Probes](runbooks/negative-error-state-probes.md) | Recommended future QA probes for invalid, empty, failed, and edge-case product states. |
@@ -52,6 +52,12 @@ preparation. It is a brainstorm for future work, not an implementation plan.
 tracks the staging and production app configuration, verified Stripe setup,
 remaining deployment and delivery checks, and the launch-trial decision. This
 is a local rollout checklist stored beside the checkout.
+
+[PaperBridge Investigations](../../paper-bridge-investigations/README.md)
+indexes local write-ups of bug and data investigations: evidence, fixes
+considered, and open items. Check it before re-investigating a known problem,
+such as PDFs that fail with **Needs attention** because of oversized pages or
+no readable text.
 
 ## Maintenance
 

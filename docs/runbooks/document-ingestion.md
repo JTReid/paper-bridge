@@ -47,6 +47,13 @@ documents.
 - PDF preparation renders every page at 300 DPI, OCRs every page, extracts
   embedded text for every page, and stores page-level artifacts in
   `DocumentPage` records.
+- A rendered page never exceeds the pixel count of a US Letter page at 300 DPI
+  (2550 x 3300, `Documents::PreparePdf::MAX_PAGE_PIXELS`). Each page's declared
+  size comes from `pdfinfo` before rendering. A page that would exceed the
+  budget renders at a lower DPI, recorded in the page metadata, so a
+  poster-sized page cannot exhaust worker memory. Letter and smaller pages
+  still render at 300 DPI; A4 renders at about 295 DPI and legal at about
+  266 DPI. The uploaded original is never changed.
 - `DocumentPage` stores page number, embedded text, OCR text, metadata, status,
   and a page image attachment.
 - `ProcessDocumentJob` creates a `PipelineRun` for the document subject.

@@ -335,6 +335,11 @@ class DependentsControllerTest < ActionDispatch::IntegrationTest
 
     assert_response :success
     assert_select "form[enctype='multipart/form-data'] input[type='file'][name='dependent[avatar]'][accept='image/jpeg,image/png,image/webp']"
+    assert_select "[data-controller='avatar-preview']" do
+      assert_select "input[name='dependent[avatar]'][data-avatar-preview-target='input'][data-action='avatar-preview#show']"
+      assert_select "[data-avatar-preview-target='current'] [data-testid='dependent-avatar-form']"
+      assert_select "img[hidden][data-avatar-preview-target='image']:not([src])"
+    end
     assert_select "a[data-testid='nav-calendar'][data-turbo-frame='#{CalendarWorkspace::FAMILY_CALENDAR_FRAME_ID}']", text: "Calendar"
     assert_select "a[href='#{dependent_path(dependent)}']", text: "Cancel"
 

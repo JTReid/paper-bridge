@@ -5,6 +5,12 @@ require "tmpdir"
 module Documents
   class PreparePdf
     DEFAULT_DPI = 300
+    # Most pixels one rendered page may have: a US Letter page at 300 DPI
+    # (2550 x 3300). A page whose declared size would exceed this renders at a
+    # lower DPI, so a poster-sized page cannot exhaust worker memory in
+    # pdftoppm or tesseract.
+    MAX_PAGE_PIXELS = 2550 * 3300
+    POINTS_PER_INCH = 72.0
 
     def self.call(document, command_runner: PdfCommandRunner.new, dpi: DEFAULT_DPI)
       new(document, command_runner: command_runner, dpi: dpi).call
@@ -72,9 +78,10 @@ module Documents
         page.save!
 
         embedded_text = normalize_text(command_runner.extract_text(pdf_path, page_number: page_number))
-        image_path = command_runner.render_page(pdf_path, page_number: page_number, output_dir: work_dir, dpi: dpi)
+        page_dpi = render_dpi(pdf_path, page_number)
+        image_path = command_runner.render_page(pdf_path, page_number: page_number, output_dir: work_dir, dpi: page_dpi)
         ocr_text = normalize_text(command_runner.ocr_image(image_path))
-        metadata = page_metadata(embedded_text, ocr_text)
+        metadata = page_metadata(embedded_text, ocr_text, page_dpi)
 
         attach_page_image(page, image_path, page_number)
         page.update!(
@@ -100,9 +107,17 @@ module Documents
         end
       end
 
-      def page_metadata(embedded_text, ocr_text)
+      def render_dpi(pdf_path, page_number)
+        width, height = command_runner.page_size(pdf_path, page_number: page_number)
+        square_inches = (width / POINTS_PER_INCH) * (height / POINTS_PER_INCH)
+        return dpi if square_inches * dpi**2 <= MAX_PAGE_PIXELS
+
+        Math.sqrt(MAX_PAGE_PIXELS / square_inches).floor(1)
+      end
+
+      def page_metadata(embedded_text, ocr_text, page_dpi)
         {
-          dpi: dpi,
+          dpi: page_dpi,
           embedded_word_count: word_count(embedded_text),
           ocr_word_count: word_count(ocr_text),
           selected_text_source: selected_text_source(embedded_text, ocr_text)

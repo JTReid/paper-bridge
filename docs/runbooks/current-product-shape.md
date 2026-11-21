@@ -75,18 +75,13 @@ operational harness checks until matching implementation exists.
   document, creates search chunks, and stores pgvector embeddings.
 - Care team contacts for a dependent, backed by `CareTeamMembership`, with
   required name, role, and email plus an optional phone number. Adding a contact
-  saves their details for the family and document/answer email recipient pickers;
+  saves their details for the family and document-sharing recipient picker;
   it creates no login, invitation email, or record access.
 - Dependent-scoped AI assistant with durable question submission,
   queued/processing/completed/failed states, background execution, final Turbo
-  replacement, progressive plain-text answer drafts, immediate progress,
+  replacement, progressive plain-text answer drafts that scroll into view
+  when they first appear on shorter screens, immediate progress,
   honest wait-time guidance, duplicate-submit locking, and reload-safe answers.
-- Direct email of one completed Ask PaperBridge response to any email address,
-  with an optional Care Team contact shortcut and message. The email preserves
-  the question, answer, source labels, date, and existing qualifications, without
-  attaching source documents or adding private document links. It uses the
-  existing query and never saves a new answer or reruns AI. See
-  [AI Assistant Search](ai-assistant-search.md#emailing-one-answer).
 - Account-scoped and category-scoped vector search authorization.
 - Private saved-answer research libraries within each profile, with editable
   titles and notes, source snapshots, generated/saved dates, text search, and
@@ -178,7 +173,14 @@ automatic start. Product access includes non-billable accounts.
 Progress is stored as a version, status, and phase in account-scoped browser
 `localStorage`; it never stores Profile names, file names, or question text.
 Closing or pressing Escape stores `dismissed` in that browser. Completion stores
-`completed`. **Replay setup tour** in the account menu resets progress and starts
+`completed`.
+
+Every milestone except creating the first Profile shows **Skip step**, because
+nothing after it works without a Profile. On a link milestone, Skip follows the
+highlighted link exactly as clicking it would. On the upload milestone, Skip
+returns to Documents without uploading and shows the Ask PaperBridge milestone.
+On a document page, Skip on that milestone goes straight to Ask PaperBridge.
+On the last milestone, Skip completes the tour. **Replay setup tour** in the account menu resets progress and starts
 from Dashboard; when a Profile already exists, replay starts by opening it
 instead of prompting for a duplicate.
 
