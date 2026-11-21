@@ -42,6 +42,20 @@ export function resetLatestAiAssistantQueryStart(accountName) {
   );
 }
 
+export function draftLatestAiAssistantQueryWithoutBroadcast(accountName, draft) {
+  runRailsRunner(
+    `
+      account = Account.find_by!(name: ENV.fetch("QA_ACCOUNT_NAME"))
+      query = account.ai_assistant_queries.order(created_at: :desc).first!
+      query.update_columns(state: "processing", draft_answer: ENV.fetch("QA_DRAFT"), updated_at: Time.current)
+    `,
+    {
+      QA_ACCOUNT_NAME: accountName,
+      QA_DRAFT: draft,
+    },
+  );
+}
+
 export function completeLatestAiAssistantQueryWithoutBroadcast(accountName, answer) {
   runRailsRunner(
     `

@@ -74,6 +74,12 @@ lifecycle.
   PaperBridge keeps working.
 - The page says that most answers begin appearing within about 30 seconds. It
   does not promise a hard deadline.
+- When answer text first appears during a live update (the first draft, or the
+  final answer if no draft came first), the page smoothly scrolls the result
+  into view unless its top is already in the upper part of the screen. Opening
+  the page, later draft updates, and a final answer replacing a draft never
+  scroll. Reduced-motion settings jump instead of animating. Focus does not
+  move; the polite status announcement still reports the phase.
 - The result itself is not a live region because repeated draft replacements
   would make screen readers reread the growing answer. A separate polite status
   announcement reports phase changes and longer waits.
