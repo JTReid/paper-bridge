@@ -43,7 +43,7 @@ WORKFLOW_SPECS = {
   "sharing" => [ "tests/e2e/product/document_sharing.spec.js" ].freeze,
   "documents" => [ "tests/e2e/product/document_management.spec.js", "tests/e2e/product/document_list_updates.spec.js", "tests/e2e/product/document_retry.spec.js" ].freeze,
   "care-team" => [ "tests/e2e/product/care_team.spec.js" ].freeze,
-  "ai" => [ "tests/e2e/product/ai_assistant.spec.js", "tests/e2e/product/ai_assistant_email.spec.js" ].freeze,
+  "ai" => [ "tests/e2e/product/ai_assistant.spec.js" ].freeze,
   "saved-answers" => [ "tests/e2e/product/saved_answers.spec.js" ].freeze,
   "calendar" => [ "tests/e2e/product/calendar.spec.js" ].freeze,
   "onboarding" => [ "tests/e2e/product/onboarding_tour.spec.js" ].freeze
@@ -110,7 +110,6 @@ STATIC_FILES = %w[
   app/javascript/controllers/document_search_controller.js
   app/javascript/controllers/document_list_controller.js
   app/javascript/controllers/ai_assistant_query_controller.js
-  app/javascript/controllers/ai_assistant_email_controller.js
   app/javascript/controllers/meeting_prep_controller.js
   app/javascript/controllers/meeting_prep_filter_controller.js
   app/javascript/controllers/product_tour_controller.js
@@ -126,7 +125,6 @@ STATIC_FILES = %w[
   tests/e2e/helpers/backend.js
   tests/e2e/helpers/document_list_updates.js
   tests/e2e/helpers/document_retry.js
-  tests/e2e/helpers/ai_assistant_email.js
   tests/e2e/helpers/diagnostics.js
   tests/e2e/helpers/accessibility.js
   tests/e2e/helpers/mailpit.js
@@ -152,8 +150,6 @@ STATIC_FILES = %w[
   tests/e2e/product/mobile_negative.spec.js
   tests/e2e/product/qa_seed_edge_states.spec.js
   tests/e2e/product/ai_assistant.spec.js
-  tests/e2e/product/ai_assistant_email.spec.js
-  tests/e2e/product/ai_assistant_email_mailpit.spec.js
   tests/e2e/product/saved_answers.spec.js
   tests/e2e/product/onboarding_tour.spec.js
   vendor/javascript/driver.js.js
@@ -217,7 +213,7 @@ def workflow_usage
       sharing    Run document sharing workflow checks without Mailpit
       documents  Run document upload and metadata workflow checks
       care-team  Run care team contact workflow checks
-      ai         Run AI assistant and answer email workflows without live model calls
+      ai         Run AI assistant workflows without live model calls
       saved-answers Run saved research and meeting preparation without live model calls
       calendar   Run appointment create/edit/delete, email, and month navigation checks
       onboarding Run the post-signup setup tour through the first question
@@ -1056,7 +1052,6 @@ when "mailpit"
   paths = args.any? ? args : %w[
     tests/e2e/product/document_sharing_mailpit.spec.js
     tests/e2e/product/password_reset_mailpit.spec.js
-    tests/e2e/product/ai_assistant_email_mailpit.spec.js
   ]
   ensure_mailpit_ready &&
     with_server(env: mailpit_server_env) do
