@@ -14,6 +14,10 @@ operational harness checks until matching implementation exists.
   responsive video dialog, loads media on demand, and stops playback on close
   or navigation. See [Meet PaperBridge Video](marketing-video.md).
 - Devise email/password registration and sign-in.
+- Password reset with PaperBridge-styled "Forgot your password?" and "Change
+  your password" pages, and a branded reset email sent as both HTML and plain
+  text. The email greets the user by name and states the link's expiry
+  (`Devise.reset_password_within`, currently 6 hours).
 - Registration-created family accounts with an admin `AccountMembership`.
 - `MAX_ACCOUNTS` caps the total number of accounts signup can create. At the
   cap, the signup page shows "Maximum accounts reached. Contact an admin for
