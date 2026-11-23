@@ -15,8 +15,18 @@ class DevisePasswordsControllerTest < ActionDispatch::IntegrationTest
     assert_equal [ ApplicationMailer::DEFAULT_FROM_ADDRESS ], email.from
     assert_equal email.from, email.reply_to
     assert_equal [ user.email ], email.to
-    reset_url = Nokogiri::HTML(email.body.decoded).at_css("a")["href"]
+    assert_equal "Reset password instructions", email.subject
+    html = email.html_part.body.decoded
+    text = email.text_part.body.decoded
+    reset_url = Nokogiri::HTML(html).at_css("a")["href"]
     token = Rack::Utils.parse_query(URI.parse(reset_url).query).fetch("reset_password_token")
+    assert_includes html, "Change my password"
+    assert_includes text, reset_url
+    assert_includes text, "expires in 6 hours"
+    if user.name.present?
+      assert_includes html, "Hi #{ERB::Util.html_escape(user.name)},"
+      assert_includes text, "Hi #{user.name},"
+    end
 
     get reset_url
     assert_response :success
