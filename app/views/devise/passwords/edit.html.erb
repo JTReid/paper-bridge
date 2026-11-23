@@ -1,0 +1,64 @@
+<% content_for :title, "Change Password | PaperBridge" %>
+
+<main class="min-h-screen bg-background text-foreground">
+  <div class="mx-auto flex min-h-screen max-w-6xl flex-col px-5 py-6 sm:px-6 lg:px-8">
+    <header class="flex items-center justify-between">
+      <%= link_to root_path, class: "flex items-center", aria: { label: "PaperBridge home" } do %>
+        <%= paperbridge_logo(width: 150, height: 52, class_name: "h-[52px] w-[150px]") %>
+      <% end %>
+
+      <%= link_to "Sign in", new_session_path(resource_name), class: "inline-flex h-10 items-center justify-center rounded-full border border-border bg-white px-5 text-sm font-medium text-foreground shadow-sm transition-colors hover:bg-muted" %>
+    </header>
+
+    <section class="flex flex-1 items-center justify-center py-10 lg:py-16">
+      <div class="w-full max-w-md">
+        <section class="rounded-2xl border border-border/60 bg-white p-6 shadow-2xl shadow-primary/10 sm:p-8" data-testid="change-password-card">
+          <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary">
+            <%= pb_icon("lock", class_name: "h-6 w-6") %>
+          </div>
+
+          <p class="mt-5 text-xs font-semibold uppercase tracking-widest text-primary">Password Help</p>
+          <h1 class="mt-2 text-2xl font-bold tracking-tight text-foreground">Change your password</h1>
+          <p class="mt-2 text-sm leading-6 text-muted-foreground">
+            Choose a new password for your PaperBridge account. You’ll be signed in once it’s saved.
+          </p>
+
+          <%= form_for(resource, as: resource_name, url: password_path(resource_name), html: { method: :put, class: "mt-6 space-y-4", data: { testid: "change-password-form" } }) do |f| %>
+            <% if resource.errors.any? %>
+              <div class="rounded-xl border border-red-200 bg-red-50 p-4 text-red-900" role="alert" data-turbo-temporary>
+                <h2 class="text-sm font-semibold"><%= pluralize(resource.errors.count, "error") %> prevented your password from being changed</h2>
+                <ul class="mt-2 list-disc space-y-1 pl-5 text-sm">
+                  <% resource.errors.full_messages.each do |message| %>
+                    <li><%= message %></li>
+                  <% end %>
+                </ul>
+              </div>
+            <% end %>
+
+            <%= f.hidden_field :reset_password_token %>
+
+            <div>
+              <%= f.label :password, "New password", class: "block text-sm font-medium text-foreground" %>
+              <%= f.password_field :password, autofocus: true, autocomplete: "new-password", class: "mt-2 block h-11 w-full rounded-xl border border-border bg-white px-3 text-sm text-foreground shadow-sm outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/10", aria: ({ describedby: "password-length-hint" } if @minimum_password_length), data: { testid: "change-password-password" } %>
+              <% if @minimum_password_length %>
+                <p id="password-length-hint" class="mt-2 text-xs text-muted-foreground">At least <%= pluralize(@minimum_password_length, "character") %>.</p>
+              <% end %>
+            </div>
+
+            <div>
+              <%= f.label :password_confirmation, "Confirm new password", class: "block text-sm font-medium text-foreground" %>
+              <%= f.password_field :password_confirmation, autocomplete: "new-password", class: "mt-2 block h-11 w-full rounded-xl border border-border bg-white px-3 text-sm text-foreground shadow-sm outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/10", data: { testid: "change-password-confirmation" } %>
+            </div>
+
+            <%= f.submit "Change my password", class: "h-11 w-full rounded-full bg-primary px-4 text-sm font-semibold text-primary-foreground shadow-lg shadow-primary/20 transition-colors hover:bg-primary/90", data: { testid: "change-password-submit" } %>
+          <% end %>
+
+          <div class="mt-5 rounded-xl border border-border bg-muted/40 px-4 py-3 text-sm text-muted-foreground">
+            Link expired?
+            <%= link_to "Send a new one", new_password_path(resource_name), class: "font-semibold text-primary hover:opacity-80" %>
+          </div>
+        </section>
+      </div>
+    </section>
+  </div>
+</main>
